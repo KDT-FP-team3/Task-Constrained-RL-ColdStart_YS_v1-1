@@ -50,3 +50,25 @@ def calculate_ctpt_and_color(lr, gamma, epsilon):
     desc = type_desc_map.get(type_code, "Unknown Type")
     
     return type_code, color, desc
+
+
+def calculate_mdd(returns_percent_array):
+    """
+    누적 수익률(%) 배열을 바탕으로 최대 낙폭(MDD, Maximum Drawdown)을 계산합니다.
+    """
+    if len(returns_percent_array) == 0: 
+        return 0.0
+    
+    # 수익률(%)을 자산 가치 지수(초기 자본 1.0 기준)로 변환
+    wealth_index = 1.0 + (returns_percent_array / 100.0)
+    
+    # 현재 시점까지의 최고점(Peak) 배열 생성
+    peak = np.maximum.accumulate(wealth_index)
+    
+    # 고점 대비 하락률 계산
+    drawdown = (wealth_index - peak) / peak
+    
+    # 가장 큰 폭의 하락률을 %로 변환 (음수로 표현)
+    max_drawdown = np.min(drawdown) * 100 
+    
+    return round(max_drawdown, 2)
