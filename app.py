@@ -23,7 +23,7 @@ if 'prev_final_contributions' not in st.session_state: st.session_state.prev_fin
 if 'prev_episodes_run' not in st.session_state: st.session_state.prev_episodes_run = 0
 
 # ==========================================
-# 🚀 실시간 컴퓨팅 부하 계기판 렌더링 함수
+# 실시간 컴퓨팅 부하 계기판 렌더링 함수
 # ==========================================
 def update_gauge(episodes_run, placeholder):
     max_load = 6000 
@@ -37,7 +37,7 @@ def update_gauge(episodes_run, placeholder):
     fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
     placeholder.plotly_chart(fig_gauge, use_container_width=True)
 
-st.sidebar.markdown("### Computing Load")
+st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty() 
 # 초기 게이지 렌더링
 update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
@@ -50,9 +50,9 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.98)
     global_epsilon = st.slider("Exploration (ε)", 0.01, 0.5, 0.10)
 
-st.title("🌐 Chainers Master Fund: Performance Monitoring Dashboard")
+st.title("Chainers Master Fund: Performance Monitoring Dashboard")
 st.markdown("---")
-st.markdown("## 📊 Master Fund Portfolio Report")
+st.markdown("## Master Fund Portfolio Report")
 
 # --- 최상단 대시보드 및 총 진행률 표시를 위한 공간 확보 ---
 master_progress_placeholder = st.empty()
@@ -60,7 +60,7 @@ summary_placeholder = st.empty()
 st.markdown("---")
 
 # ==========================================
-# 📊 최상단 대시보드 그리기 함수
+# 최상단 대시보드 그리기 함수
 # ==========================================
 def draw_top_dashboard(final_contribs, container, is_updating=False):
     df_contrib = pd.DataFrame(final_contribs)
@@ -134,7 +134,7 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
             
     return current_summary
 
-# --- 🔄 화면 깜빡임 방지: 이전 상태의 창을 먼저 그려둠 ---
+# --- 화면 깜빡임 방지: 이전 상태의 창을 먼저 그려둠 ---
 if st.session_state.prev_final_contributions:
     with summary_placeholder.container():
         draw_top_dashboard(st.session_state.prev_final_contributions, summary_placeholder, is_updating=True)
@@ -184,12 +184,12 @@ current_rendered_charts = 0
 if total_charts_to_render > 0:
     master_progress = master_progress_placeholder.progress(0.0, text="🚀 연산 시작 중...")
 
-st.markdown("### 👨‍💻 Portfolio Managers (Independent RL Labs)")
+st.markdown("### Portfolio Managers (Independent RL Labs)")
 
 for m_config in sorted_modules:
     with st.container():
         m_name = getattr(m_config, "MEMBER_NAME", "Unknown")
-        st.subheader(f"📍 {m_name}")
+        st.subheader(f"{m_name}")
         
         m_params = getattr(m_config, "RL_PARAMS", {})
         default_p = m_params.get("default", {})
@@ -210,7 +210,7 @@ for m_config in sorted_modules:
                     stock_idx = name_to_index.get(stock_name)
                     p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                     
-                    with st.expander(f"⚙️ {stock_name} 파라미터 조절", expanded=True):
+                    with st.expander(f"{stock_name} 파라미터 조절", expanded=True):
                         sc1, sc2 = st.columns(2)
                         with sc1:
                             local_epi = st.slider("Trading Days", 10, 500, int(p_settings.get("episodes", global_episodes)), key=f"epi_{m_name}_{stock_name}")
@@ -220,16 +220,16 @@ for m_config in sorted_modules:
                             local_gamma = st.slider("Discount Factor", 0.1, 0.99, float(p_settings.get("gamma", global_gamma)), key=f"gamma_{m_name}_{stock_name}")
                             local_epsilon = st.slider("Exploration", 0.01, 0.5, float(p_settings.get("epsilon", global_epsilon)), key=f"eps_{m_name}_{stock_name}")
 
-                    # 🌟 각 멤버 그래프 영역 로딩 표시자 (Spinner)
+                    # 각 멤버 그래프 영역 로딩 표시자 (Spinner)
                     with st.spinner(f"⏳ {stock_name} 시뮬레이션 중..."):
                         fig, final_ret, local_mdd = create_real_rl_chart(stock_name, ticker, local_lr, local_gamma, local_epsilon, local_epi, local_seed)
                         st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_name}_{stock_name}")
                         
-                    # 🌟 실시간 연산 부하 갱신 (왼쪽 계기판)
+                    # 실시간 연산 부하 갱신 (왼쪽 계기판)
                     total_episodes_run += local_epi
                     update_gauge(total_episodes_run, gauge_placeholder)
                     
-                    # 🌟 실시간 총 진행률 갱신 (상단 바)
+                    # 실시간 총 진행률 갱신 (상단 바)
                     current_rendered_charts += 1
                     pct = min(current_rendered_charts / max(total_charts_to_render, 1), 1.0)
                     master_progress.progress(pct, text=f"🚀 글로벌 포트폴리오 연산 중... ({int(pct*100)}%)")
@@ -247,10 +247,10 @@ for m_config in sorted_modules:
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
 
 # ==========================================
-# 📊 연산 종료 후: 최상단 대시보드 최종 업데이트
+# 연산 종료 후: 최상단 대시보드 최종 업데이트
 # ==========================================
 if final_contributions:
-    # 🌟 연산이 끝났으므로 진행률 바 숨김 처리
+    # 연산이 끝났으므로 진행률 바 숨김 처리
     master_progress_placeholder.empty()
     
     # 빈 공간을 비우고 새 데이터로 덮어씌움
