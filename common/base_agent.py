@@ -11,7 +11,7 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
 
     returns = df['Daily_Return'].values
     prices = df['Close'].values
-    emas = df['EMA_20'].values
+    emas = df['EMA_10'].values  # [수정] EMA_20 → EMA_10: data_loader 변경에 맞춰 업데이트
 
     # ==========================================
     # 상태 공간 정의
@@ -23,25 +23,26 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     #   1: 상승추세 + EMA 아래 → 매수 금지
     #   2: 하락추세 + EMA 위   → 매수 가능 (하락 주의)
     #   3: 상승추세 + EMA 위   → 매수 가능 (핵심 매수 신호)
-    #
-    # [2-state 문제점] STATIC에서 2-state를 사용하면 'EMA 위'와 'EMA 아래' 상황이
-    # 같은 state로 뭉쳐져 Q-값이 서로 다른 시장 조건의 보상 신호를 혼합합니다.
-    # 이로 인해 Q[state, 매수]가 수렴에 실패하거나 음수로 편향되어
-    # 평가 단계에서 영구 현금보유(수평 직선)가 됩니다.
 
     if use_static:
         n_states = 4
         q_table = np.zeros((n_states, 2))
-        # [핵심] 비대칭 낙관적 초기화 (Asymmetric Optimistic Initialization):
-        # EMA 위 상태(2, 3)에서만 매수 Q-값을 현금보유 Q-값보다 높게 초기화.
-        # → 초기 탐욕 정책이 EMA 위에서 매수를 선택 → 즉시 실제 보상 수집 시작
-        # → 수익성이 있으면 Q[3,1]이 증가, 없으면 감소 → 빠른 수렴
-        # np.full((2,2), 0.01) 방식은 argmax([0.01,0.01])=0 이므로 효과 없음
-        q_table[2, 1] = 0.005   # 하락+EMA위: 약한 매수 초기화 (하락 중이라 불확실)
-        q_table[3, 1] = 0.01    # 상승+EMA위: 강한 매수 초기화 (상승 + EMA 돌파 = 핵심 신호)
+        # [수정] 비대칭 낙관적 초기화 값 대폭 상향:
+        # 기존 Q[2,1]=0.005, Q[3,1]=0.01 → Q[2,1]=0.05, Q[3,1]=0.05
+        # 이유: 초기값이 작으면 훈련 중 몇 번의 손실로도 Q[state,1]이 음수로 전락하여
+        # 평가 시 영구 현금보유(수평 직선)가 됩니다. 높은 초기값은 더 많은 실제 경험
+        # 데이터가 쌓인 후에야 매수 선호를 포기하도록 하여 빠른 수렴을 유도합니다.
+        q_table[2, 1] = 0.05   # 하락+EMA위: 매수 가능, 불확실 구간
+        q_table[3, 1] = 0.05   # 상승+EMA위: 핵심 매수 신호, 강한 초기 매수 선호
+
+        # [수정] STATIC 추가 학습 반복: max(episodes * 2, 200)
+        # EMA 위 상태(state 2,3) 방문 횟수가 적을 수 있으므로 더 많은 반복으로
+        # Q[3,1]이 실제 보상을 충분히 반영하도록 합니다.
+        train_episodes = max(episodes * 2, 200)
     else:
         n_states = 2
         q_table = np.zeros((n_states, 2))
+        train_episodes = episodes
 
     def make_state(ret, price, ema):
         """시장 관측치로부터 상태 인덱스를 계산"""
@@ -54,7 +55,7 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     # ==========================================
     # 1. 훈련 (Training) 단계
     # ==========================================
-    for _ in range(episodes):
+    for _ in range(train_episodes):
         state = make_state(returns[0], prices[0], emas[0])
 
         for t in range(1, n_days):
