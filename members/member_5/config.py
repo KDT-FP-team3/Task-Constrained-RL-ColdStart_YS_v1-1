@@ -1,11 +1,16 @@
 MEMBER_NAME = "Member 5 (US Market)"
 TARGET_INDICES = [2, 8] # SPY, QQQ, NVDA 자동 선택
 
-RL_PARAMS = {"lr": 0.01, "gamma": 0.98}
-
-# 팀원이 자유롭게 추가하는 파라미터 (app.py가 자동 감지)
-CUSTOM_PARAMS = {
-    "buy_probability_threshold": 0.85,
-    "sell_signal_ema": 60,
-    "user_notes": "미국 기술주 중심 공격적 투자 전략"
+# 종목별 완전히 독립적인 파라미터 셋업!
+RL_PARAMS = {
+    "default": {
+        "lr": 0.01, "gamma": 0.98, "epsilon": 0.1, "episodes": 100, "seed": 2026
+    },
+    "엔비디아": {
+        "lr": 0.05,            # 엔비디아는 변동성이 크므로 학습률을 높임
+        "gamma": 0.90,         # 단기 추세에 민감하게 반응
+        "epsilon": 0.2, 
+        "episodes": 200,       # 학습을 더 많이 시킴
+        "seed": 777            # 고유 시드 사용
+    }
 }
