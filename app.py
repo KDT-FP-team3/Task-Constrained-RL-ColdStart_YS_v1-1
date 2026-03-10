@@ -18,7 +18,7 @@ if root_path not in sys.path: sys.path.append(root_path)
 
 st.set_page_config(page_title="Chainers Master Fund", layout="wide", initial_sidebar_state="collapsed")
 
-# --- UI 세션 상태 유지 (깜빡임 방지용 캐시) ---
+# --- UI 세션 상태 (에러 방지 및 캐시) ---
 if 'prev_summary' not in st.session_state: st.session_state.prev_summary = {}
 if 'prev_final_contributions' not in st.session_state: st.session_state.prev_final_contributions = []
 if 'prev_episodes_run' not in st.session_state: st.session_state.prev_episodes_run = 0
@@ -42,8 +42,7 @@ def update_gauge(episodes_run, placeholder):
     ))
     fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
     
-    # 🌟 [에러 해결]: key를 아예 제거합니다. 
-    # placeholder(st.empty)를 사용하므로 key 없이도 해당 위치만 정확히 실시간 갱신됩니다.
+    # 🌟 [에러 해결]: st.empty() 슬롯을 사용할 때는 key를 부여하지 않아야 중복 충돌이 없습니다.
     placeholder.plotly_chart(fig_gauge, use_container_width=True)
 
 st.sidebar.markdown("### System Status")
@@ -67,33 +66,36 @@ summary_placeholder = st.empty()
 st.markdown("---")
 
 # ==========================================
-# 📊 2. 통합 대시보드 (Vanilla vs STATIC 비교 & 시각적 고도화)
+# 📊 2. 통합 대시보드 (Bold & Red Font & Alpha 비교)
 # ==========================================
 def draw_top_dashboard(final_contribs, container, is_updating=False):
     df_contrib = pd.DataFrame(final_contribs)
     if df_contrib.empty: return {}
     
     df_contrib = df_contrib.sort_values(by="Member").reset_index(drop=True)
-    distinct_colors = px.colors.qualitative.T10 
+    # 멤버별 고유 색상 강제 지정
+    distinct_colors = px.colors.qualitative.Plotly 
+    df_contrib['Unique_Color'] = [distinct_colors[i % len(distinct_colors)] for i in range(len(df_contrib))]
+    
     total_fund_capital = df_contrib['Final_Capital'].sum()
 
-    # 1) 도넛 차트 (텍스트 굵게)
+    # (1) 도넛 그래프 (굵은 텍스트, 범례 순서 고정)
     fig_donut = go.Figure(go.Pie(
         labels=df_contrib['Member'], values=df_contrib['Final_Capital'], hole=0.6,
-        marker=dict(colors=distinct_colors), textinfo="percent", 
+        marker=dict(colors=df_contrib['Unique_Color']), textinfo="percent", 
         texttemplate="<b>%{percent}</b><br><b>%{value:.2f}$</b>", 
         textfont=dict(weight='bold'), sort=False 
     ))
-    title_text = "<b>Fund Contribution (STATIC)</b>"
+    title_text = "<b>Master Fund Contribution (STATIC)</b>"
     if is_updating: title_text += " <span style='color:#ff9800;'>(Updating...)</span>"
     
     fig_donut.update_layout(
         title=title_text, height=350, margin=dict(l=0, r=0, t=40, b=0),
         annotations=[dict(text=f"Total Capital<br><b>{total_fund_capital:.2f} $</b>", x=0.5, y=0.5, font_size=18, showarrow=False)],
-        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4) 
+        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4, traceorder="normal") 
     )
 
-    # 2) 수익 바 차트 (Vanilla vs STATIC 비교 & 텍스트 굵게)
+    # (2) 수익 바 차트 (Vanilla vs STATIC 비교 & 상단 텍스트 굵게)
     fig_profit = go.Figure()
     fig_profit.add_trace(go.Bar(
         x=df_contrib['Member'], y=df_contrib['Vanilla_Profit'], 
@@ -111,7 +113,7 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
-    # 3) 성과 테이블 (음수 빨간색 텍스트 & 화살표)
+    # (3) 성과 테이블 (음수 빨간색 텍스트 전용 스타일링)
     table_data = []
     current_summary = {}
     prev_data = st.session_state.prev_summary
@@ -123,21 +125,21 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
         delta_str = f"+{delta:.1f}%" if delta > 0 else f"{delta:.1f}%"
 
         table_data.append({
-            "Member": m_name, "Capital ($)": f"<b>{row['Final_Capital']:.2f}$</b>",
+            "Member": m_name, "Persona": row['CTPT_Code'], "Capital ($)": f"{row['Final_Capital']:.2f}$",
             "STATIC (%)": f"{c_ret:.2f}", "Vanilla (%)": f"{v_ret:.2f}",
-            "Alpha (Gap)": f"<b>{delta_str}</b>", "STATIC MDD": f"{row['Avg_MDD']:.2f}%"
+            "Alpha (Gap)": f"{delta_str}", "STATIC MDD": f"{row['Avg_MDD']:.2f}%"
         })
         
-    def highlight_negatives(val):
+    def color_negative_red(val):
         if isinstance(val, str) and val.strip().startswith('-'): return 'color: #FF4B4B; font-weight: bold;'
         return ''
 
-    styled_table = pd.DataFrame(table_data).style.map(highlight_negatives)
+    styled_table = pd.DataFrame(table_data).style.map(color_negative_red)
 
     with container:
         col1, col2, col3 = st.columns([1, 1.2, 1.3])
-        with col1: st.plotly_chart(fig_donut, use_container_width=True)
-        with col2: st.plotly_chart(fig_profit, use_container_width=True)
+        with col1: st.plotly_chart(fig_donut, use_container_width=True, key="top_donut_chart")
+        with col2: st.plotly_chart(fig_profit, use_container_width=True, key="top_profit_chart")
         with col3: 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("#### Portfolio Alpha Strategy Report")
@@ -166,14 +168,14 @@ def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed)
     fig.add_trace(go.Scatter(x=df.index, y=s_trace, mode='lines+markers', name='STATIC', line=dict(color='#2196f3', width=2.5), marker=dict(symbol='circle-open', size=6)))
     
     fig.update_layout(
-        title=f"<b>{stock_name}</b> (Lookback: {len(df)} Trading Days)", 
+        title=f"<b>{stock_name}</b> (Lookback: {len(df)} Days)", 
         height=320, margin=dict(l=20, r=20, t=40, b=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        font=dict(weight='bold') # 차트 전체 폰트 굵게
+        font=dict(weight='bold') 
     )
     return fig, s_trace[-1], v_trace[-1], s_mdd
 
-# --- [창 유지 로직] ---
+# --- [사라짐 방지] ---
 if st.session_state.prev_final_contributions:
     draw_top_dashboard(st.session_state.prev_final_contributions, summary_placeholder, is_updating=True)
 
@@ -193,7 +195,7 @@ total_charts = sum(len(st.session_state.get(f"ms_{getattr(m, 'MEMBER_NAME', m.__
                    [all_stock_names[idx] for idx in getattr(m, 'TARGET_INDICES', [])])) for m in sorted_modules)
 
 final_contributions, total_episodes_run, rendered_count = [], 0, 0
-if total_charts > 0: master_pbar = master_progress_placeholder.progress(0.0, text="Benchmarking Vanilla vs STATIC RL...")
+if total_charts > 0: master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -223,18 +225,19 @@ for m_config in sorted_modules:
                             l_epi = st.slider("Trading Days", 10, 500, int(p_settings.get("episodes", global_episodes)), key=f"epi_{m_name}_{stock_name}")
                             l_seed = st.number_input("Seed", value=int(p_settings.get("seed", global_seed)), step=1, key=f"seed_{m_name}_{stock_name}")
                         with sc2:
-                            l_lr = st.slider("LR", 0.001, 0.1, float(p_settings.get("lr", global_lr)), step=0.001, key=f"lr_{m_name}_{stock_name}")
+                            l_lr = st.slider("LR", 0.001, 0.1, float(p_settings.get("lr", global_lr)), step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}")
                             l_gamma = st.slider("Gamma", 0.1, 0.99, float(p_settings.get("gamma", global_gamma)), key=f"gamma_{m_name}_{stock_name}")
                             l_epsilon = st.slider("Epsilon", 0.01, 0.5, float(p_settings.get("epsilon", global_epsilon)), key=f"eps_{m_name}_{stock_name}")
 
-                    with st.spinner(f"Processing {stock_name}..."):
+                    with st.spinner(f"📡 Processing {stock_name}..."):
                         fig, s_final, v_final, s_mdd = create_real_rl_chart(stock_name, ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed)
                         st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_name}_{stock_name}")
                     
                     total_episodes_run += l_epi
                     update_gauge(total_episodes_run, gauge_placeholder)
                     rendered_count += 1
-                    master_pbar.progress(rendered_count / total_charts, text=f"Analyzing Agents... ({int((rendered_count/total_charts)*100)}%)")
+                    pct = min(rendered_count / total_charts, 1.0)
+                    master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct*100)}%)")
                     mem_s_rets.append(s_final)
                     mem_v_rets.append(v_final)
                     mem_mdds.append(s_mdd)
