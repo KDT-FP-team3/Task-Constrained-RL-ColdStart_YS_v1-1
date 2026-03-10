@@ -1,24 +1,11 @@
-# 1. 메타 정보 및 종목 인덱스 선택
-MEMBER_NAME = "Member 3 (US Tech)"
-TARGET_STOCK_INDICES = [0, 1]  # 0: SPY, 1: QQQ
+MEMBER_NAME = "Member 3 (US Market)"
+TARGET_INDICES = [0, 1, 4] # SPY, QQQ, NVDA 자동 선택
 
-# 2. 기본 RL 파라미터
-RL_PARAMS = {
-    "learning_rate": 0.01,
-    "discount_factor": 0.98,
-    "exploration_rate": 0.10
-}
+RL_PARAMS = {"lr": 0.01, "gamma": 0.98}
 
-# 3. 추가 확장 파라미터 (팀원이 자유롭게 추가 가능, 웹에 자동 표시됨)
+# 팀원이 자유롭게 추가하는 파라미터 (app.py가 자동 감지)
 CUSTOM_PARAMS = {
-    "ema_window": 20,
-    "use_volume_filter": True,
-    "profit_take_threshold": 0.05
+    "buy_probability_threshold": 0.85,
+    "sell_signal_ema": 60,
+    "user_notes": "미국 기술주 중심 공격적 투자 전략"
 }
-
-# 4. 커스텀 함수 주입 (선택사항)
-def custom_reward_function(current_price, ema_value):
-    """팀원이 독자적으로 개발한 커스텀 보상 함수 예시"""
-    if current_price > ema_value:
-        return 1.5
-    return -1.0

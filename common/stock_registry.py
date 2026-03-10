@@ -1,4 +1,4 @@
-# 중앙 종목 레지스트리 (인덱스 매핑)
+# 중앙 종목 관리: 인덱스 번호로 종목을 호출합니다.
 STOCK_REGISTRY = {
     0: {"ticker": "SPY", "name": "S&P 500 ETF"},
     1: {"ticker": "QQQ", "name": "Nasdaq 100 ETF"},
@@ -10,6 +10,5 @@ STOCK_REGISTRY = {
     7: {"ticker": "000660.KS", "name": "SK하이닉스"}
 }
 
-def get_stock_info(indices):
-    """팀원이 선택한 인덱스 리스트를 받아 종목 정보를 반환합니다."""
-    return [STOCK_REGISTRY[idx] for idx in indices if idx in STOCK_REGISTRY]
+def get_stock_by_index(index):
+    return STOCK_REGISTRY.get(index, None)
