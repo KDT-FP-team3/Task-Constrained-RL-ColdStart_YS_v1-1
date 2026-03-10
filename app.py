@@ -100,6 +100,11 @@ for m_config in team_modules:
                     ticker = get_ticker_by_name(stock_name)
                     # 실제 RL 알고리즘에 팀원 고유의 파라미터를 주입하여 그래프 생성!
                     fig = create_real_rl_chart(stock_name, ticker, m_lr, m_gamma, m_epsilon, base_seed)
-                    st.plotly_chart(fig, use_container_width=True)
+                    # (key 속성 추가)
+                    st.plotly_chart(
+                        fig, 
+                        use_container_width=True, 
+                        key=f"chart_{m_config.MEMBER_NAME}_{stock_name}"
+                    )
                     
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
