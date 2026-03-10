@@ -103,10 +103,14 @@ for m_config in team_modules:
     with st.container():
         st.subheader(f"📍 {m_config.MEMBER_NAME}")
         
+        # 멤버의 전체 파라미터 딕셔너리 로드
         m_params = getattr(m_config, "RL_PARAMS", {})
-        c_lr = m_params.get("learning_rate", m_params.get("lr", global_lr))
-        c_gamma = m_params.get("discount_factor", m_params.get("gamma", global_gamma))
-        c_epsilon = m_params.get("exploration_rate", m_params.get("epsilon", global_epsilon))
+        
+        # 성향(MBTI) 분석을 위한 대표 파라미터 추출 (default 값 기준)
+        default_p = m_params.get("default", {})
+        c_lr = default_p.get("lr", global_lr)
+        c_gamma = default_p.get("gamma", global_gamma)
+        c_epsilon = default_p.get("epsilon", global_epsilon)
 
         ctpt_code, ctpt_color, ctpt_desc = calculate_ctpt_and_color(c_lr, c_gamma, c_epsilon)
         st.markdown(f"**Persona:** <span style='color:{ctpt_color}; font-weight:bold;'>{ctpt_code}</span> ({ctpt_desc})", unsafe_allow_html=True)
@@ -130,26 +134,28 @@ for m_config in team_modules:
                 with cols[j % 2]:
                     ticker = get_ticker_by_name(stock_name)
                     
-                    # config.py에 저장된 종목별 기본값 불러오기
-                    p_settings = m_params.get(stock_name, m_params.get("default", m_params))
+                    # [핵심] 1. config.py에 멤버가 입력한 '종목별 기본값' 불러오기
+                    p_settings = m_params.get(stock_name, m_params.get("default", {}))
                     def_lr = p_settings.get("learning_rate", p_settings.get("lr", global_lr))
                     def_gamma = p_settings.get("discount_factor", p_settings.get("gamma", global_gamma))
                     def_epsilon = p_settings.get("exploration_rate", p_settings.get("epsilon", global_epsilon))
                     def_epi = p_settings.get("episodes", global_episodes)
                     def_seed = p_settings.get("seed", global_seed)
 
-                    # 🌟 [신규 추가] 개별 그래프용 파라미터 조절 슬라이더 (Expander 활용)
-                    with st.expander(f"⚙️ {stock_name} 파라미터 조절기", expanded=False):
+                    # [핵심] 2. 각 그래프 바로 아래에 상시 노출되는 막대 스크롤(슬라이더) 생성
+                    # expanded=True 로 설정하여 화면에 바로 보이게 합니다.
+                    with st.expander(f"⚙️ {stock_name} 파라미터 실시간 조절", expanded=True):
+                        st.caption("막대를 움직이면 그래프가 즉시 재학습되어 업데이트됩니다.")
                         sc1, sc2 = st.columns(2)
                         with sc1:
-                            local_epi = st.slider("Trading Days (Epi)", 10, 500, int(def_epi), key=f"epi_{m_config.MEMBER_NAME}_{stock_name}")
+                            local_epi = st.slider("Trading Days", 10, 500, int(def_epi), key=f"epi_{m_config.MEMBER_NAME}_{stock_name}")
                             local_seed = st.number_input("Random Seed", value=int(def_seed), step=1, key=f"seed_{m_config.MEMBER_NAME}_{stock_name}")
                         with sc2:
-                            local_lr = st.slider("Learning Rate (α)", 0.001, 0.1, float(def_lr), step=0.001, format="%.3f", key=f"lr_{m_config.MEMBER_NAME}_{stock_name}")
-                            local_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, float(def_gamma), key=f"gamma_{m_config.MEMBER_NAME}_{stock_name}")
-                            local_epsilon = st.slider("Exploration (ε)", 0.01, 0.5, float(def_epsilon), key=f"eps_{m_config.MEMBER_NAME}_{stock_name}")
+                            local_lr = st.slider("Learning Rate", 0.001, 0.1, float(def_lr), step=0.001, format="%.3f", key=f"lr_{m_config.MEMBER_NAME}_{stock_name}")
+                            local_gamma = st.slider("Discount Factor", 0.1, 0.99, float(def_gamma), key=f"gamma_{m_config.MEMBER_NAME}_{stock_name}")
+                            local_epsilon = st.slider("Exploration", 0.01, 0.5, float(def_epsilon), key=f"eps_{m_config.MEMBER_NAME}_{stock_name}")
 
-                    # 변경된 로컬 슬라이더 값을 기반으로 차트 렌더링
+                    # [핵심] 3. 슬라이더에서 조절된 값(local_***)을 차트 생성 함수에 주입!
                     fig, final_ret = create_real_rl_chart(stock_name, ticker, local_lr, local_gamma, local_epsilon, local_epi, local_seed)
                     st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_config.MEMBER_NAME}_{stock_name}")
                     member_final_returns.append(final_ret)

@@ -1,16 +1,18 @@
 MEMBER_NAME = "Member 1"
 TARGET_INDICES = [0, 4] # SPY, QQQ, NVDA 자동 선택
 
-# 종목별 완전히 독립적인 파라미터 셋업!
+# 멤버가 종목별로 기본값을 직접 입력해서 설정합니다!
 RL_PARAMS = {
-    "default": {
-        "lr": 0.01, "gamma": 0.98, "epsilon": 0.1, "episodes": 100, "seed": 2026
+    "S&P 500 ETF": {
+        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10, 
+        "episodes": 100, "seed": 2026
     },
     "엔비디아": {
-        "lr": 0.05,            # 엔비디아는 변동성이 크므로 학습률을 높임
-        "gamma": 0.90,         # 단기 추세에 민감하게 반응
-        "epsilon": 0.2, 
-        "episodes": 200,       # 학습을 더 많이 시킴
-        "seed": 777            # 고유 시드 사용
+        "lr": 0.05, "gamma": 0.90, "epsilon": 0.20, 
+        "episodes": 300, "seed": 777
+    },
+    # 만약 리스트에 추가했지만 아래에 설정이 없는 종목을 위한 기본값
+    "default": {
+        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10, "episodes": 100, "seed": 1234
     }
 }
