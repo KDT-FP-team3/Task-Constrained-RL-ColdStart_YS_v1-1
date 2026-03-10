@@ -24,7 +24,7 @@ if 'prev_final_contributions' not in st.session_state: st.session_state.prev_fin
 if 'prev_episodes_run' not in st.session_state: st.session_state.prev_episodes_run = 0
 
 # ==========================================
-# 🚀 실시간 컴퓨팅 부하 계기판 렌더링 함수
+# 실시간 컴퓨팅 부하 계기판 렌더링 함수
 # ==========================================
 def update_gauge(episodes_run, placeholder):
     max_load = 6000 
@@ -32,14 +32,15 @@ def update_gauge(episodes_run, placeholder):
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number", 
         value=load_pct, 
-        number={'suffix': "%", 'valueformat': ".1f"}, # 🌟 소수점 1자리 적용
+        number={'suffix': "%", 'valueformat': ".1f"}, # 소수점 1자리 적용
         title={'text': "Real-time Load"},
-        gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#2196f3"},
-               'steps': [{'range': [0, 50], 'color': "#333"}, {'range': [50, 80], 'color': "#ff9800"}, {'range': [80, 100], 'color': "#ff4b4b"}]}
+        gauge={'axis': {'range': [None, 100]},
+               'bar': {'color': "#2196f3"},
+               'steps': [{'range': [0, 50],'color': "#333"}, {'range': [50, 80], 'color': "#ff9800"}, {'range': [80, 100], 'color': "#ff4b4b"}]}
     ))
     fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
     
-    # 🌟 [에러 해결] DuplicateElementKey 방지를 위해 key를 제거합니다. 
+    # [에러 해결] DuplicateElementKey 방지를 위해 key를 제거합니다. 
     # placeholder(st.empty)를 사용하므로 key 없이도 해당 위치만 정확히 업데이트됩니다.
     placeholder.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -55,9 +56,9 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.98)
     global_epsilon = st.slider("Exploration (ε)", 0.01, 0.5, 0.10)
 
-st.title("🌐 Chainers Master Fund: Performance Monitoring Dashboard")
+st.title("Chainers Master Fund: Performance Monitoring Dashboard")
 st.markdown("---")
-st.markdown("## 📊 Master Fund Portfolio Report")
+st.markdown("## Master Fund Portfolio Report")
 
 # --- 최상단 대시보드 및 총 진행률 표시 공간 ---
 master_progress_placeholder = st.empty()
@@ -65,7 +66,7 @@ summary_placeholder = st.empty()
 st.markdown("---")
 
 # ==========================================
-# 📊 최상단 대시보드 그리기 함수
+# 최상단 대시보드 그리기 함수
 # ==========================================
 def draw_top_dashboard(final_contribs, container, is_updating=False):
     df_contrib = pd.DataFrame(final_contribs)
@@ -92,7 +93,7 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
         legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4, traceorder="normal") 
     )
 
-    # 2) 수익 바 차트 (🌟 Total Fund 삭제 및 개별 수익금 텍스트 추가)
+    # 2) 수익 바 차트 (Total Fund 삭제 및 개별 수익금 텍스트 추가)
     fig_profit = go.Figure()
     fig_profit.add_trace(go.Bar(
         x=df_contrib['Member'], 
@@ -190,12 +191,12 @@ rendered_count = 0
 if total_charts > 0:
     master_pbar = master_progress_placeholder.progress(0.0, text="🚀 Global Portfolio Analysis Starting...")
 
-st.markdown("### 👨‍💻 Portfolio Managers (Independent RL Labs)")
+st.markdown("### Portfolio Managers (Independent RL Labs)")
 
 for m_config in sorted_modules:
     m_name = getattr(m_config, "MEMBER_NAME", "Unknown")
     with st.container():
-        st.subheader(f"📍 {m_name}")
+        st.subheader(f"{m_name}")
         m_params = getattr(m_config, "RL_PARAMS", {})
         default_p = m_params.get("default", {})
         ctpt_code, ctpt_desc, ctpt_color = calculate_ctpt_and_color(default_p.get("lr", global_lr), default_p.get("gamma", global_gamma), default_p.get("epsilon", global_epsilon))
@@ -213,7 +214,7 @@ for m_config in sorted_modules:
                     stock_idx = name_to_index.get(stock_name)
                     p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                     
-                    with st.expander(f"⚙️ {stock_name} Parameters", expanded=True):
+                    with st.expander(f"{stock_name} Parameters", expanded=True):
                         sc1, sc2 = st.columns(2)
                         with sc1:
                             local_epi = st.slider("Trading Days", 10, 500, int(p_settings.get("episodes", global_episodes)), key=f"epi_{m_name}_{stock_name}")
@@ -235,7 +236,7 @@ for m_config in sorted_modules:
                     # 🌟 총 진행률 바 실시간 업데이트
                     rendered_count += 1
                     pct = rendered_count / total_charts
-                    master_pbar.progress(pct, text=f"🚀 Analyzing Agents... ({int(pct*100)}%)")
+                    master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct*100)}%)")
 
                     member_returns.append(final_ret)
                     member_mdds.append(local_mdd)
