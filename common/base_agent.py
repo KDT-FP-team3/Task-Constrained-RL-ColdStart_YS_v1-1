@@ -42,6 +42,11 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     else:
         n_states = 2
         q_table = np.zeros((n_states, 2))
+        # [수정] Vanilla 낙관적 초기화: 상승 상태(state=1)에서 매수 Q값을 소폭 높게 설정
+        # np.zeros 초기화 시 argmax([0,0])=0 → 항상 현금보유로 수렴하는 편향 제거
+        # state=0 (하락추세): 매수 Q값 미설정 (현금보유 선호 유지)
+        # state=1 (상승추세): 매수 Q값 0.01 설정 → 상승장에서 초기 매수 시도 유도
+        q_table[1, 1] = 0.01   # 상승추세: 초기 매수 선호
         train_episodes = episodes
 
     def make_state(ret, price, ema):
