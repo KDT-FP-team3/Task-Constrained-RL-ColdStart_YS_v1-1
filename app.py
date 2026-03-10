@@ -97,16 +97,16 @@ final_contributions_data = []
 
 # --- 1. 팀원별 독립 워크스페이스 렌더링 루프 ---
 st.markdown("### 👨‍💻 Individual Member Labs")
+
+# [매핑 준비] 종목 인덱스와 이름을 상호 변환하기 위한 딕셔너리 생성
 all_stock_names = {idx: info["name"] for idx, info in STOCK_REGISTRY.items()}
+name_to_index = {info["name"]: idx for idx, info in STOCK_REGISTRY.items()} # "엔비디아" -> 4 변환용
 
 for m_config in team_modules:
     with st.container():
         st.subheader(f"📍 {m_config.MEMBER_NAME}")
         
-        # 멤버의 전체 파라미터 딕셔너리 로드
         m_params = getattr(m_config, "RL_PARAMS", {})
-        
-        # 성향(MBTI) 분석을 위한 대표 파라미터 추출 (default 값 기준)
         default_p = m_params.get("default", {})
         c_lr = default_p.get("lr", global_lr)
         c_gamma = default_p.get("gamma", global_gamma)
@@ -134,16 +134,19 @@ for m_config in team_modules:
                 with cols[j % 2]:
                     ticker = get_ticker_by_name(stock_name)
                     
-                    # [핵심] 1. config.py에 멤버가 입력한 '종목별 기본값' 불러오기
-                    p_settings = m_params.get(stock_name, m_params.get("default", {}))
+                    # 💡 [핵심 매핑 로직]: 화면의 글씨("엔비디아")를 인덱스 번호(4)로 변환합니다.
+                    stock_idx = name_to_index.get(stock_name)
+                    
+                    # 변환된 인덱스 번호로 config.py의 RL_PARAMS에서 설정값을 쏙 빼옵니다.
+                    # 만약 해당 인덱스의 설정이 없다면 "default" 값을 가져옵니다.
+                    p_settings = m_params.get(stock_idx, m_params.get("default", {}))
+                    
                     def_lr = p_settings.get("learning_rate", p_settings.get("lr", global_lr))
                     def_gamma = p_settings.get("discount_factor", p_settings.get("gamma", global_gamma))
                     def_epsilon = p_settings.get("exploration_rate", p_settings.get("epsilon", global_epsilon))
                     def_epi = p_settings.get("episodes", global_episodes)
                     def_seed = p_settings.get("seed", global_seed)
 
-                    # [핵심] 2. 각 그래프 바로 아래에 상시 노출되는 막대 스크롤(슬라이더) 생성
-                    # expanded=True 로 설정하여 화면에 바로 보이게 합니다.
                     with st.expander(f"⚙️ {stock_name} 파라미터 실시간 조절", expanded=True):
                         st.caption("막대를 움직이면 그래프가 즉시 재학습되어 업데이트됩니다.")
                         sc1, sc2 = st.columns(2)
@@ -155,7 +158,6 @@ for m_config in team_modules:
                             local_gamma = st.slider("Discount Factor", 0.1, 0.99, float(def_gamma), key=f"gamma_{m_config.MEMBER_NAME}_{stock_name}")
                             local_epsilon = st.slider("Exploration", 0.01, 0.5, float(def_epsilon), key=f"eps_{m_config.MEMBER_NAME}_{stock_name}")
 
-                    # [핵심] 3. 슬라이더에서 조절된 값(local_***)을 차트 생성 함수에 주입!
                     fig, final_ret = create_real_rl_chart(stock_name, ticker, local_lr, local_gamma, local_epsilon, local_epi, local_seed)
                     st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_config.MEMBER_NAME}_{stock_name}")
                     member_final_returns.append(final_ret)
