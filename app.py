@@ -29,13 +29,23 @@ def update_gauge(episodes_run, placeholder):
     max_load = 6000 
     load_pct = min((episodes_run / max_load) * 100, 100)
     fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number", value=load_pct, number={'suffix': "%"},
-        title={'text': "Computing Load"},
-        gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#2196f3"},
-               'steps': [{'range': [0, 50], 'color': "#333"}, {'range': [50, 80], 'color': "#ff9800"}, {'range': [80, 100], 'color': "#ff4b4b"}]}
+        mode = "gauge+number", 
+        value = load_pct, 
+        number = {'suffix': "%", 'valueformat': ".1f"},
+        title = {'text': "Real-time Load"}, 
+        gauge = {
+            'axis': {'range': [None, 100]},
+            'bar': {'color': "#2196f3"},
+            'steps' : [
+                {'range': [0, 50], 'color': "#333"}, 
+                {'range': [50, 80], 'color': "#ff9800"}, 
+                {'range': [80, 100], 'color': "#ff4b4b"}
+            ]
+        }
     ))
     fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
-    placeholder.plotly_chart(fig_gauge, use_container_width=True)
+    # [중요] placeholder.plotly_chart를 사용하되, 고유한 key를 명시합니다.
+    placeholder.plotly_chart(fig_gauge, use_container_width=True, key="side_gauge_chart")
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty() 
