@@ -18,13 +18,13 @@ if root_path not in sys.path: sys.path.append(root_path)
 
 st.set_page_config(page_title="Chainers Master Fund", layout="wide", initial_sidebar_state="collapsed")
 
-# --- UI 세션 상태 유지 (캐시) ---
+# --- UI 세션 상태 (깜빡임 방지 및 캐시) ---
 if 'prev_summary' not in st.session_state: st.session_state.prev_summary = {}
 if 'prev_final_contributions' not in st.session_state: st.session_state.prev_final_contributions = []
 if 'prev_episodes_run' not in st.session_state: st.session_state.prev_episodes_run = 0
 
 # ==========================================
-# 실시간 컴퓨팅 부하 계기판 렌더링 함수
+# 1. 실시간 시스템 상태 계기판 (에러 해결 핵심)
 # ==========================================
 def update_gauge(episodes_run, placeholder):
     max_load = 6000 
@@ -32,22 +32,19 @@ def update_gauge(episodes_run, placeholder):
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number", 
         value=load_pct, 
-        number={'suffix': "%", 'valueformat': ".1f", 'font': {'weight': 'bold', 'size': 35}},
+        number={'suffix': "%", 'valueformat': ".1f", 'font': {'weight': 'bold'}},
         title={'text': "Real-time Load", 'font': {'weight': 'bold'}},
-        gauge={'axis': {'range': [None, 100]},
-               'bar': {'color': "#2196f3"},
-               'steps': [{'range': [0, 50], 'color': "#333"}, 
-                         {'range': [50, 80], 'color': "#ff9800"}, 
-                         {'range': [80, 100], 'color': "#ff4b4b"}]}
+        gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#2196f3"},
+               'steps': [{'range': [0, 50], 'color': "#333"}, {'range': [50, 80], 'color': "#ff9800"}, {'range': [80, 100], 'color': "#ff4b4b"}]}
     ))
     fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
     
-    # 🌟 [에러 해결]: 동일한 위치에서 업데이트됨을 보장하기 위해 고정된 key를 부여합니다.
-    placeholder.plotly_chart(fig_gauge, use_container_width=True, key="sidebar_fixed_gauge")
+    # 🌟 [에러 해결]: 루프 내 중복 호출 시 ID 충돌을 방지하기 위해 key를 제거합니다.
+    # placeholder(st.empty)가 이미 고유 슬롯을 점유하므로 key 없이도 그 자리만 갱신됩니다.
+    placeholder.plotly_chart(fig_gauge, use_container_width=True)
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty() 
-# 초기 렌더링
 update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
@@ -67,7 +64,7 @@ summary_placeholder = st.empty()
 st.markdown("---")
 
 # ==========================================
-# 최상단 대시보드 그리기 함수
+# 2. 통합 대시보드 렌더링 함수 (Bold & Red Font 적용)
 # ==========================================
 def draw_top_dashboard(final_contribs, container, is_updating=False):
     df_contrib = pd.DataFrame(final_contribs)
@@ -79,12 +76,12 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
     
     total_fund_capital = df_contrib['Final_Capital'].sum()
 
-    # 1) 도넛 그래프 (굵게 처리)
+    # 도넛 차트 (텍스트/숫자 굵게)
     fig_donut = go.Figure(go.Pie(
         labels=df_contrib['Member'], values=df_contrib['Final_Capital'], hole=0.6,
         marker=dict(colors=df_contrib['Unique_Color']), textinfo="percent", 
-        texttemplate="<b>%{percent}</b><br><b>%{value:.2f}$</b>", # 🌟 텍스트 굵게
-        hovertemplate="<b>%{label}</b><br>Capital: %{value:.2f} $ <extra></extra>", sort=False 
+        texttemplate="<b>%{percent}</b><br><b>%{value:.2f}$</b>", 
+        sort=False 
     ))
     title_text = "<b>Master Fund Contribution</b>"
     if is_updating: title_text += " <span style='color:#ff9800;'>(Updating...)</span>"
@@ -95,18 +92,17 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
         legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4) 
     )
 
-    # 2) 수익 바 차트 (텍스트 굵게)
-    fig_profit = go.Figure()
-    fig_profit.add_trace(go.Bar(
+    # 수익 바 차트 (숫자 굵게 & Total Fund 삭제됨)
+    fig_profit = go.Figure(go.Bar(
         x=df_contrib['Member'], y=df_contrib['Profit_Dollar'], 
         marker=dict(color=df_contrib['Unique_Color']),
-        text=df_contrib['Profit_Dollar'].apply(lambda x: f"<b>{x:.2f} $</b>"), # 🌟 숫자 굵게
-        textposition='outside' 
+        text=df_contrib['Profit_Dollar'].apply(lambda x: f"<b>{x:.2f} $</b>"), 
+        textposition='outside'
     ))
-    fig_profit.update_yaxes(range=[min(0, df_contrib['Profit_Dollar'].min()*1.2), df_contrib['Profit_Dollar'].max() * 1.4]) 
-    fig_profit.update_layout(title="<b>Portfolio Profit ($)</b>", height=350, margin=dict(l=0, r=0, t=40, b=0))
+    fig_profit.update_yaxes(range=[min(0, df_contrib['Profit_Dollar'].min()*1.2), df_contrib['Profit_Dollar'].max() * 1.4])
+    fig_profit.update_layout(title="<b>Portfolio Profit ($)</b>", height=350, margin=dict(l=0, r=0, t=40, b=0), showlegend=False)
 
-    # 3) 성과 테이블 (음수 빨간색 텍스트)
+    # 성과 테이블 (음수 시 텍스트만 빨간색)
     table_data = []
     current_summary = {}
     prev_data = st.session_state.prev_summary
@@ -114,42 +110,40 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
     for i, row in df_contrib.iterrows():
         m_name, c_ret, c_mdd = row['Member'], row['Avg_Return'], row['Avg_MDD']
         current_summary[m_name] = {'return': c_ret, 'mdd': c_mdd}
-        
         ret_arrow = "(up)" if m_name in prev_data and c_ret > prev_data[m_name]['return'] else "(down)" if m_name in prev_data and c_ret < prev_data[m_name]['return'] else "(-)"
         mdd_arrow = "(up)" if m_name in prev_data and c_mdd > prev_data[m_name]['mdd'] else "(down)" if m_name in prev_data and c_mdd < prev_data[m_name]['mdd'] else "(-)"
-
+        
         table_data.append({
             "Member": m_name, "Persona": row['CTPT_Code'], "Capital ($)": f"{row['Final_Capital']:.2f} $",
             "Return (%)": f"{c_ret:.2f} {ret_arrow}", "MDD (%)": f"{c_mdd:.2f} {mdd_arrow}"
         })
         
-    # 🌟 [수정] 배경색은 건드리지 않고, 음수일 때 텍스트만 밝은 붉은색 표시
-    def color_negative_red(val):
+    def highlight_negatives(val):
+        # 🌟 배경색은 유지하고, 음수일 때 텍스트만 밝은 빨강(#FF4B4B) 적용
         if isinstance(val, str) and val.strip().startswith('-'): 
-            return 'color: #FF4B4B; font-weight: bold;'
-        elif isinstance(val, (int, float)) and val < 0: 
             return 'color: #FF4B4B; font-weight: bold;'
         return ''
 
-    styled_table = pd.DataFrame(table_data).style.map(color_negative_red)
+    styled_table = pd.DataFrame(table_data).style.map(highlight_negatives)
 
     with container:
         col1, col2, col3 = st.columns([1, 1, 1.4])
-        with col1: st.plotly_chart(fig_donut, use_container_width=True, key="donut_top_fixed")
-        with col2: st.plotly_chart(fig_profit, use_container_width=True, key="bar_top_fixed")
+        with col1: st.plotly_chart(fig_donut, use_container_width=True)
+        with col2: st.plotly_chart(fig_profit, use_container_width=True)
         with col3: 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### Persona & Profit / Loss Summary")
+            st.markdown("#### Persona & Performance Summary")
             st.dataframe(styled_table, use_container_width=True, hide_index=True)
             
     return current_summary
 
-# --- 창 유지 로직 ---
+# --- [창 유지 로직]: 연산 시작 전 캐시된 대시보드 출력 ---
 if st.session_state.prev_final_contributions:
-    with summary_placeholder.container():
-        draw_top_dashboard(st.session_state.prev_final_contributions, summary_placeholder, is_updating=True)
+    draw_top_dashboard(st.session_state.prev_final_contributions, summary_placeholder, is_updating=True)
 
-# --- 모듈 탐색 ---
+# ==========================================
+# 3. 메인 연산 및 진행률 관리
+# ==========================================
 members_dir = os.path.join(root_path, "members")
 team_modules = []
 for item in sorted(os.listdir(members_dir)):
@@ -163,29 +157,10 @@ name_to_index = {info["name"]: idx for idx, info in STOCK_REGISTRY.items()}
 
 # 총 차트 수 계산 (진행률 바용)
 total_charts = sum(len(st.session_state.get(f"ms_{getattr(m, 'MEMBER_NAME', m.__name__)}", 
-                                           [all_stock_names[idx] for idx in getattr(m, 'TARGET_INDICES', [])])) for m in sorted_modules)
+                   [all_stock_names[idx] for idx in getattr(m, 'TARGET_INDICES', [])])) for m in sorted_modules)
 
-def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed):
-    df = fetch_stock_data(ticker, period="2y")
-    if df.empty or len(df) < 50: return go.Figure(), 0.0, 0.0
-    dates = df.index
-    real_ret = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-    vanilla_ret = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=False, seed=seed)
-    static_ret = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
-    static_mdd = calculate_mdd(static_ret)
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=dates, y=real_ret, mode='lines', name='Market', line=dict(color='#4caf50', width=5)))
-    fig.add_trace(go.Scatter(x=dates, y=vanilla_ret, mode='lines+markers', name='Vanilla RL', line=dict(color='#ff4b4b', width=1), marker=dict(symbol='square-open', size=5)))
-    fig.add_trace(go.Scatter(x=dates, y=static_ret, mode='lines+markers', name='STATIC RL', line=dict(color='#2196f3', width=2.5), marker=dict(symbol='circle-open', size=6)))
-    # 🌟 차트 타이틀 및 폰트 굵게
-    fig.update_layout(title=f"<b>{stock_name}</b>", height=320, margin=dict(l=20, r=20, t=40, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-    return fig, static_ret[-1] if len(static_ret) > 0 else 0.0, static_mdd
-
-# --- 연산 시작 ---
 final_contributions, total_episodes_run, rendered_count = [], 0, 0
-if total_charts > 0:
-    master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
+if total_charts > 0: master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -215,23 +190,31 @@ for m_config in sorted_modules:
                             l_epi = st.slider("Trading Days", 10, 500, int(p_settings.get("episodes", global_episodes)), key=f"epi_{m_name}_{stock_name}")
                             l_seed = st.number_input("Seed", value=int(p_settings.get("seed", global_seed)), step=1, key=f"seed_{m_name}_{stock_name}")
                         with sc2:
-                            l_lr = st.slider("LR", 0.001, 0.1, float(p_settings.get("lr", global_lr)), step=0.001, key=f"lr_{m_name}_{stock_name}")
+                            l_lr = st.slider("LR", 0.001, 0.1, float(p_settings.get("lr", global_lr)), step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}")
                             l_gamma = st.slider("Gamma", 0.1, 0.99, float(p_settings.get("gamma", global_gamma)), key=f"gamma_{m_name}_{stock_name}")
                             l_epsilon = st.slider("Epsilon", 0.01, 0.5, float(p_settings.get("epsilon", global_epsilon)), key=f"eps_{m_name}_{stock_name}")
 
-                    with st.spinner(f"📡 Processing {stock_name}..."):
-                        fig, final_ret, local_mdd = create_real_rl_chart(stock_name, ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed)
+                    # 🌟 종목별 로딩 스피너
+                    with st.spinner(f"Processing {stock_name}..."):
+                        # 차트 생성 (Market: 녹색 굵게, Vanilla: 빨강 네모, STATIC: 파랑 원형)
+                        df = fetch_stock_data(ticker, period="2y")
+                        v_ret = run_rl_simulation(df, l_lr, l_gamma, l_epsilon, episodes=l_epi, use_static=False, seed=l_seed)
+                        s_ret = run_rl_simulation(df, l_lr, l_gamma, l_epsilon, episodes=l_epi, use_static=True, seed=l_seed)
+                        
+                        fig = go.Figure()
+                        m_ret = (df['Close'] / df['Close'].iloc[0] - 1) * 100
+                        fig.add_trace(go.Scatter(x=df.index, y=m_ret, mode='lines', name='Market', line=dict(color='#4caf50', width=5)))
+                        fig.add_trace(go.Scatter(x=df.index, y=v_ret, mode='lines+markers', name='Vanilla', line=dict(color='#ff4b4b', width=1), marker=dict(symbol='square-open', size=5)))
+                        fig.add_trace(go.Scatter(x=df.index, y=s_ret, mode='lines+markers', name='STATIC', line=dict(color='#2196f3', width=2.5), marker=dict(symbol='circle-open', size=6)))
+                        fig.update_layout(title=f"<b>{stock_name}</b>", height=320, margin=dict(l=20, r=20, t=40, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                         st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_name}_{stock_name}")
                     
-                    # 🌟 실시간 시스템 부하 갱신
                     total_episodes_run += l_epi
                     update_gauge(total_episodes_run, gauge_placeholder)
-                    
                     rendered_count += 1
-                    pct = rendered_count / total_charts
-                    master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct*100)}%)")
-                    member_returns.append(final_ret)
-                    member_mdds.append(local_mdd)
+                    master_pbar.progress(rendered_count / total_charts, text=f"Analyzing Agents... ({int((rendered_count/total_charts)*100)}%)")
+                    member_returns.append(s_ret[-1])
+                    member_mdds.append(calculate_mdd(s_ret))
 
         if member_returns:
             avg_r = np.mean(member_returns)
