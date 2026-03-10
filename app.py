@@ -129,11 +129,14 @@ for m_config in team_modules:
                     # 종목별 독립 파라미터 추출 logic (지난 번 구현 유지)
                     # members/member_X/config.py에서 "엔비디아": {...} 처럼 종목 이름을 키로 가지는 파라미터를 찾습니다.
                     # 만약 없으면 RL_PARAMS 내부의 "learning_rate" 등을 찾고, 그것도 없으면 전역 슬라이더 값을 씁니다.
-                    p_settings = member_params.get(stock_name, member_params) # getattr() 성찰 기법 활용 가능
-
-                    p_lr = p_settings.get("learning_rate", global_lr)
-                    p_gamma = p_settings.get("discount_factor", global_gamma)
-                    p_epsilon = p_settings.get("exploration_rate", global_epsilon)
+                    # [수정된 부분] member_params -> m_params 로 이름 통일
+                    # 종목 이름으로 된 설정이 없으면 default를 찾고, 그것도 없으면 전체 m_params를 씁니다.
+                    p_settings = m_params.get(stock_name, m_params.get("default", m_params))
+                    
+                    # config.py에서 "learning_rate" 또는 "lr" 어떤 이름으로 작성해도 인식하도록 처리
+                    p_lr = p_settings.get("learning_rate", p_settings.get("lr", global_lr))
+                    p_gamma = p_settings.get("discount_factor", p_settings.get("gamma", global_gamma))
+                    p_epsilon = p_settings.get("exploration_rate", p_settings.get("epsilon", global_epsilon))
                     p_episodes = p_settings.get("episodes", global_episodes)
                     p_seed = p_settings.get("seed", global_seed)
 
