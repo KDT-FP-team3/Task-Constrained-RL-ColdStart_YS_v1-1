@@ -1,5 +1,5 @@
 MEMBER_NAME = "Member 4 (US Market)"
-TARGET_INDICES = [0, 1, 4] # SPY, QQQ, NVDA 자동 선택
+TARGET_INDICES = [1, 7] # SPY, QQQ, NVDA 자동 선택
 
 RL_PARAMS = {"lr": 0.01, "gamma": 0.98}
 

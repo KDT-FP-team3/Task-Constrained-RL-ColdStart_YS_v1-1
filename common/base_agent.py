@@ -1,27 +1,55 @@
 import numpy as np
 
-class BaseSTATICAgent:
-    """모든 팀원이 공통으로 사용할 수 있는 기본 STATIC RL 에이전트 클래스"""
+def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, use_static=False, seed=2026):
+    """
+    실제 Q-Learning 알고리즘을 수행하여 누적 수익률 배열을 반환합니다.
+    """
+    np.random.seed(seed)
+    n_days = len(df)
     
-    def __init__(self, rl_params, custom_params=None):
-        # 기본 강화학습 파라미터 적용
-        self.lr = rl_params.get("learning_rate", 0.01)
-        self.gamma = rl_params.get("discount_factor", 0.98)
-        self.epsilon = rl_params.get("exploration_rate", 0.10)
-        
-        # 팀원별 커스텀 파라미터 수용
-        self.custom_params = custom_params if custom_params is not None else {}
-        
-    def apply_static_mask(self, logits, valid_mask):
-        """
-        STATIC 프레임워크의 핵심인 CSR 매트릭스 변환 및 마스킹 로직
-        유효하지 않은 행동의 확률을 -무한대로 설정합니다.
-        """
-        return np.where(valid_mask, logits, -1e9)
+    # Q-Table: 상태(0:하락추세, 1:상승추세) x 행동(0:현금보유, 1:주식보유)
+    q_table = np.zeros((2, 2)) 
+    
+    returns = df['Daily_Return'].values
+    prices = df['Close'].values
+    emas = df['EMA_20'].values
+    
+    cumulative_return = np.zeros(n_days)
+    current_capital = 1.0
+    
+    # 초기 상태 설정
+    state = 1 if returns[0] > 0 else 0
 
-    def select_action(self, state_logits, valid_mask):
-        """마스킹된 로짓을 바탕으로 최적의 행동을 선택합니다."""
-        masked_logits = self.apply_static_mask(state_logits, valid_mask)
-        # Softmax 기반 확률적 선택 또는 Argmax 기반 탐욕적 선택 로직 구현
-        best_action = np.argmax(masked_logits)
-        return best_action
+    for t in range(1, n_days):
+        # 1. 행동 선택 (Epsilon-Greedy)
+        if np.random.rand() < epsilon:
+            action = np.random.choice([0, 1])
+        else:
+            q_values = q_table[state].copy()
+            
+            # [STATIC 핵심 로직]: 현재 주가가 EMA 아래면 매수(1) 행동의 가치를 -무한대로 마스킹
+            if use_static and prices[t-1] < emas[t-1]:
+                q_values[1] = -np.inf 
+                
+            action = np.argmax(q_values)
+
+        # 2. 보상 산정 및 자본 업데이트
+        reward = returns[t] if action == 1 else 0
+        current_capital *= (1 + reward)
+        cumulative_return[t] = (current_capital - 1) * 100
+
+        # 3. 다음 상태 관측
+        next_state = 1 if returns[t] > 0 else 0
+
+        # 4. Q-Table 업데이트 (벨만 방정식)
+        next_q_values = q_table[next_state].copy()
+        if use_static and prices[t] < emas[t]:
+            next_q_values[1] = -np.inf # 다음 상태 평가 시에도 마스킹 적용
+            
+        best_next_action = np.argmax(next_q_values)
+        td_target = reward + gamma * q_table[next_state, best_next_action]
+        q_table[state, action] += lr * (td_target - q_table[state, action])
+
+        state = next_state
+
+    return cumulative_return
