@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
 from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name
 from common.data_loader import fetch_stock_data
@@ -16,7 +17,6 @@ if root_path not in sys.path: sys.path.append(root_path)
 
 st.set_page_config(page_title="Chainers Master Fund", layout="wide", initial_sidebar_state="collapsed")
 
-# 펀드 성과 증감 비교를 위한 세션 초기화
 if 'prev_summary' not in st.session_state:
     st.session_state.prev_summary = {}
 
@@ -36,6 +36,7 @@ st.title("🌐 Chainers Master Fund: Performance Monitoring Dashboard")
 st.markdown("---")
 st.markdown("## 📊 Master Fund Portfolio Report")
 summary_placeholder = st.empty()
+softmax_placeholder = st.empty() # Softmax 게이지 차트용 공간 추가
 st.markdown("---")
 
 members_dir = os.path.join(root_path, "members")
@@ -71,8 +72,6 @@ total_episodes_run = 0
 st.markdown("### 👨‍💻 Portfolio Managers (Independent RL Labs)")
 all_stock_names = {idx: info["name"] for idx, info in STOCK_REGISTRY.items()}
 name_to_index = {info["name"]: idx for idx, info in STOCK_REGISTRY.items()}
-
-# Member 1 ~ 6 오름차순 정렬
 sorted_modules = sorted(team_modules, key=lambda m: getattr(m, "MEMBER_NAME", m.__name__))
 
 for m_config in sorted_modules:
@@ -122,7 +121,7 @@ for m_config in sorted_modules:
             final_capital = 1.0 * (1 + avg_return / 100)
             final_contributions.append({
                 "Member": m_name, "Final_Capital": final_capital, "Profit_Dollar": final_capital - 1.0,
-                "Avg_Return": avg_return, "Avg_MDD": np.mean(member_mdds), "CTPT_Code": ctpt_code, "CTPT_Color": ctpt_color
+                "Avg_Return": avg_return, "Avg_MDD": np.mean(member_mdds), "CTPT_Code": ctpt_code
             })
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
 
@@ -131,29 +130,47 @@ for m_config in sorted_modules:
 # ==========================================
 if final_contributions:
     df_contrib = pd.DataFrame(final_contributions)
+    df_contrib = df_contrib.sort_values(by="Member").reset_index(drop=True)
+    
+    # 🌟 멤버별로 고유하고 뚜렷한 색상 팔레트 강제 배정 (파란색 통일 문제 해결)
+    distinct_colors = px.colors.qualitative.Plotly 
+    df_contrib['Unique_Color'] = [distinct_colors[i % len(distinct_colors)] for i in range(len(df_contrib))]
+    
     total_fund_capital = df_contrib['Final_Capital'].sum()
     total_fund_profit = df_contrib['Profit_Dollar'].sum()
     df_contrib['Contribution_Weight'] = df_contrib['Final_Capital'] / total_fund_capital
     
-    # 1) 도넛 그래프
+    # 🌟 Softmax 알고리즘 구현 (Temperature 적용하여 극단값 방지)
+    tau = 20.0 
+    z_scaled = df_contrib['Avg_Return'].values / tau
+    exp_z = np.exp(z_scaled - np.max(z_scaled)) # 오버플로우 방지
+    softmax_weights = exp_z / np.sum(exp_z)
+    df_contrib['Softmax_Weight'] = softmax_weights
+
+    # 1) 도넛 그래프 (텍스트 간소화 및 범례 순서 고정)
     fig_donut = go.Figure(go.Pie(
-        labels=df_contrib['Member'], values=df_contrib['Final_Capital'], hole=0.6,
-        marker=dict(colors=df_contrib['CTPT_Color']), textinfo="label+percent",
-        texttemplate="<b>%{label}</b><br>%{percent}<br>%{value:.2f}$"
+        labels=df_contrib['Member'], 
+        values=df_contrib['Final_Capital'], 
+        hole=0.6,
+        marker=dict(colors=df_contrib['Unique_Color']), 
+        textinfo="percent", # 🌟 텍스트에서 Member 이름 제거
+        texttemplate="%{percent}<br>%{value:.2f}$",
+        hovertemplate="<b>%{label}</b><br>Capital: %{value:.2f} $ <extra></extra>",
+        sort=False # 🌟 멤버 1번부터 차례대로 범례와 조각이 정렬되도록 고정
     ))
     fig_donut.update_layout(
         title="<b>Master Fund Contribution</b>", height=350, margin=dict(l=0, r=0, t=40, b=0),
         annotations=[dict(text=f"Total Capital<br><b>{total_fund_capital:.2f} $</b>", x=0.5, y=0.5, font_size=18, showarrow=False)],
-        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.3) # 범례 좌측 상단 배치
+        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4, traceorder="normal") # 좌측 상단 범례
     )
 
     # 2) 수익 바 차트
     fig_profit = go.Figure()
     fig_profit.add_trace(go.Bar(x=["Total Fund"], y=[total_fund_profit], name="Total", marker=dict(color='#ff4b4b')))
-    fig_profit.add_trace(go.Bar(x=df_contrib['Member'], y=df_contrib['Profit_Dollar'], name="Members", marker=dict(color=df_contrib['CTPT_Color'])))
+    fig_profit.add_trace(go.Bar(x=df_contrib['Member'], y=df_contrib['Profit_Dollar'], name="Members", marker=dict(color=df_contrib['Unique_Color'])))
     fig_profit.update_layout(title="<b>Portfolio Profit ($)</b>", height=350, margin=dict(l=0, r=0, t=40, b=0), showlegend=False)
 
-    # 3) 성과 테이블 데이터 가공 (증감 화살표 추가)
+    # 3) 성과 테이블
     table_data = []
     current_summary = {}
     prev_data = st.session_state.prev_summary
@@ -163,37 +180,59 @@ if final_contributions:
         c_ret, c_mdd = row['Avg_Return'], row['Avg_MDD']
         current_summary[m_name] = {'return': c_ret, 'mdd': c_mdd}
         
-        ret_arrow, mdd_arrow = "(-)", "(-)"
-        if m_name in prev_data:
-            ret_arrow = "(↑)" if c_ret > prev_data[m_name]['return'] else "(↓)" if c_ret < prev_data[m_name]['return'] else "(-)"
-            mdd_arrow = "(↑)" if c_mdd > prev_data[m_name]['mdd'] else "(↓)" if c_mdd < prev_data[m_name]['mdd'] else "(-)"
+        ret_arrow = "(↑)" if m_name in prev_data and c_ret > prev_data[m_name]['return'] else "(↓)" if m_name in prev_data and c_ret < prev_data[m_name]['return'] else "(-)"
+        mdd_arrow = "(↑)" if m_name in prev_data and c_mdd > prev_data[m_name]['mdd'] else "(↓)" if m_name in prev_data and c_mdd < prev_data[m_name]['mdd'] else "(-)"
 
         table_data.append({
             "Member": m_name, "Persona": row['CTPT_Code'],
             "Capital ($)": f"{row['Final_Capital']:.2f} $",
             "Return (%)": f"{c_ret:.2f} {ret_arrow}",
-            "MDD (%)": f"{c_mdd:.2f} {mdd_arrow}"
+            "MDD (%)": f"{c_mdd:.2f} {mdd_arrow}",
+            "Opt. Weight": f"{row['Softmax_Weight']*100:.1f} %" # Softmax 비중 추가
         })
         
     st.session_state.prev_summary = current_summary
-    df_table = pd.DataFrame(table_data)
-
-    # 음수 또는 (↓) 기호가 있는 데이터를 붉은색으로 칠하는 로직
-    def color_negative_red(val):
-        if isinstance(val, str) and ('-' in val and '(-)' not in val):
-            return 'color: #ff4b4b; font-weight: bold;'
-        return ''
-    
-    styled_table = df_table.style.map(color_negative_red)
+    styled_table = pd.DataFrame(table_data).style.map(lambda val: 'color: #ff4b4b; font-weight: bold;' if isinstance(val, str) and ('-' in val and '(-)' not in val) else '')
 
     with summary_placeholder.container():
-        col1, col2, col3 = st.columns([1, 1, 1.2])
+        col1, col2, col3 = st.columns([1, 1, 1.4])
         with col1: st.plotly_chart(fig_donut, use_container_width=True)
         with col2: st.plotly_chart(fig_profit, use_container_width=True)
         with col3: 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("#### Persona & Profit / Loss")
             st.dataframe(styled_table, use_container_width=True, hide_index=True)
+            
+    # 🌟 4) [신규] Softmax 기반 최적 포트폴리오 비중 게이지 (Horizontal Stacked Bar)
+    with softmax_placeholder.container():
+        fig_softmax = go.Figure()
+        for i, row in df_contrib.iterrows():
+            # [신규 계산]: 전체 펀드 자본금을 Softmax 비중대로 나누었을 때의 목표 할당 금액
+            target_allocation_dollar = total_fund_capital * row['Softmax_Weight']
+            
+            # 막대기 안에 표시될 두 줄짜리 텍스트 (비율 % \n 금액 $)
+            bar_text = f"{row['Softmax_Weight']*100:.1f}%<br>{target_allocation_dollar:.2f} $"
+            
+            fig_softmax.add_trace(go.Bar(
+                y=['Optimal Allocation'], 
+                x=[row['Softmax_Weight'] * 100], 
+                name=row['Member'], 
+                orientation='h', 
+                marker=dict(color=row['Unique_Color']),
+                text=bar_text, 
+                textposition='inside', # 막대기 안쪽에 텍스트 배치
+                insidetextanchor='middle', # 텍스트 중앙 정렬
+                customdata=[target_allocation_dollar], # hover 데이터용
+                hovertemplate="<b>%{name}</b><br>Suggested Weight: %{x:.2f}%<br>Target Capital: %{customdata[0]:.2f} $<extra></extra>"
+            ))
+            
+        fig_softmax.update_layout(
+            barmode='stack', height=180, margin=dict(l=20, r=20, t=40, b=20),
+            title="<b>🎯 Target Portfolio Allocation (by Softmax Function)</b>",
+            xaxis=dict(showgrid=False, range=[0, 100], ticksuffix="%"),
+            yaxis=dict(showticklabels=False), showlegend=False
+        )
+        st.plotly_chart(fig_softmax, use_container_width=True)
 
 # ==========================================
 # 🚀 --- 3. 사이드바 서버 부하 계기판 ---
