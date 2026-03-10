@@ -59,14 +59,32 @@ def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed)
 
     fig = go.Figure()
     
-    # 1. 실제 주가 (녹색 실선)
-    fig.add_trace(go.Scatter(x=dates, y=real_return_percent, mode='lines', name=f'Market', line=dict(color='#4caf50', width=2)))
+    # 1. 실제 주가 (Market): 녹색 실선, 가장 굵게 (width=5)
+    # 다른 선들이 겹쳐도 배경처럼 넓게 보이도록 굵기를 키웠습니다.
+    fig.add_trace(go.Scatter(
+        x=dates, y=real_return_percent, 
+        mode='lines', 
+        name=f'Market', 
+        line=dict(color='#4caf50', width=5)
+    ))
     
-    # 2. Vanilla RL (붉은색 실선으로 수정!)
-    fig.add_trace(go.Scatter(x=dates, y=vanilla_return, mode='lines', name='Vanilla RL', line=dict(color='#ff4b4b', width=2)))
+    # 2. Vanilla RL: 붉은색 실선, 가장 가늘게 (width=1) + 빈 네모 심벌 (square-open)
+    fig.add_trace(go.Scatter(
+        x=dates, y=vanilla_return, 
+        mode='lines+markers', 
+        name='Vanilla RL', 
+        line=dict(color='#ff4b4b', width=1),
+        marker=dict(symbol='square-open', size=5, color='#ff4b4b')
+    ))
     
-    # 3. STATIC RL (파란색 실선)
-    fig.add_trace(go.Scatter(x=dates, y=static_return, mode='lines', name='STATIC RL (Ours)', line=dict(color='#2196f3', width=2)))
+    # 3. STATIC RL: 파란색 실선, 중간 굵기 (width=2.5) + 빈 원형 심벌 (circle-open)
+    fig.add_trace(go.Scatter(
+        x=dates, y=static_return, 
+        mode='lines+markers', 
+        name='STATIC RL (Ours)', 
+        line=dict(color='#2196f3', width=2.5),
+        marker=dict(symbol='circle-open', size=6, color='#2196f3')
+    ))
     
     fig.update_layout(
         title=f"<b>{stock_name}</b> (Epi:{episodes}, Seed:{seed} | LR:{lr:.3f}, γ:{gamma:.2f})",

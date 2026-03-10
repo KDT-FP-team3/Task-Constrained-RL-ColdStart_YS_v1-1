@@ -1,4 +1,4 @@
-MEMBER_NAME = "Member 5 (US Market)"
+MEMBER_NAME = "Member 5"
 TARGET_INDICES = [2, 8] # SPY, QQQ, NVDA 자동 선택
 
 # 종목별 완전히 독립적인 파라미터 셋업!
