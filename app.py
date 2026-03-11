@@ -184,8 +184,8 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
     ))
     fig.update_layout(
         title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>", font=dict(size=22)),
-        xaxis=dict(title="<b>Trading Days</b>", titlefont=dict(size=16), showgrid=True),
-        yaxis=dict(title="<b>Total Cumulative Return (%)</b>", titlefont=dict(size=16), showgrid=True),
+        xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=16)), showgrid=True),
+        yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=16)), showgrid=True),
         legend=dict(font=dict(size=14), x=0.01, y=0.99,
                     bgcolor='rgba(128,128,128,0.15)', bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
@@ -248,9 +248,9 @@ def _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
     fig.update_layout(
         title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>",
                    font=dict(size=22, family="Arial Black")),
-        yaxis=dict(title="<b>Daily Return (%)</b>", titlefont=dict(size=16, family="Arial Black")),
+        yaxis=dict(title=dict(text="<b>Daily Return (%)</b>", font=dict(size=16, family="Arial Black"))),
         xaxis=dict(
-            title="<b>Performance Metrics</b>", titlefont=dict(size=16, family="Arial Black"),
+            title=dict(text="<b>Performance Metrics</b>", font=dict(size=16, family="Arial Black")),
             tickmode='array', tickvals=[1.0, 2.25],
             ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'],
             range=[0, 3.0]
