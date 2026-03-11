@@ -160,7 +160,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.05,
                                   step=0.01, format="%.2f",    key="fb_frame")
     global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
-    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=1,
+    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=10,
                                         step=1,                key="fb_auto")
     global_active_agents = st.multiselect(
         "Active Agents",
@@ -577,7 +577,7 @@ for m_config in sorted_modules:
                         )
                     with sc4:
                         l_auto_runs = st.number_input(
-                            "Auto Run Count", min_value=1, value=1, step=1,
+                            "Auto Run Count", min_value=1, value=10, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             help="Run Evaluation 클릭 시 자동 반복 횟수"
                         )
