@@ -106,7 +106,7 @@ if 'sim_result' not in st.session_state:
 # ==========================================
 # 1. 실시간 시스템 상태 계기판
 # ==========================================
-def update_gauge(episodes_run, placeholder):
+def update_gauge(episodes_run, placeholder, is_loading=False):
     max_load = 6000
     load_pct = min((episodes_run / max_load) * 100, 100)
     fig_gauge = go.Figure(go.Indicator(
@@ -124,15 +124,22 @@ def update_gauge(episodes_run, placeholder):
             ]
         }
     ))
-    fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=10))
-    # [핵심 수정] placeholder.plotly_chart() 대신 with 문으로 컨텍스트 교체:
-    # st.empty() 슬롯을 with 구문으로 사용해야 기존 요소를 올바르게 교체합니다.
+    b_margin = 30 if is_loading else 10
+    fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=b_margin))
+    if is_loading:
+        fig_gauge.add_annotation(
+            text="⏳  Loading...",
+            x=0.5, y=0.08,
+            xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=12, color="#ff9800"),
+            align="center",
+        )
     with placeholder:
         st.plotly_chart(fig_gauge, use_container_width=True)
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty()
-gauge_status_placeholder = st.sidebar.empty()
 # 스크립트 재실행 시 즉시 이전 값으로 렌더링 → gauge 공백(사라짐) 방지
 update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
 
@@ -658,7 +665,7 @@ for m_config in sorted_modules:
 
                 if run_clicked:
                     if not _gauge_loading_set:
-                        gauge_status_placeholder.caption("⏳ Loading...")
+                        update_gauge(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
                     # 종목별 파라미터를 다시 적용: fallback 목록에서 이 종목 제거
                     st.session_state.stocks_reverted.add(hist_key)
@@ -688,7 +695,7 @@ for m_config in sorted_modules:
                 # ── Simulation: STATIC > Vanilla 조건 파라미터 탐색 ──
                 if sim_clicked:
                     if not _gauge_loading_set:
-                        gauge_status_placeholder.caption("⏳ Loading...")
+                        update_gauge(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
                     n_iters = max(20, int(l_auto_runs) * 8)
                     phase1  = int(n_iters * 0.4)
