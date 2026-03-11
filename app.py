@@ -714,6 +714,9 @@ for m_config in sorted_modules:
                     gap_history = []
                     param_hist  = {k: [] for k in param_bounds}
                     sim_display = st.empty()
+                    # 단일 시드 과적합 방지: 후보마다 복수 시드 평균 gap으로 평가
+                    _n_eval = min(3, max(2, int(l_auto_runs) // 3))
+                    _eval_seeds = [int(l_seed) + _j for _j in range(_n_eval)]
 
                     for _i in range(n_iters):
                         if _i < phase1:
@@ -731,18 +734,24 @@ for m_config in sorted_modules:
                                 _base + random.uniform(-_rng / 2, _rng / 2), _lo, _hi
                             ))
 
-                        _seed = int(l_seed) + _i
-                        _, _vt, _st_t, _, _, _, _ = get_rl_data(
-                            ticker,
-                            candidate["lr"], candidate["gamma"], candidate["epsilon"],
-                            int(l_epi), _seed, v_epsilon=candidate["v_epsilon"],
-                            fee_rate=fee_rate
-                        )
-                        if _vt is not None and _st_t is not None:
-                            _gap = float(_st_t[-1]) - float(_vt[-1])
+                        # 복수 시드로 평가 → 평균 gap (일반화 성능 측정)
+                        _gaps, _s_list, _v_list = [], [], []
+                        for _eseed in _eval_seeds:
+                            _, _vt, _st_t, _, _, _, _ = get_rl_data(
+                                ticker,
+                                candidate["lr"], candidate["gamma"], candidate["epsilon"],
+                                int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
+                                fee_rate=fee_rate
+                            )
+                            if _vt is not None and _st_t is not None:
+                                _gaps.append(float(_st_t[-1]) - float(_vt[-1]))
+                                _s_list.append(float(_st_t[-1]))
+                                _v_list.append(float(_vt[-1]))
+                        if _gaps:
+                            _gap = float(np.mean(_gaps))
                             candidate["gap"]     = _gap
-                            candidate["s_final"] = float(_st_t[-1])
-                            candidate["v_final"] = float(_vt[-1])
+                            candidate["s_final"] = float(np.mean(_s_list))
+                            candidate["v_final"] = float(np.mean(_v_list))
                             if _gap > best["gap"]:
                                 best = candidate.copy()
                         gap_history.append(best["gap"])
