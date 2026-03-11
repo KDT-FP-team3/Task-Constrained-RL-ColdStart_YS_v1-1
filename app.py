@@ -41,6 +41,14 @@ st.markdown("""
     padding-right: 1.25rem !important;
     white-space: nowrap !important;
 }
+/* sim-btn-marker 컨테이너 완전 제거 — Simulation 버튼 수직 오프셋 방지 */
+[data-testid="stMarkdownContainer"]:has(.sim-btn-marker),
+.element-container:has(.sim-btn-marker) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
 /* Simulation 버튼 보라색 — sim-btn-marker를 포함한 column 내 primary 버튼에 적용 */
 [data-testid="column"]:has(.sim-btn-marker) button[kind="primary"] {
     background-color: #7B2FBE !important;
@@ -49,6 +57,11 @@ st.markdown("""
 [data-testid="column"]:has(.sim-btn-marker) button[kind="primary"]:hover {
     background-color: #6322A3 !important;
     border-color: #6322A3 !important;
+}
+/* 버튼 row 컬럼 수직 정렬 — 두 버튼 바닥선 일치 */
+[data-testid="column"]:has(button[kind="primary"]) {
+    display: flex !important;
+    align-items: flex-end !important;
 }
 </style>
 """, unsafe_allow_html=True)
