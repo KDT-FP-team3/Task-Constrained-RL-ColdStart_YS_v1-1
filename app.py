@@ -167,7 +167,102 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
 # ==========================================
 # 3. 시뮬레이션 및 차트 생성
 # ==========================================
-def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed):
+def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
+    """구버전 'S&P 500 Performance' fig_main 스타일: Cumulative Return Comparison"""
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df.index, y=v_trace, mode='lines+markers', name='<b>Vanilla RL</b>',
+        line=dict(color='#e05050', width=2), marker=dict(symbol='circle-open', size=6)
+    ))
+    fig.add_trace(go.Scatter(
+        x=df.index, y=s_trace, mode='lines+markers', name='<b>RL with STATIC</b>',
+        line=dict(color='#4a90d9', width=2), marker=dict(symbol='square-open', size=6)
+    ))
+    fig.add_trace(go.Scatter(
+        x=df.index, y=real_ret_trace, mode='lines+markers', name='<b>Market</b>',
+        line=dict(color='green', width=2, dash='dot'), marker=dict(symbol='diamond-open', size=6)
+    ))
+    fig.update_layout(
+        title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>", font=dict(size=22)),
+        xaxis=dict(title="<b>Trading Days</b>", titlefont=dict(size=16), showgrid=True),
+        yaxis=dict(title="<b>Total Cumulative Return (%)</b>", titlefont=dict(size=16), showgrid=True),
+        legend=dict(font=dict(size=14), x=0.01, y=0.99,
+                    bgcolor='rgba(128,128,128,0.15)', bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        height=420, margin=dict(t=70, b=70, l=70, r=30)
+    )
+    fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
+    return fig
+
+
+def _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
+    """구버전 'Trial History: Statistical Analysis' fig_box 스타일: Daily Return Distribution"""
+    v_arr = np.array(v_trace)
+    s_arr = np.array(s_trace)
+    real_arr = np.array(real_ret_trace)
+
+    if len(v_arr) < 2:
+        return go.Figure()
+
+    v_daily = np.diff(v_arr)
+    s_daily = np.diff(s_arr)
+    market_daily = np.diff(real_arr)
+
+    v_mean, s_mean = float(np.mean(v_daily)), float(np.mean(s_daily))
+    med_v, med_s = float(np.median(v_daily)), float(np.median(s_daily))
+    avg_market = float(np.mean(market_daily))
+
+    fig = go.Figure()
+    fig.add_trace(go.Box(
+        y=v_daily, x0=1.0, name='<b>Vanilla RL</b>',
+        line=dict(color='#e05050', width=3), fillcolor='rgba(224,80,80,0.05)',
+        boxmean=True, width=0.5
+    ))
+    fig.add_trace(go.Box(
+        y=s_daily, x0=2.25, name='<b>STATIC RL (Ours)</b>',
+        line=dict(color='#4a90d9', width=3), fillcolor='rgba(74,144,217,0.05)',
+        boxmean=True, width=0.5
+    ))
+
+    fig.add_annotation(x=0.75, y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
+                       showarrow=False, xshift=-4, yshift=8, xanchor='right',
+                       font=dict(color='#e05050', size=12, family="Arial Black"))
+    fig.add_annotation(x=0.75, y=med_v, text=f"<b>Median: {med_v:.2f}%</b>",
+                       showarrow=False, xshift=-4, yshift=-8, xanchor='right',
+                       font=dict(color='#e05050', size=12, family="Arial Black"))
+    fig.add_annotation(x=2.5, y=med_s, text=f"<b>Median: {med_s:.2f}%</b>",
+                       showarrow=False, xshift=4, yshift=8, xanchor='left',
+                       font=dict(color='#4a90d9', size=12, family="Arial Black"))
+    fig.add_annotation(x=2.5, y=s_mean, text=f"<b>Mean: {s_mean:.2f}%</b>",
+                       showarrow=False, xshift=4, yshift=-8, xanchor='left',
+                       font=dict(color='#4a90d9', size=12, family="Arial Black"))
+
+    fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
+    fig.add_annotation(
+        x=1.625, xref="x", y=avg_market,
+        text=f"<b>Market Daily Avg<br>{avg_market:.2f}%</b>",
+        showarrow=False, yshift=18, xanchor='center', align='center',
+        font=dict(color="green", size=12, family="Arial Black"), bgcolor="rgba(0,0,0,0)"
+    )
+
+    fig.update_layout(
+        title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>",
+                   font=dict(size=22, family="Arial Black")),
+        yaxis=dict(title="<b>Daily Return (%)</b>", titlefont=dict(size=16, family="Arial Black")),
+        xaxis=dict(
+            title="<b>Performance Metrics</b>", titlefont=dict(size=16, family="Arial Black"),
+            tickmode='array', tickvals=[1.0, 2.25],
+            ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'],
+            range=[0, 3.0]
+        ),
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        height=420, margin=dict(t=80, b=80, l=60, r=60)
+    )
+    fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
+    return fig
+
+
+def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed, chart_type='cumulative'):
     df_full = fetch_stock_data(ticker, period="2y")
     if df_full.empty or len(df_full) < 10:
         return go.Figure(), 0.0, 0.0, 0.0
@@ -180,22 +275,11 @@ def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed)
     s_trace = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
     s_mdd = calculate_mdd(s_trace)
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=real_ret_trace, mode='lines', name='Market',
-                             line=dict(color='#4caf50', width=5)))
-    fig.add_trace(go.Scatter(x=df.index, y=v_trace, mode='lines+markers', name='Vanilla',
-                             line=dict(color='#ff4b4b', width=1),
-                             marker=dict(symbol='square-open', size=5)))
-    fig.add_trace(go.Scatter(x=df.index, y=s_trace, mode='lines+markers', name='STATIC',
-                             line=dict(color='#2196f3', width=2.5),
-                             marker=dict(symbol='circle-open', size=6)))
+    if chart_type == 'stats':
+        fig = _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace)
+    else:
+        fig = _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace)
 
-    fig.update_layout(
-        title=f"<b>{stock_name}</b> (Lookback: {len(df)} Days)",
-        height=320, margin=dict(l=20, r=20, t=40, b=20),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        font=dict(weight='bold')
-    )
     return fig, s_trace[-1], v_trace[-1], s_mdd
 
 # --- 이전 결과 표시 (로딩 중 사라짐 방지) ---
@@ -287,9 +371,12 @@ for m_config in sorted_modules:
                                                   float(p_settings.get("epsilon", global_epsilon)),
                                                   key=f"eps_{m_name}_{stock_name}")
 
+                    # 짝수 컬럼(왼쪽): Cumulative Return 스타일, 홀수 컬럼(오른쪽): Stats 스타일
+                    chart_type = 'cumulative' if j % 2 == 0 else 'stats'
                     with st.spinner(f"📡 Processing {stock_name}..."):
                         fig, s_final, v_final, s_mdd = create_real_rl_chart(
-                            stock_name, ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed
+                            stock_name, ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed,
+                            chart_type=chart_type
                         )
                         st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_name}_{stock_name}")
 
