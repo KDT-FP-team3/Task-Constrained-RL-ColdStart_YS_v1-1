@@ -1,10 +1,11 @@
 import numpy as np
 
 
-def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026):
+def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026, fee_rate=0.0):
     """
     Q-Learning 알고리즘을 지정된 에피소드(episodes) 횟수만큼 반복 학습한 후,
     최종 누적 수익률 배열을 반환합니다.
+    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
     """
     np.random.seed(seed)
     n_days = len(df)
@@ -62,6 +63,7 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     # ==========================================
     for _ in range(train_episodes):
         state = make_state(returns[0], prices[0], emas[0])
+        prev_action = 0  # 에피소드 시작: 현금 보유 상태
 
         for t in range(1, n_days):
             # STATIC: 상태 자체에 EMA 위치가 인코딩됨 (state >= 2 → EMA 위 → 매수 가능)
@@ -77,7 +79,11 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
                     q_values[1] = -np.inf
                 action = np.argmax(q_values)
 
-            reward = returns[t] if action == 1 else 0
+            # 수수료: CASH→BUY 진입 시 왕복 수수료 1회 부과
+            _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            reward = (returns[t] if action == 1 else 0.0) - _fee
+            prev_action = action
+
             next_state = make_state(returns[t], prices[t], emas[t])
             next_can_buy = (next_state >= 2) if use_static else True
 
@@ -99,6 +105,7 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     cumulative_return = np.zeros(n_days)
     current_capital = 1.0
     state = make_state(returns[0], prices[0], emas[0])
+    prev_action = 0
 
     for t in range(1, n_days):
         can_buy = (state >= 2) if use_static else True
@@ -107,19 +114,22 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
             q_values[1] = -np.inf
         action = np.argmax(q_values)
 
-        reward = returns[t] if action == 1 else 0
+        _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+        reward = (returns[t] if action == 1 else 0.0) - _fee
         current_capital *= (1 + reward)
         cumulative_return[t] = (current_capital - 1) * 100
+        prev_action = action
 
         state = make_state(returns[t], prices[t], emas[t])
 
     return cumulative_return
 
 
-def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026):
+def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026, fee_rate=0.0):
     """
     run_rl_simulation과 동일한 훈련 로직으로 평가 단계에서
     누적수익 배열 + 일별 행동 로그를 함께 반환합니다.
+    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
     Returns:
         cumulative_return: np.ndarray (n_days,)
         action_log: list of dicts {Day, Action, Daily_Return(%)}
@@ -151,6 +161,7 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
 
     for _ in range(train_episodes):
         state = make_state(returns[0], prices[0], emas[0])
+        prev_action = 0
         for t in range(1, n_days):
             can_buy = (state >= 2) if use_static else True
             if np.random.rand() < epsilon:
@@ -160,7 +171,9 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
                 if not can_buy:
                     q_values[1] = -np.inf
                 action = np.argmax(q_values)
-            reward = returns[t] if action == 1 else 0
+            _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            reward = (returns[t] if action == 1 else 0.0) - _fee
+            prev_action = action
             next_state = make_state(returns[t], prices[t], emas[t])
             next_can_buy = (next_state >= 2) if use_static else True
             next_q_values = q_table[next_state].copy()
@@ -174,6 +187,7 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
     cumulative_return = np.zeros(n_days)
     current_capital = 1.0
     state = make_state(returns[0], prices[0], emas[0])
+    prev_action = 0
     action_log = []
 
     for t in range(1, n_days):
@@ -182,7 +196,8 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
         if not can_buy:
             q_values[1] = -np.inf
         action = np.argmax(q_values)
-        reward = returns[t] if action == 1 else 0
+        _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+        reward = (returns[t] if action == 1 else 0.0) - _fee
         current_capital *= (1 + reward)
         cumulative_return[t] = (current_capital - 1) * 100
         action_log.append({
@@ -190,6 +205,7 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
             "Action": "BUY" if action == 1 else "CASH",
             "Daily_Return(%)": round(reward * 100, 4)
         })
+        prev_action = action
         state = make_state(returns[t], prices[t], emas[t])
 
     return cumulative_return, action_log

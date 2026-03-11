@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
-from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name
+from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name, get_fee_info
 from common.data_loader import fetch_stock_data
 from common.base_agent import run_rl_simulation_with_log
 from common.evaluator import calculate_ctpt_and_color, calculate_mdd
@@ -33,6 +33,15 @@ st.markdown("""
 [data-testid="stPlotlyChart"] { margin-bottom: 0 !important; }
 /* 다크/라이트 모드 div 테두리 */
 .st-summary-card { border: 1px solid rgba(128,128,128,0.3); border-radius: 10px; padding: 12px 14px; }
+/* Simulation 버튼 보라색 — sim-btn-marker를 포함한 column 내 primary 버튼에 적용 */
+[data-testid="column"]:has(.sim-btn-marker) button[kind="primary"] {
+    background-color: #7B2FBE !important;
+    border-color: #7B2FBE !important;
+}
+[data-testid="column"]:has(.sim-btn-marker) button[kind="primary"]:hover {
+    background-color: #6322A3 !important;
+    border-color: #6322A3 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -352,17 +361,18 @@ def _make_trial_box_fig(df_h):
     return fig
 
 
-def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None):
+def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_rate=0.0):
     """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환.
-    v_epsilon: Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용."""
+    v_epsilon: Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용.
+    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과)."""
     df_full = fetch_stock_data(ticker, period="2y")
     if df_full.empty or len(df_full) < 10:
         return None, None, None, None, 0.0, [], []
     df = df_full.tail(episodes).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
     _v_eps = v_epsilon if v_epsilon is not None else epsilon
-    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=episodes, use_static=False, seed=seed)
-    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=episodes, use_static=True,  seed=seed)
+    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=episodes, use_static=False, seed=seed, fee_rate=fee_rate)
+    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=episodes, use_static=True,  seed=seed, fee_rate=fee_rate)
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
 
@@ -429,7 +439,9 @@ for m_config in sorted_modules:
         mem_s_rets, mem_v_rets, mem_mdds = [], [], []
         if selected_stock_names:
             for stock_name in selected_stock_names:
-                ticker = get_ticker_by_name(stock_name)
+                ticker    = get_ticker_by_name(stock_name)
+                fee_info  = get_fee_info(ticker)
+                fee_rate  = fee_info["buy"] + fee_info["sell"]
                 stock_idx = name_to_index.get(stock_name)
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                 hist_key = f"{m_name}_{stock_name}"
@@ -445,6 +457,7 @@ for m_config in sorted_modules:
 
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
+                    st.caption(f"💸 거래 수수료 — {fee_info['label']}")
                     # ─ 행 1: System Parameters ─
                     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
                     sc1, sc2, sc3, sc4, sc5 = st.columns(5)
@@ -522,12 +535,16 @@ for m_config in sorted_modules:
                     run_clicked = st.button(
                         "▶ Run Evaluation",
                         key=f"run_btn_{m_name}_{stock_name}",
-                        type="primary"
+                        type="primary",
+                        use_container_width=True,
                     )
                 with sim_btn_col:
+                    st.markdown('<span class="sim-btn-marker"></span>', unsafe_allow_html=True)
                     sim_clicked = st.button(
-                        "🔍 Simulation",
+                        "Simulation",
                         key=f"sim_btn_{m_name}_{stock_name}",
+                        type="primary",
+                        use_container_width=True,
                     )
                 run_prog_slot = run_prog_col.empty()
 
@@ -562,7 +579,7 @@ for m_config in sorted_modules:
                         )
                         _, vt, st_t, mkt, _, _, _ = get_rl_data(
                             ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
-                            v_epsilon=l_v_epsilon
+                            v_epsilon=l_v_epsilon, fee_rate=fee_rate
                         )
                         if vt is not None:
                             trials.append({
@@ -615,7 +632,8 @@ for m_config in sorted_modules:
                         _, _vt, _st_t, _, _, _, _ = get_rl_data(
                             ticker,
                             candidate["lr"], candidate["gamma"], candidate["epsilon"],
-                            int(l_epi), _seed, v_epsilon=candidate["v_epsilon"]
+                            int(l_epi), _seed, v_epsilon=candidate["v_epsilon"],
+                            fee_rate=fee_rate
                         )
                         if _vt is not None and _st_t is not None:
                             _gap = float(_st_t[-1]) - float(_vt[-1])
@@ -707,7 +725,7 @@ for m_config in sorted_modules:
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
                         ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed,
-                        v_epsilon=eff_v_eps
+                        v_epsilon=eff_v_eps, fee_rate=fee_rate
                     )
 
                 if df_stock is None:
