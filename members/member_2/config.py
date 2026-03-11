@@ -1,19 +1,16 @@
 MEMBER_NAME = "Member 2"
-TARGET_INDICES = [0, 5] # SPY, TSLA
+TARGET_INDICES = [1] # SPY, NVDA
 
-# [조정 근거] Alpha +1.7% 양호 → 기존 방향 유지하되 안정성 소폭 강화
-# SPY: 기존 유지 (이미 STATIC 우위)
-# TSLA: epsilon↓, lr↓로 Q값 안정성 향상 → STATIC 우위 확대
+# [조정 근거] episodes = Trading Days(df_full.tail(N)) + 학습 반복 횟수 동시 제어
+# 기존 100일 → 최근 5개월만 학습: 단기 상승장에서 Vanilla 압도적 유리
+# 조정: episodes↑(윈도우 확대→조정+회복 사이클 포함), epsilon↓(EMA 신호 순도↑),
+#       lr↓(안정 수렴), gamma↑(장기 보상 중시)
 RL_PARAMS = {
-    TARGET_INDICES[0]: {  # SPY: 기존 파라미터 유지 (STATIC 이미 우세)
-        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10,
-        "episodes": 100, "seed": 2026
-    },
-    TARGET_INDICES[1]: {  # TSLA: 변동성 높음, 안정 수렴 강화
+    TARGET_INDICES[0]: {  # SPY: 1년 윈도우(252일)로 조정 국면 포함
         "lr": 0.005, "gamma": 0.99, "epsilon": 0.05,
-        "episodes": 300, "seed": 2026
+        "episodes": 252, "seed": 2026
     },
     "default": {
-        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10, "episodes": 100, "seed": 2026
+        "lr": 0.005, "gamma": 0.99, "epsilon": 0.05, "episodes": 252, "seed": 2026
     }
 }
