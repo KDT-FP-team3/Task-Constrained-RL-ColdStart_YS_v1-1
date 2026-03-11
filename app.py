@@ -44,6 +44,12 @@ if 'prev_episodes_run' not in st.session_state:
     st.session_state.prev_episodes_run = 0
 if 'stock_trial_history' not in st.session_state:
     st.session_state.stock_trial_history = {}  # key: f"{m_name}_{stock_name}" → list of trial dicts
+if 'fallback_params' not in st.session_state:
+    st.session_state.fallback_params = {}       # 마지막 "All 적용" 시 스냅샷
+if 'stock_use_fallback' not in st.session_state:
+    st.session_state.stock_use_fallback = None  # "ALL" 이면 전체 fallback 활성
+if 'stocks_reverted' not in st.session_state:
+    st.session_state.stocks_reverted = set()    # Run Evaluation 클릭으로 되돌아온 종목
 
 # ==========================================
 # 1. 실시간 시스템 상태 계기판
@@ -77,12 +83,43 @@ gauge_placeholder = st.sidebar.empty()
 update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
+
+# ── All 적용 버튼 (파라미터 창 위에 배치) ──
+_fb_active = st.session_state.stock_use_fallback == "ALL"
+_fb_label  = "✅ Fallback 적용 중" if _fb_active else "🔁 All 적용"
+apply_all_clicked = st.sidebar.button(
+    _fb_label, key="sidebar_apply_all", type="primary",
+    help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다\n"
+         "(각 종목 Parameters 위젯 값은 변경되지 않습니다)"
+)
+
 with st.sidebar.expander("Fallback Parameters", expanded=False):
-    global_episodes = st.slider("Episodes", 10, 500, 100)
-    global_seed = st.number_input("Random Seed", value=2026, step=1)
-    global_lr = st.slider("Learning Rate (alpha)", 0.001, 0.1, 0.01, step=0.001)
-    global_gamma = st.slider("Discount Factor (gamma)", 0.1, 0.99, 0.98)
-    global_epsilon = st.slider("Exploration (epsilon)", 0.01, 0.5, 0.10)
+    st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
+    global_episodes   = st.slider("Trading Days",       10,    500,  100,        key="fb_epi")
+    global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.05,
+                                  step=0.01, format="%.2f",    key="fb_frame")
+    global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
+    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=1,
+                                        step=1,                key="fb_auto")
+    st.markdown("<small><b>RL Hyperparameters</b></small>", unsafe_allow_html=True)
+    global_lr         = st.slider("Learning Rate (α)",  0.001, 0.1,  0.01,
+                                  step=0.001, format="%.3f",   key="fb_lr")
+    global_gamma      = st.slider("Discount Factor (γ)",0.1,   0.99, 0.98,       key="fb_gamma")
+    global_epsilon    = st.slider("Exploration (ε)",    0.01,  0.5,  0.10,       key="fb_eps")
+
+# 버튼 클릭 시 현재 슬라이더 값 스냅샷 저장 (슬라이더가 위에서 이미 렌더됨)
+if apply_all_clicked:
+    st.session_state.fallback_params = {
+        "episodes":   global_episodes,
+        "frame_speed": global_frame,
+        "seed":       int(global_seed),
+        "auto_runs":  int(global_auto_runs),
+        "lr":         global_lr,
+        "gamma":      global_gamma,
+        "epsilon":    global_epsilon,
+    }
+    st.session_state.stock_use_fallback = "ALL"
+    st.session_state.stocks_reverted    = set()
 
 st.title("Chainers Master Fund: Performance Monitoring Dashboard")
 st.markdown("---")
@@ -453,6 +490,8 @@ for m_config in sorted_modules:
                 run_prog_slot = run_prog_col.empty()
 
                 if run_clicked:
+                    # 종목별 파라미터를 다시 적용: fallback 목록에서 이 종목 제거
+                    st.session_state.stocks_reverted.add(hist_key)
                     trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
                     n_runs = int(l_auto_runs)
                     for run_i in range(n_runs):
@@ -475,10 +514,30 @@ for m_config in sorted_modules:
                     run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
                     st.rerun()
 
-                # ── 시뮬레이션 실행 (현재 파라미터 기준) ──
+                # ── 유효 파라미터 결정: fallback 활성 여부 ──
+                _use_fb = (
+                    st.session_state.stock_use_fallback == "ALL"
+                    and hist_key not in st.session_state.stocks_reverted
+                )
+                if _use_fb:
+                    fp = st.session_state.fallback_params
+                    eff_lr, eff_gamma, eff_eps = fp["lr"],   fp["gamma"],   fp["epsilon"]
+                    eff_epi, eff_seed          = fp["episodes"], fp["seed"]
+                    st.info(
+                        f"Fallback 파라미터 적용 중 "
+                        f"(LR={eff_lr:.3f} γ={eff_gamma:.2f} ε={eff_eps:.2f} "
+                        f"Days={eff_epi} Seed={eff_seed})",
+                        icon="ℹ️"
+                    )
+                else:
+                    eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed = (
+                        l_lr, l_gamma, l_epsilon, l_epi, l_seed
+                    )
+
+                # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
-                        ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed
+                        ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed
                     )
 
                 if df_stock is None:
