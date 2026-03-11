@@ -390,57 +390,77 @@ for m_config in sorted_modules:
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                 hist_key = f"{m_name}_{stock_name}"
 
-                # ── 파라미터: 접힌 expander – 2행 5열 구조 ──
+                # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
-                    # 행 1: 랜덤시드 | Frame Speed | (비워둠 3칸)
-                    pr1c1, pr1c2, pr1c3, pr1c4, pr1c5 = st.columns(5)
-                    with pr1c1:
+                    # ─ 행 1: System Parameters ─
+                    st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
+                    sc1, sc2, sc3, sc4 = st.columns(4)
+                    with sc1:
+                        l_epi = st.slider(
+                            "Trading Days", 10, 500,
+                            int(p_settings.get("episodes", global_episodes)),
+                            key=f"epi_{m_name}_{stock_name}"
+                        )
+                    with sc2:
+                        l_frame_speed = st.slider(
+                            "Frame Speed (sec)", 0.01, 2.0,
+                            0.05, step=0.01, format="%.2f",
+                            key=f"fspd_{m_name}_{stock_name}",
+                            help="시뮬레이션 재생 프레임 간격"
+                        )
+                    with sc3:
                         l_seed = st.number_input(
                             "Base Seed",
                             value=int(p_settings.get("seed", global_seed)),
                             step=1, key=f"seed_{m_name}_{stock_name}"
                         )
-                    with pr1c2:
-                        l_frame_speed = st.number_input(
-                            "Frame Speed (sec)", value=0.05,
-                            min_value=0.01, max_value=2.0, step=0.01, format="%.2f",
-                            key=f"fspd_{m_name}_{stock_name}",
-                            help="시뮬레이션 재생 프레임 간격"
-                        )
-                    # 행 2: Auto Run Count | LR | Gamma | Epsilon | (비워둠)
-                    pr2c1, pr2c2, pr2c3, pr2c4, pr2c5 = st.columns(5)
-                    with pr2c1:
+                    with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1, value=1, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             help="Run Evaluation 클릭 시 자동 반복 횟수"
                         )
-                    with pr2c2:
+                    # ─ 행 2: RL Hyperparameters ─
+                    st.markdown("<small><b>RL Hyperparameters (Logic: STATIC)</b></small>", unsafe_allow_html=True)
+                    hc1, hc2, hc3, hc4 = st.columns(4)
+                    with hc1:
                         l_lr = st.slider(
-                            "LR (α)", 0.001, 0.1,
+                            "Learning Rate (α)", 0.001, 0.1,
                             float(p_settings.get("lr", global_lr)),
                             step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}"
                         )
-                    with pr2c3:
+                    with hc2:
                         l_gamma = st.slider(
-                            "Gamma (γ)", 0.1, 0.99,
+                            "Discount Factor (γ)", 0.1, 0.99,
                             float(p_settings.get("gamma", global_gamma)),
                             key=f"gamma_{m_name}_{stock_name}"
                         )
-                    with pr2c4:
+                    with hc3:
                         l_epsilon = st.slider(
-                            "Epsilon (ε)", 0.01, 0.5,
+                            "Exploration (ε)", 0.01, 0.5,
                             float(p_settings.get("epsilon", global_epsilon)),
                             key=f"eps_{m_name}_{stock_name}"
                         )
 
-                l_epi = int(p_settings.get("episodes", global_episodes))
+                # ── Run Evaluation 버튼 + 진행률 (버튼 오른쪽에 표시) ──
+                run_btn_col, run_prog_col = st.columns([1, 4])
+                with run_btn_col:
+                    run_clicked = st.button(
+                        "▶ Run Evaluation",
+                        key=f"run_btn_{m_name}_{stock_name}",
+                        type="primary"
+                    )
+                run_prog_slot = run_prog_col.empty()
 
-                # ── Run Evaluation 버튼 (파라미터 창 바로 아래) ──
-                if st.button("▶ Run Evaluation", key=f"run_btn_{m_name}_{stock_name}", type="primary"):
+                if run_clicked:
                     trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
-                    for run_i in range(int(l_auto_runs)):
+                    n_runs = int(l_auto_runs)
+                    for run_i in range(n_runs):
                         trial_seed = int(l_seed) + len(trials) + run_i
+                        run_prog_slot.progress(
+                            run_i / n_runs,
+                            text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
+                        )
                         _, vt, st_t, mkt, _, _, _ = get_rl_data(
                             ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed
                         )
@@ -452,6 +472,7 @@ for m_config in sorted_modules:
                                 "STATIC Final (%)":  float(st_t[-1]),
                                 "Market Final (%)":  float(mkt.iloc[-1]),
                             })
+                    run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
                     st.rerun()
 
                 # ── 시뮬레이션 실행 (현재 파라미터 기준) ──
@@ -517,14 +538,25 @@ for m_config in sorted_modules:
                         with bar_col:
                             action_counts = df_log["STATIC Action"].value_counts().reset_index()
                             action_counts.columns = ["Action", "Count"]
-                            fig_bar = px.bar(action_counts, x="Action", y="Count",
-                                             title="<b>STATIC: Action Frequency</b>",
-                                             color="Action",
-                                             color_discrete_map={"BUY": "#4a90d9", "CASH": "#e05050"})
+                            _bar_colors = {"BUY": "#4a90d9", "CASH": "#e05050"}
+                            fig_bar = go.Figure()
+                            for _, row in action_counts.iterrows():
+                                fig_bar.add_trace(go.Bar(
+                                    x=[row["Action"]], y=[row["Count"]],
+                                    name=row["Action"],
+                                    marker_color=_bar_colors.get(row["Action"], "#888"),
+                                    width=0.35,
+                                    text=[f"<b>{row['Count']}</b>"],
+                                    textposition="outside",
+                                    textfont=dict(size=14, color=_bar_colors.get(row["Action"], "#888"))
+                                ))
                             fig_bar.update_layout(
+                                title=dict(text="<b>STATIC: Action Frequency</b>", font=dict(size=13)),
                                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
                                 height=250, showlegend=False,
-                                margin=dict(t=45, b=25, l=30, r=10)
+                                margin=dict(t=45, b=25, l=30, r=10),
+                                xaxis=dict(showgrid=False),
+                                yaxis=dict(showgrid=True, range=[0, action_counts["Count"].max() * 1.2])
                             )
                             st.plotly_chart(fig_bar, use_container_width=True, key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
