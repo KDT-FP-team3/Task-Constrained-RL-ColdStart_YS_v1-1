@@ -6,11 +6,11 @@ TARGET_INDICES = [2] # SPY, NVDA
 # 조정: episodes↑(윈도우 확대→조정+회복 사이클 포함), epsilon↓(EMA 신호 순도↑),
 #       lr↓(안정 수렴), gamma↑(장기 보상 중시)
 RL_PARAMS = {
-    TARGET_INDICES[0]: {  # SPY: 1년 윈도우(252일)로 조정 국면 포함
-        "lr": 0.005, "gamma": 0.99, "epsilon": 0.05,
-        "episodes": 252, "seed": 2026
+    TARGET_INDICES[0]: {
+        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10,
+        "episodes": 180, "seed": 2026
     },
     "default": {
-        "lr": 0.005, "gamma": 0.99, "epsilon": 0.05, "episodes": 252, "seed": 2026
+        "lr": 0.01, "gamma": 0.98, "epsilon": 0.10, "episodes": 100, "seed": 2026
     }
 }

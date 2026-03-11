@@ -435,7 +435,7 @@ for m_config in sorted_modules:
                 with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
                     # ─ 행 1: System Parameters ─
                     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
-                    sc1, sc2, sc3, sc4 = st.columns(4)
+                    sc1, sc2, sc3, sc4, sc5 = st.columns(5)
                     with sc1:
                         l_epi = st.slider(
                             "Trading Days", 10, 500,
@@ -461,6 +461,14 @@ for m_config in sorted_modules:
                             key=f"autoruns_{m_name}_{stock_name}",
                             help="Run Evaluation 클릭 시 자동 반복 횟수"
                         )
+                    with sc5:
+                        l_active_agents = st.multiselect(
+                            "Active Agents",
+                            options=["Vanilla RL", "STATIC RL"],
+                            default=["Vanilla RL", "STATIC RL"],
+                            key=f"active_{m_name}_{stock_name}",
+                            help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
+                        )
                     # ─ 행 2: RL Hyperparameters ─
                     st.markdown(
                         "<small><b>RL Hyperparameters &nbsp;"
@@ -468,7 +476,7 @@ for m_config in sorted_modules:
                         "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
                         unsafe_allow_html=True
                     )
-                    hc1, hc2, hc3, hc4, hc5 = st.columns(5)
+                    hc1, hc2, hc3, hc4 = st.columns(4)
                     with hc1:
                         l_lr = st.slider(
                             "Learning Rate (α)", 0.001, 0.1,
@@ -494,14 +502,6 @@ for m_config in sorted_modules:
                             float(p_settings.get("v_epsilon", global_epsilon)),
                             key=f"v_eps_{m_name}_{stock_name}",
                             help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)"
-                        )
-                    with hc5:
-                        l_active_agents = st.multiselect(
-                            "Active Agents",
-                            options=["Vanilla RL", "STATIC RL"],
-                            default=["Vanilla RL", "STATIC RL"],
-                            key=f"active_{m_name}_{stock_name}",
-                            help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
                         )
 
                 # ── Run Evaluation 버튼 + 진행률 (버튼 오른쪽에 표시) ──
