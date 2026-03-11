@@ -24,7 +24,7 @@ st.set_page_config(page_title="Chainers Master Fund", layout="wide", initial_sid
 st.markdown("""
 <style>
 /* 상단 여백 최소화 */
-.block-container { padding-top: 0 !important; padding-bottom: 1rem !important; }
+.block-container { padding-top: 0.5rem !important; padding-bottom: 1rem !important; }
 /* metric 카드 compact */
 [data-testid="stMetric"] { padding: 4px 8px !important; }
 /* expander 내부 여백 축소 */
@@ -38,53 +38,43 @@ st.markdown("""
     display: none !important; height: 0 !important;
     margin: 0 !important; padding: 0 !important;
 }
-/* ── 헤더 컨테이너 sticky 고정 ── */
-[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .sticky-header-marker) {
+/* ── 헤더 컨테이너 sticky 고정: > .element-container 직접 자식 확인으로 범위 제한 ── */
+[data-testid="stVerticalBlock"]:has(> .element-container .sticky-header-marker) {
     position: sticky !important;
-    top: var(--header-height, 2.875rem) !important;
+    top: 3.5rem !important;
     z-index: 999 !important;
     background-color: var(--background-color, #0e1117) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    padding-top: 0.3rem !important;
     padding-bottom: 2px !important;
 }
 /* ── 헤더 제목 소형화 ── */
 .sticky-main-title {
     font-size: 1.4rem !important; font-weight: 700 !important;
-    margin: 0.15rem 0 !important; line-height: 1.3 !important;
+    margin: 0.1rem 0 !important; line-height: 1.3 !important;
 }
 .sticky-sub-title {
     font-size: 1.1rem !important; font-weight: 700 !important;
     margin: 0.05rem 0 !important;
 }
 .sticky-divider { margin: 0.15rem 0 !important; border-color: rgba(128,128,128,0.3) !important; }
-/* Run Evaluation / Simulation 버튼 공통: 텍스트 맞춤 너비, 균일 높이 */
+/* ── 버튼 공통: 텍스트 맞춤 너비, 균일 높이 ── */
 [data-testid="stButton"] button[kind="primary"] {
-    min-height: 2.4rem !important;
-    height: 2.4rem !important;
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
+    min-height: 2.4rem !important; height: 2.4rem !important;
+    padding-left: 1.25rem !important; padding-right: 1.25rem !important;
     white-space: nowrap !important;
 }
-/* btn-pair-marker 컨테이너 숨김 */
-.element-container:has(.btn-pair-marker) {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+/* ── sim-btn-marker 컨테이너 숨김 ── */
+.element-container:has(.sim-btn-marker) {
+    display: none !important; height: 0 !important;
+    margin: 0 !important; padding: 0 !important;
 }
-/* 두 버튼이 담긴 stVerticalBlock을 가로 배치로 전환 — > 직접 자식으로 범위 제한 */
-[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) {
-    flex-direction: row !important;
-    align-items: flex-end !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-}
-/* Simulation 버튼 보라색 — 버튼 쌍 중 마지막 primary 버튼 */
-[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) > .element-container:last-child button[kind="primary"] {
+/* ── Simulation 버튼 보라색: 중첩 컬럼 안쪽(column 포함 안 된) sim-btn-marker 컬럼 ── */
+[data-testid="column"]:not(:has([data-testid="column"])):has(.sim-btn-marker) button[kind="primary"] {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) > .element-container:last-child button[kind="primary"]:hover {
+[data-testid="column"]:not(:has([data-testid="column"])):has(.sim-btn-marker) button[kind="primary"]:hover {
     background-color: #6322A3 !important;
     border-color: #6322A3 !important;
 }
@@ -623,17 +613,20 @@ for m_config in sorted_modules:
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
                 btn_col, run_prog_col = st.columns([2, 3])
                 with btn_col:
-                    st.markdown('<span class="btn-pair-marker"></span>', unsafe_allow_html=True)
-                    run_clicked = st.button(
-                        "▶ Run Evaluation",
-                        key=f"run_btn_{m_name}_{stock_name}",
-                        type="primary",
-                    )
-                    sim_clicked = st.button(
-                        "Simulation",
-                        key=f"sim_btn_{m_name}_{stock_name}",
-                        type="primary",
-                    )
+                    b1, b2 = st.columns(2)
+                    with b1:
+                        run_clicked = st.button(
+                            "▶ Run Evaluation",
+                            key=f"run_btn_{m_name}_{stock_name}",
+                            type="primary",
+                        )
+                    with b2:
+                        st.markdown('<span class="sim-btn-marker"></span>', unsafe_allow_html=True)
+                        sim_clicked = st.button(
+                            "Simulation",
+                            key=f"sim_btn_{m_name}_{stock_name}",
+                            type="primary",
+                        )
                 run_prog_slot = run_prog_col.empty()
 
                 # ── 이전 Simulation 결과 배너 ──
