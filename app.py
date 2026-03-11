@@ -552,6 +552,7 @@ for m_config in sorted_modules:
 
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
+                    st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
                     sc1, sc2, sc3, sc4, sc5 = st.columns(5)
                     with sc1:
                         l_epi = st.slider(
@@ -769,10 +770,10 @@ for m_config in sorted_modules:
                             _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate["gamma"]
                             _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate["epsilon"]
                             _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate["v_epsilon"]
-                            _pc1.metric("α (LR)",    f'{candidate["lr"]:.4f}',        f'{candidate["lr"]        - _prev_lr:+.4f}')
-                            _pc2.metric("γ",          f'{candidate["gamma"]:.4f}',    f'{candidate["gamma"]     - _prev_g:+.4f}')
-                            _pc3.metric("ε STATIC",   f'{candidate["epsilon"]:.4f}',  f'{candidate["epsilon"]   - _prev_e:+.4f}')
-                            _pc4.metric("ε Vanilla",  f'{candidate["v_epsilon"]:.4f}',f'{candidate["v_epsilon"] - _prev_ve:+.4f}')
+                            _pc1.metric("Learning Rate (α)", f'{candidate["lr"]:.4f}',        f'{candidate["lr"]        - _prev_lr:+.4f}')
+                            _pc2.metric("Discount Factor (γ)", f'{candidate["gamma"]:.4f}',  f'{candidate["gamma"]     - _prev_g:+.4f}')
+                            _pc3.metric("STATIC ε",          f'{candidate["epsilon"]:.4f}',  f'{candidate["epsilon"]   - _prev_e:+.4f}')
+                            _pc4.metric("Vanilla ε",         f'{candidate["v_epsilon"]:.4f}',f'{candidate["v_epsilon"] - _prev_ve:+.4f}')
                             if len(gap_history) > 1:
                                 _fig_sim = go.Figure()
                                 _fig_sim.add_trace(go.Scatter(
