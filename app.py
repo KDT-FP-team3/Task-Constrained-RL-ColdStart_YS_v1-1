@@ -235,7 +235,7 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
         line=dict(color='#e05050', width=2, dash='solid')
     ))
     fig.add_trace(go.Scatter(
-        x=df.index, y=s_trace, mode='lines', name='<b>RL with STATIC</b>',
+        x=df.index, y=s_trace, mode='lines', name='<b>STATIC RL</b>',
         line=dict(color='#4a90d9', width=2.5, dash='solid')
     ))
     fig.add_trace(go.Scatter(
@@ -480,6 +480,14 @@ for m_config in sorted_modules:
                             float(p_settings.get("epsilon", global_epsilon)),
                             key=f"eps_{m_name}_{stock_name}"
                         )
+                    with hc4:
+                        l_active_agents = st.multiselect(
+                            "Active Agents",
+                            options=["Vanilla RL", "STATIC RL"],
+                            default=["Vanilla RL", "STATIC RL"],
+                            key=f"active_{m_name}_{stock_name}",
+                            help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
+                        )
 
                 # ── Run Evaluation 버튼 + 진행률 (버튼 오른쪽에 표시) ──
                 run_btn_col, run_prog_col = st.columns([1, 4])
@@ -545,6 +553,15 @@ for m_config in sorted_modules:
                 if df_stock is None:
                     st.warning(f"데이터를 불러올 수 없습니다: {stock_name}")
                     continue
+
+                # ── Active Agents 적용: 비활성 에이전트 → 0% 수평선 ──
+                if "Vanilla RL" not in l_active_agents:
+                    v_trace = np.zeros(len(df_stock))
+                    v_log   = []
+                if "STATIC RL" not in l_active_agents:
+                    s_trace = np.zeros(len(df_stock))
+                    s_log   = []
+                    s_mdd   = 0.0
 
                 s_final      = float(s_trace[-1])
                 v_final      = float(v_trace[-1])
