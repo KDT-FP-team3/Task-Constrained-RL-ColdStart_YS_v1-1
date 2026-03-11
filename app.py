@@ -41,11 +41,11 @@ st.markdown("""
 /* ── 헤더 컨테이너 sticky 고정: > .element-container 직접 자식 확인으로 범위 제한 ── */
 [data-testid="stVerticalBlock"]:has(> .element-container .sticky-header-marker) {
     position: sticky !important;
-    top: 3.5rem !important;
+    top: 3.75rem !important;
     z-index: 999 !important;
     background-color: var(--background-color, #0e1117) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
-    padding-top: 0.3rem !important;
+    padding-top: 0.5rem !important;
     padding-bottom: 2px !important;
 }
 /* ── 헤더 제목 소형화 ── */
