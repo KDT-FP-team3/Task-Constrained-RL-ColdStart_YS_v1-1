@@ -23,8 +23,8 @@ st.set_page_config(page_title="Chainers Master Fund", layout="wide", initial_sid
 # ── 반응형 레이아웃 & 다크/라이트 모드 공통 CSS ──
 st.markdown("""
 <style>
-/* 불필요한 상단 여백 축소 */
-.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+/* 상단 여백 최소화 */
+.block-container { padding-top: 0 !important; padding-bottom: 1rem !important; }
 /* metric 카드 compact */
 [data-testid="stMetric"] { padding: 4px 8px !important; }
 /* expander 내부 여백 축소 */
@@ -33,6 +33,30 @@ st.markdown("""
 [data-testid="stPlotlyChart"] { margin-bottom: 0 !important; }
 /* 다크/라이트 모드 div 테두리 */
 .st-summary-card { border: 1px solid rgba(128,128,128,0.3); border-radius: 10px; padding: 12px 14px; }
+/* ── sticky-header-marker 숨김 ── */
+.element-container:has(.sticky-header-marker) {
+    display: none !important; height: 0 !important;
+    margin: 0 !important; padding: 0 !important;
+}
+/* ── 헤더 컨테이너 sticky 고정 ── */
+[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .sticky-header-marker) {
+    position: sticky !important;
+    top: var(--header-height, 2.875rem) !important;
+    z-index: 999 !important;
+    background-color: var(--background-color, #0e1117) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    padding-bottom: 2px !important;
+}
+/* ── 헤더 제목 소형화 ── */
+.sticky-main-title {
+    font-size: 1.4rem !important; font-weight: 700 !important;
+    margin: 0.15rem 0 !important; line-height: 1.3 !important;
+}
+.sticky-sub-title {
+    font-size: 1.1rem !important; font-weight: 700 !important;
+    margin: 0.05rem 0 !important;
+}
+.sticky-divider { margin: 0.15rem 0 !important; border-color: rgba(128,128,128,0.3) !important; }
 /* Run Evaluation / Simulation 버튼 공통: 텍스트 맞춤 너비, 균일 높이 */
 [data-testid="stButton"] button[kind="primary"] {
     min-height: 2.4rem !important;
@@ -41,27 +65,28 @@ st.markdown("""
     padding-right: 1.25rem !important;
     white-space: nowrap !important;
 }
-/* sim-btn-marker 컨테이너 완전 제거 — Simulation 버튼 수직 오프셋 방지 */
-[data-testid="stMarkdownContainer"]:has(.sim-btn-marker),
-.element-container:has(.sim-btn-marker) {
+/* btn-pair-marker 컨테이너 숨김 */
+.element-container:has(.btn-pair-marker) {
     display: none !important;
     height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
 }
-/* Simulation 버튼 보라색 — sim-btn-marker를 포함한 column 내 primary 버튼에 적용 */
-[data-testid="column"]:has(.sim-btn-marker) button[kind="primary"] {
+/* 두 버튼이 담긴 stVerticalBlock을 가로 배치로 전환 */
+[data-testid="stVerticalBlock"]:has(.btn-pair-marker) {
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+}
+/* Simulation 버튼 보라색 — 버튼 쌍 중 마지막 primary 버튼 */
+[data-testid="stVerticalBlock"]:has(.btn-pair-marker) > .element-container:last-child button[kind="primary"] {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="column"]:has(.sim-btn-marker) button[kind="primary"]:hover {
+[data-testid="stVerticalBlock"]:has(.btn-pair-marker) > .element-container:last-child button[kind="primary"]:hover {
     background-color: #6322A3 !important;
     border-color: #6322A3 !important;
-}
-/* 버튼 row 컬럼 수직 정렬 — 두 버튼 바닥선 일치 */
-[data-testid="column"]:has(button[kind="primary"]) {
-    display: flex !important;
-    align-items: flex-end !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -171,13 +196,14 @@ if apply_all_clicked:
     st.session_state.stock_use_fallback = "ALL"
     st.session_state.stocks_reverted    = set()
 
-st.title("Chainers Master Fund: Performance Monitoring Dashboard")
-st.markdown("---")
-st.markdown("## Master Fund Portfolio Report")
-
-master_progress_placeholder = st.empty()
-summary_placeholder = st.empty()
-st.markdown("---")
+with st.container():
+    st.markdown('<span class="sticky-header-marker"></span>', unsafe_allow_html=True)
+    st.markdown('<h1 class="sticky-main-title">Chainers Master Fund: Performance Monitoring Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
+    st.markdown('<h2 class="sticky-sub-title">Master Fund Portfolio Report</h2>', unsafe_allow_html=True)
+    master_progress_placeholder = st.empty()
+    summary_placeholder = st.empty()
+    st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
 
 # ==========================================
 # 2. 통합 대시보드 (Bold & Red Font & Alpha 비교)
@@ -595,15 +621,14 @@ for m_config in sorted_modules:
                         )
 
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
-                run_btn_col, sim_btn_col, run_prog_col = st.columns([1, 1, 3])
-                with run_btn_col:
+                btn_col, run_prog_col = st.columns([2, 3])
+                with btn_col:
+                    st.markdown('<span class="btn-pair-marker"></span>', unsafe_allow_html=True)
                     run_clicked = st.button(
                         "▶ Run Evaluation",
                         key=f"run_btn_{m_name}_{stock_name}",
                         type="primary",
                     )
-                with sim_btn_col:
-                    st.markdown('<span class="sim-btn-marker"></span>', unsafe_allow_html=True)
                     sim_clicked = st.button(
                         "Simulation",
                         key=f"sim_btn_{m_name}_{stock_name}",
@@ -1006,10 +1031,7 @@ border:1px solid rgba(128,128,128,0.3);'>
 
 if final_contributions:
     master_progress_placeholder.empty()
-    summary_placeholder.empty()
-
-    # [핵심 수정] with summary_placeholder.container() 제거:
-    # draw_top_dashboard 내부에서 이미 'with container:'를 사용하므로 중복 중첩 불필요
+    # summary_placeholder.empty() 제거 — draw_top_dashboard 내부 with container:가 원자적으로 교체함
     current_summary = draw_top_dashboard(final_contributions, summary_placeholder)
 
     # 게이지를 최종 값으로 한 번만 업데이트 (루프 안에서는 호출하지 않음)
