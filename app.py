@@ -227,7 +227,7 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
         labels=df_contrib['Member'], values=df_contrib['Final_Capital'], hole=0.6,
         marker=dict(colors=df_contrib['Unique_Color']), textinfo="percent",
         texttemplate="<b>%{percent}</b><br><b>%{value:.2f}$</b>",
-        textfont=dict(weight='bold'), sort=False
+        textfont=dict(size=15, weight='bold'), sort=False
     ))
     title_text = "<b>Master Fund Contribution (STATIC)</b>"
     if is_updating:
