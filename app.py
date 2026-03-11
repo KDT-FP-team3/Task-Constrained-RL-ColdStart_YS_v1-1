@@ -231,16 +231,16 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=df.index, y=v_trace, mode='lines+markers', name='<b>Vanilla RL</b>',
-        line=dict(color='#e05050', width=2), marker=dict(symbol='circle-open', size=6)
+        x=df.index, y=v_trace, mode='lines', name='<b>Vanilla RL</b>',
+        line=dict(color='#e05050', width=2, dash='solid')
     ))
     fig.add_trace(go.Scatter(
-        x=df.index, y=s_trace, mode='lines+markers', name='<b>RL with STATIC</b>',
-        line=dict(color='#4a90d9', width=2), marker=dict(symbol='square-open', size=6)
+        x=df.index, y=s_trace, mode='lines', name='<b>RL with STATIC</b>',
+        line=dict(color='#4a90d9', width=2.5, dash='solid')
     ))
     fig.add_trace(go.Scatter(
-        x=df.index, y=real_ret_trace, mode='lines+markers', name='<b>Market</b>',
-        line=dict(color='green', width=2, dash='dot'), marker=dict(symbol='diamond-open', size=6)
+        x=df.index, y=real_ret_trace, mode='lines', name='<b>Market</b>',
+        line=dict(color='#2ecc71', width=1.8, dash='dot')
     ))
     fig.update_layout(
         title=dict(text=f"<b>Cumulative Return Comparison ({stock_name})</b>", font=dict(size=title_size)),
@@ -268,10 +268,12 @@ def _make_trend_fig(df_h):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['Vanilla Final (%)'],
         mode='lines+markers', name='<b>Vanilla Return</b>',
-        line=dict(color='#e05050', width=2), marker=dict(size=8)))
+        line=dict(color='#e05050', width=2),
+        marker=dict(size=7, symbol='circle', color='#e05050')))
     fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['STATIC Final (%)'],
         mode='lines+markers', name='<b>STATIC Return (Ours)</b>',
-        line=dict(color='#4a90d9', width=2), marker=dict(size=8)))
+        line=dict(color='#4a90d9', width=2),
+        marker=dict(size=7, symbol='square', color='#4a90d9')))
 
     for y, dash, color, label, pos in [
         (v_mean, "solid",  "#e05050", "Vanilla Mean", "top right"),
