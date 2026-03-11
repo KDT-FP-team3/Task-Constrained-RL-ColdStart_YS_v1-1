@@ -69,6 +69,10 @@ st.markdown("""
     display: none !important; height: 0 !important;
     margin: 0 !important; padding: 0 !important;
 }
+/* ── 버튼 쌍 column gap 최소화: b2 직계 구조로 inner stHorizontalBlock만 타겟 ── */
+[data-testid="stHorizontalBlock"]:has(> [data-testid="column"] > [data-testid="stVerticalBlock"] > .element-container .sim-btn-marker) {
+    gap: 4px !important;
+}
 /* ── Simulation 버튼 보라색: 중첩 컬럼 안쪽(column 포함 안 된) sim-btn-marker 컬럼 ── */
 [data-testid="column"]:not(:has([data-testid="column"])):has(.sim-btn-marker) button[kind="primary"] {
     background-color: #7B2FBE !important;
@@ -128,7 +132,9 @@ def update_gauge(episodes_run, placeholder):
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty()
-# Gauge is rendered once at end of script to avoid DuplicateElementId
+gauge_status_placeholder = st.sidebar.empty()
+# 스크립트 재실행 시 즉시 이전 값으로 렌더링 → gauge 공백(사라짐) 방지
+update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
 
@@ -459,6 +465,7 @@ total_charts = sum(
 final_contributions = []
 total_episodes_run = 0
 rendered_count = 0
+_gauge_loading_set = False  # gauge Loading 표시 중복 방지 플래그
 
 # [수정] master_pbar를 None으로 초기화해 루프 내 undefined 변수 오류 방지
 master_pbar = None
@@ -613,12 +620,13 @@ for m_config in sorted_modules:
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
                 btn_col, run_prog_col = st.columns([2, 3])
                 with btn_col:
-                    b1, b2 = st.columns(2)
+                    b1, b2 = st.columns([3, 2])   # 텍스트 길이 비율: "▶ Run Evaluation":Simulation ≈ 3:2
                     with b1:
                         run_clicked = st.button(
                             "▶ Run Evaluation",
                             key=f"run_btn_{m_name}_{stock_name}",
                             type="primary",
+                            use_container_width=True,
                         )
                     with b2:
                         st.markdown('<span class="sim-btn-marker"></span>', unsafe_allow_html=True)
@@ -626,6 +634,7 @@ for m_config in sorted_modules:
                             "Simulation",
                             key=f"sim_btn_{m_name}_{stock_name}",
                             type="primary",
+                            use_container_width=True,
                         )
                 run_prog_slot = run_prog_col.empty()
 
@@ -648,6 +657,9 @@ for m_config in sorted_modules:
                     run_clicked = True
 
                 if run_clicked:
+                    if not _gauge_loading_set:
+                        gauge_status_placeholder.caption("⏳ Loading...")
+                        _gauge_loading_set = True
                     # 종목별 파라미터를 다시 적용: fallback 목록에서 이 종목 제거
                     st.session_state.stocks_reverted.add(hist_key)
                     trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
@@ -675,6 +687,9 @@ for m_config in sorted_modules:
 
                 # ── Simulation: STATIC > Vanilla 조건 파라미터 탐색 ──
                 if sim_clicked:
+                    if not _gauge_loading_set:
+                        gauge_status_placeholder.caption("⏳ Loading...")
+                        _gauge_loading_set = True
                     n_iters = max(20, int(l_auto_runs) * 8)
                     phase1  = int(n_iters * 0.4)
                     phase2  = int(n_iters * 0.8)
