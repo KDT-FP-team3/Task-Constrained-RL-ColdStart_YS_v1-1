@@ -551,10 +551,7 @@ for m_config in sorted_modules:
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
 
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
-                with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
-                    st.caption(f"💸 거래 수수료 — {fee_info['label']}")
-                    # ─ 행 1: System Parameters ─
-                    st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
+                with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
                     sc1, sc2, sc3, sc4, sc5 = st.columns(5)
                     with sc1:
                         l_epi = st.slider(
