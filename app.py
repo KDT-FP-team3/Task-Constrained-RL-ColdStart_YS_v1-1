@@ -80,7 +80,7 @@ def update_gauge(episodes_run, placeholder):
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty()
-update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
+# Gauge is rendered once at end of script to avoid DuplicateElementId
 
 st.sidebar.markdown("---")
 
@@ -343,21 +343,23 @@ def _make_trial_box_fig(df_h):
             ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'], range=[0.3, 2.9]
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=400, margin=dict(t=55, b=50, l=50, r=50)
+        height=510, margin=dict(t=55, b=50, l=50, r=50)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
     return fig
 
 
-def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed):
-    """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환"""
+def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None):
+    """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환.
+    v_epsilon: Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용."""
     df_full = fetch_stock_data(ticker, period="2y")
     if df_full.empty or len(df_full) < 10:
         return None, None, None, None, 0.0, [], []
     df = df_full.tail(episodes).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, epsilon, episodes=episodes, use_static=False, seed=seed)
-    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
+    _v_eps = v_epsilon if v_epsilon is not None else epsilon
+    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=episodes, use_static=False, seed=seed)
+    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=episodes, use_static=True,  seed=seed)
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
 
@@ -460,8 +462,13 @@ for m_config in sorted_modules:
                             help="Run Evaluation 클릭 시 자동 반복 횟수"
                         )
                     # ─ 행 2: RL Hyperparameters ─
-                    st.markdown("<small><b>RL Hyperparameters (Logic: STATIC)</b></small>", unsafe_allow_html=True)
-                    hc1, hc2, hc3, hc4 = st.columns(4)
+                    st.markdown(
+                        "<small><b>RL Hyperparameters &nbsp;"
+                        "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
+                        "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
+                        unsafe_allow_html=True
+                    )
+                    hc1, hc2, hc3, hc4, hc5 = st.columns(5)
                     with hc1:
                         l_lr = st.slider(
                             "Learning Rate (α)", 0.001, 0.1,
@@ -476,11 +483,19 @@ for m_config in sorted_modules:
                         )
                     with hc3:
                         l_epsilon = st.slider(
-                            "Exploration (ε)", 0.01, 0.5,
+                            "STATIC ε", 0.01, 0.5,
                             float(p_settings.get("epsilon", global_epsilon)),
-                            key=f"eps_{m_name}_{stock_name}"
+                            key=f"eps_{m_name}_{stock_name}",
+                            help="STATIC RL 탐험율"
                         )
                     with hc4:
+                        l_v_epsilon = st.slider(
+                            "Vanilla ε", 0.01, 0.5,
+                            float(p_settings.get("v_epsilon", global_epsilon)),
+                            key=f"v_eps_{m_name}_{stock_name}",
+                            help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)"
+                        )
+                    with hc5:
                         l_active_agents = st.multiselect(
                             "Active Agents",
                             options=["Vanilla RL", "STATIC RL"],
@@ -511,7 +526,8 @@ for m_config in sorted_modules:
                             text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
                         )
                         _, vt, st_t, mkt, _, _, _ = get_rl_data(
-                            ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed
+                            ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
+                            v_epsilon=l_v_epsilon
                         )
                         if vt is not None:
                             trials.append({
@@ -533,9 +549,10 @@ for m_config in sorted_modules:
                     fp = st.session_state.fallback_params
                     eff_lr, eff_gamma, eff_eps = fp["lr"],   fp["gamma"],   fp["epsilon"]
                     eff_epi, eff_seed          = fp["episodes"], fp["seed"]
+                    eff_v_eps = fp.get("v_epsilon", fp["epsilon"])
                     st.info(
                         f"Fallback 파라미터 적용 중 "
-                        f"(LR={eff_lr:.3f} γ={eff_gamma:.2f} ε={eff_eps:.2f} "
+                        f"(LR={eff_lr:.3f} γ={eff_gamma:.2f} ε(S)={eff_eps:.2f} ε(V)={eff_v_eps:.2f} "
                         f"Days={eff_epi} Seed={eff_seed})",
                         icon="ℹ️"
                     )
@@ -543,11 +560,13 @@ for m_config in sorted_modules:
                     eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed = (
                         l_lr, l_gamma, l_epsilon, l_epi, l_seed
                     )
+                    eff_v_eps = l_v_epsilon
 
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
-                        ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed
+                        ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed,
+                        v_epsilon=eff_v_eps
                     )
 
                 if df_stock is None:
@@ -584,11 +603,31 @@ for m_config in sorted_modules:
                     fig_cum = _make_cumulative_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
                     st.plotly_chart(fig_cum, use_container_width=True, key=f"chart_cum_{m_name}_{stock_name}")
 
-                    # 3 지표 카드 (구버전 metric 스타일)
+                    # 3 지표 카드 – 색상 커스터마이징 (HTML)
+                    st.markdown(
+                        "<p style='margin:6px 0 2px 0;font-size:12px;font-weight:700;"
+                        "color:rgba(180,180,180,0.8);letter-spacing:0.05em;'>이곳에 최종 누적 수익률</p>",
+                        unsafe_allow_html=True
+                    )
                     mc1, mc2, mc3 = st.columns(3)
-                    mc1.metric(label="Unconstrained Return", value=f"{v_final:.2f}%", delta=f"{v_last_day:.2f}%")
-                    mc2.metric(label=f"STATIC Return", value=f"{s_final:.2f}%", delta=f"{s_last_day:.2f}%")
-                    mc3.metric(label="Market (Buy&Hold)", value=f"{market_final:.2f}%", delta=f"{m_last_day:.2f}%")
+                    def _metric_html(label, value_pct, delta_pct, color):
+                        delta_sign = "▲" if delta_pct >= 0 else "▼"
+                        delta_color = "#2ecc71" if delta_pct >= 0 else "#e05050"
+                        return (
+                            f"<div style='padding:8px 4px 4px 4px;'>"
+                            f"<div style='font-size:12px;font-weight:700;color:{color};'>{label}</div>"
+                            f"<div style='font-size:28px;font-weight:900;color:{color};line-height:1.2;'>"
+                            f"{value_pct:.2f}%</div>"
+                            f"<div style='font-size:13px;color:{delta_color};margin-top:2px;'>"
+                            f"{delta_sign} {abs(delta_pct):.2f}%</div>"
+                            f"</div>"
+                        )
+                    with mc1:
+                        st.markdown(_metric_html("Vanilla RL", v_final, v_last_day, "#e05050"), unsafe_allow_html=True)
+                    with mc2:
+                        st.markdown(_metric_html("STATIC RL", s_final, s_last_day, "#4a90d9"), unsafe_allow_html=True)
+                    with mc3:
+                        st.markdown(_metric_html("Market (Buy&Hold)", market_final, m_last_day, "#2ecc71"), unsafe_allow_html=True)
 
                     # Agent Decision Analysis – Action Frequency(좌) + 테이블(우)
                     if v_log and s_log:
@@ -616,6 +655,11 @@ for m_config in sorted_modules:
                         with bar_col:
                             action_counts = df_log["STATIC Action"].value_counts().reset_index()
                             action_counts.columns = ["Action", "Count"]
+                            for _act in ["BUY", "CASH"]:
+                                if _act not in action_counts["Action"].values:
+                                    action_counts = pd.concat([action_counts,
+                                        pd.DataFrame({"Action": [_act], "Count": [0]})], ignore_index=True)
+                            action_counts = action_counts.sort_values("Action").reset_index(drop=True)
                             _bar_colors = {"BUY": "#4a90d9", "CASH": "#e05050"}
                             fig_bar = go.Figure()
                             for _, row in action_counts.iterrows():
@@ -684,13 +728,20 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 <div style='background:var(--secondary-background-color);padding:12px 14px;border-radius:10px;
 border:1px solid rgba(128,128,128,0.3);'>
 <h4 style='margin-top:0;margin-bottom:8px;font-weight:900;font-size:14px;'>통계 요약 (Expected &amp; Risk)</h4>
-<ul style='font-size:12px;margin-bottom:4px;padding-left:14px;line-height:1.7;'>
-<li><b style='color:#e05050;'>Vanilla 평균:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
-<li><b style='color:#e05050;'>Vanilla 범위:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
-<hr style='margin:5px 0;border-color:rgba(128,128,128,0.3);'>
-<li><b style='color:#4a90d9;'>STATIC 평균:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
-<li><b style='color:#4a90d9;'>STATIC 범위:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
-</ul></div>""", unsafe_allow_html=True)
+<div style='display:flex;gap:12px;'>
+  <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:10px;'>
+    <ul style='font-size:12px;margin:0;padding-left:12px;line-height:1.9;list-style:none;'>
+    <li><b style='color:#e05050;'>Vanilla 평균:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
+    <li><b style='color:#e05050;'>Vanilla 범위:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
+    </ul>
+  </div>
+  <div style='flex:1;padding-left:2px;'>
+    <ul style='font-size:12px;margin:0;padding-left:12px;line-height:1.9;list-style:none;'>
+    <li><b style='color:#4a90d9;'>STATIC 평균:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
+    <li><b style='color:#4a90d9;'>STATIC 범위:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
+    </ul>
+  </div>
+</div></div>""", unsafe_allow_html=True)
 
                             def _color_neg(val):
                                 if isinstance(val, (int, float)) and val < 0:
@@ -737,8 +788,12 @@ if final_contributions:
     current_summary = draw_top_dashboard(final_contributions, summary_placeholder)
 
     # 게이지를 최종 값으로 한 번만 업데이트 (루프 안에서는 호출하지 않음)
-    update_gauge(total_episodes_run, gauge_placeholder)
-
     st.session_state.prev_final_contributions = final_contributions
     st.session_state.prev_summary = current_summary
     st.session_state.prev_episodes_run = total_episodes_run
+
+# Render gauge exactly once per script run
+update_gauge(
+    total_episodes_run if final_contributions else st.session_state.prev_episodes_run,
+    gauge_placeholder
+)
