@@ -33,6 +33,14 @@ st.markdown("""
 [data-testid="stPlotlyChart"] { margin-bottom: 0 !important; }
 /* 다크/라이트 모드 div 테두리 */
 .st-summary-card { border: 1px solid rgba(128,128,128,0.3); border-radius: 10px; padding: 12px 14px; }
+/* Run Evaluation / Simulation 버튼 공통: 텍스트 맞춤 너비, 균일 높이 */
+[data-testid="stButton"] button[kind="primary"] {
+    min-height: 2.4rem !important;
+    height: 2.4rem !important;
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+    white-space: nowrap !important;
+}
 /* Simulation 버튼 보라색 — sim-btn-marker를 포함한 column 내 primary 버튼에 적용 */
 [data-testid="column"]:has(.sim-btn-marker) button[kind="primary"] {
     background-color: #7B2FBE !important;
@@ -113,22 +121,39 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
     global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=1,
                                         step=1,                key="fb_auto")
-    st.markdown("<small><b>RL Hyperparameters</b></small>", unsafe_allow_html=True)
+    global_active_agents = st.multiselect(
+        "Active Agents",
+        options=["Vanilla RL", "STATIC RL"],
+        default=["Vanilla RL", "STATIC RL"],
+        key="fb_active_agents",
+        help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
+    )
+    st.markdown(
+        "<small><b>RL Hyperparameters &nbsp;"
+        "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
+        "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
+        unsafe_allow_html=True
+    )
     global_lr         = st.slider("Learning Rate (α)",  0.001, 0.1,  0.01,
                                   step=0.001, format="%.3f",   key="fb_lr")
     global_gamma      = st.slider("Discount Factor (γ)",0.1,   0.99, 0.98,       key="fb_gamma")
-    global_epsilon    = st.slider("Exploration (ε)",    0.01,  0.5,  0.10,       key="fb_eps")
+    global_epsilon    = st.slider("STATIC ε",           0.01,  0.5,  0.10,       key="fb_eps",
+                                  help="STATIC RL 탐험율")
+    global_v_epsilon  = st.slider("Vanilla ε",          0.01,  0.5,  0.10,       key="fb_v_eps",
+                                  help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)")
 
 # 버튼 클릭 시 현재 슬라이더 값 스냅샷 저장 (슬라이더가 위에서 이미 렌더됨)
 if apply_all_clicked:
     st.session_state.fallback_params = {
-        "episodes":   global_episodes,
-        "frame_speed": global_frame,
-        "seed":       int(global_seed),
-        "auto_runs":  int(global_auto_runs),
-        "lr":         global_lr,
-        "gamma":      global_gamma,
-        "epsilon":    global_epsilon,
+        "episodes":      global_episodes,
+        "frame_speed":   global_frame,
+        "seed":          int(global_seed),
+        "auto_runs":     int(global_auto_runs),
+        "active_agents": global_active_agents,
+        "lr":            global_lr,
+        "gamma":         global_gamma,
+        "epsilon":       global_epsilon,
+        "v_epsilon":     global_v_epsilon,
     }
     st.session_state.stock_use_fallback = "ALL"
     st.session_state.stocks_reverted    = set()
@@ -424,8 +449,35 @@ for m_config in sorted_modules:
             default_p.get("gamma", global_gamma),
             default_p.get("epsilon", global_epsilon)
         )
+        _all_personas = [
+            ("PSR", "#607d8b", "보수형"),
+            ("PSV", "#ff9800", "탐색형"),
+            ("PLR", "#3f51b5", "신중한 장기형"),
+            ("PLV", "#e91e63", "유연한 장기형"),
+            ("ASR", "#f44336", "단기 민첩형"),
+            ("ASV", "#ffc107", "단기 모험형"),
+            ("ALR", "#4caf50", "안정적 성장형"),
+            ("ALV", "#2196f3", "적응형 모험가"),
+        ]
+        _badges = ""
+        for _code, _color, _desc in _all_personas:
+            if _code == ctpt_code:
+                _badges += (
+                    f"<span style='background:{_color}; color:#fff; border-radius:5px; "
+                    f"padding:3px 11px; font-size:0.85em; font-weight:bold; "
+                    f"box-shadow:0 0 8px {_color}99; margin:2px;'>"
+                    f"{_code}&nbsp;{_desc}</span>"
+                )
+            else:
+                _badges += (
+                    f"<span style='background:{_color}18; color:{_color}; "
+                    f"border:1px solid {_color}55; border-radius:5px; "
+                    f"padding:3px 8px; font-size:0.78em; opacity:0.55; margin:2px;'>"
+                    f"{_code}</span>"
+                )
         st.markdown(
-            f"**Persona:** <span style='color:{ctpt_color}; font-weight:bold;'>{ctpt_code}</span> ({ctpt_desc})",
+            f"<div style='display:flex; align-items:center; gap:3px; flex-wrap:wrap; margin-bottom:2px;'>"
+            f"<small style='margin-right:4px;'><b>Persona</b></small>{_badges}</div>",
             unsafe_allow_html=True
         )
 
@@ -536,7 +588,6 @@ for m_config in sorted_modules:
                         "▶ Run Evaluation",
                         key=f"run_btn_{m_name}_{stock_name}",
                         type="primary",
-                        use_container_width=True,
                     )
                 with sim_btn_col:
                     st.markdown('<span class="sim-btn-marker"></span>', unsafe_allow_html=True)
@@ -544,7 +595,6 @@ for m_config in sorted_modules:
                         "Simulation",
                         key=f"sim_btn_{m_name}_{stock_name}",
                         type="primary",
-                        use_container_width=True,
                     )
                 run_prog_slot = run_prog_col.empty()
 
@@ -708,18 +758,21 @@ for m_config in sorted_modules:
                     fp = st.session_state.fallback_params
                     eff_lr, eff_gamma, eff_eps = fp["lr"],   fp["gamma"],   fp["epsilon"]
                     eff_epi, eff_seed          = fp["episodes"], fp["seed"]
-                    eff_v_eps = fp.get("v_epsilon", fp["epsilon"])
+                    eff_v_eps          = fp.get("v_epsilon", fp["epsilon"])
+                    eff_active_agents  = fp.get("active_agents", ["Vanilla RL", "STATIC RL"])
                     st.info(
                         f"Fallback 파라미터 적용 중 "
                         f"(LR={eff_lr:.3f} γ={eff_gamma:.2f} ε(S)={eff_eps:.2f} ε(V)={eff_v_eps:.2f} "
-                        f"Days={eff_epi} Seed={eff_seed})",
+                        f"Days={eff_epi} Seed={eff_seed} "
+                        f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'})",
                         icon="ℹ️"
                     )
                 else:
                     eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed = (
                         l_lr, l_gamma, l_epsilon, l_epi, l_seed
                     )
-                    eff_v_eps = l_v_epsilon
+                    eff_v_eps         = l_v_epsilon
+                    eff_active_agents = l_active_agents
 
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
                 with st.spinner(f"Processing {stock_name}..."):
@@ -733,10 +786,10 @@ for m_config in sorted_modules:
                     continue
 
                 # ── Active Agents 적용: 비활성 에이전트 → 0% 수평선 ──
-                if "Vanilla RL" not in l_active_agents:
+                if "Vanilla RL" not in eff_active_agents:
                     v_trace = np.zeros(len(df_stock))
                     v_log   = []
-                if "STATIC RL" not in l_active_agents:
+                if "STATIC RL" not in eff_active_agents:
                     s_trace = np.zeros(len(df_stock))
                     s_log   = []
                     s_mdd   = 0.0
