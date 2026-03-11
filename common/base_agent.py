@@ -114,3 +114,82 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
         state = make_state(returns[t], prices[t], emas[t])
 
     return cumulative_return
+
+
+def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026):
+    """
+    run_rl_simulation과 동일한 훈련 로직으로 평가 단계에서
+    누적수익 배열 + 일별 행동 로그를 함께 반환합니다.
+    Returns:
+        cumulative_return: np.ndarray (n_days,)
+        action_log: list of dicts {Day, Action, Daily_Return(%)}
+    """
+    np.random.seed(seed)
+    n_days = len(df)
+    returns = df['Daily_Return'].values
+    prices = df['Close'].values
+    emas = df['EMA_10'].values
+
+    if use_static:
+        n_states = 4
+        q_table = np.zeros((n_states, 2))
+        q_table[2, 1] = 0.05
+        q_table[3, 1] = 0.05
+        train_episodes = max(episodes * 2, 200)
+    else:
+        n_states = 2
+        q_table = np.zeros((n_states, 2))
+        q_table[1, 1] = 0.01
+        train_episodes = episodes
+
+    def make_state(ret, price, ema):
+        is_bull = 1 if ret > 0 else 0
+        if use_static:
+            is_above_ema = 1 if price >= ema else 0
+            return is_bull + 2 * is_above_ema
+        return is_bull
+
+    for _ in range(train_episodes):
+        state = make_state(returns[0], prices[0], emas[0])
+        for t in range(1, n_days):
+            can_buy = (state >= 2) if use_static else True
+            if np.random.rand() < epsilon:
+                action = np.random.choice([0, 1]) if can_buy else 0
+            else:
+                q_values = q_table[state].copy()
+                if not can_buy:
+                    q_values[1] = -np.inf
+                action = np.argmax(q_values)
+            reward = returns[t] if action == 1 else 0
+            next_state = make_state(returns[t], prices[t], emas[t])
+            next_can_buy = (next_state >= 2) if use_static else True
+            next_q_values = q_table[next_state].copy()
+            if not next_can_buy:
+                next_q_values[1] = -np.inf
+            best_next_action = np.argmax(next_q_values)
+            td_target = reward + gamma * q_table[next_state, best_next_action]
+            q_table[state, action] += lr * (td_target - q_table[state, action])
+            state = next_state
+
+    cumulative_return = np.zeros(n_days)
+    current_capital = 1.0
+    state = make_state(returns[0], prices[0], emas[0])
+    action_log = []
+
+    for t in range(1, n_days):
+        can_buy = (state >= 2) if use_static else True
+        q_values = q_table[state].copy()
+        if not can_buy:
+            q_values[1] = -np.inf
+        action = np.argmax(q_values)
+        reward = returns[t] if action == 1 else 0
+        current_capital *= (1 + reward)
+        cumulative_return[t] = (current_capital - 1) * 100
+        action_log.append({
+            "Day": t,
+            "Action": "BUY" if action == 1 else "CASH",
+            "Daily_Return(%)": round(reward * 100, 4)
+        })
+        state = make_state(returns[t], prices[t], emas[t])
+
+    return cumulative_return, action_log

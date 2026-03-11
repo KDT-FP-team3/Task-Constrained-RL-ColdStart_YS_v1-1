@@ -9,7 +9,7 @@ import plotly.express as px
 
 from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name
 from common.data_loader import fetch_stock_data
-from common.base_agent import run_rl_simulation
+from common.base_agent import run_rl_simulation_with_log
 from common.evaluator import calculate_ctpt_and_color, calculate_mdd
 
 # 루트 경로 설정
@@ -26,6 +26,8 @@ if 'prev_final_contributions' not in st.session_state:
     st.session_state.prev_final_contributions = []
 if 'prev_episodes_run' not in st.session_state:
     st.session_state.prev_episodes_run = 0
+if 'stock_trial_history' not in st.session_state:
+    st.session_state.stock_trial_history = {}  # key: f"{m_name}_{stock_name}" → list of trial dicts
 
 # ==========================================
 # 1. 실시간 시스템 상태 계기판
@@ -167,12 +169,12 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
 # ==========================================
 # 3. 시뮬레이션 및 차트 생성
 # ==========================================
-def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace, full_width=False):
+def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
     """구버전 'S&P 500 Performance' fig_main 스타일: Cumulative Return Comparison"""
-    height = 550 if full_width else 420
-    title_size = 28 if full_width else 22
-    axis_size = 18 if full_width else 16
-    legend_size = 16 if full_width else 14
+    height = 460
+    title_size = 22
+    axis_size = 16
+    legend_size = 14
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -200,84 +202,109 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace, full_
     return fig
 
 
-def _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
-    """구버전 'Trial History: Statistical Analysis' fig_box 스타일: Daily Return Distribution"""
-    v_arr = np.array(v_trace)
-    s_arr = np.array(s_trace)
-    real_arr = np.array(real_ret_trace)
 
-    if len(v_arr) < 2:
-        return go.Figure()
-
-    v_daily = np.diff(v_arr)
-    s_daily = np.diff(s_arr)
-    market_daily = np.diff(real_arr)
-
-    v_mean, s_mean = float(np.mean(v_daily)), float(np.mean(s_daily))
-    med_v, med_s = float(np.median(v_daily)), float(np.median(s_daily))
-    avg_market = float(np.mean(market_daily))
+def _make_trend_fig(df_h):
+    """구버전 fig_trend: Trial-by-Trial Return Progression & Stability"""
+    v_mean = df_h['Vanilla Final (%)'].mean()
+    v_max  = df_h['Vanilla Final (%)'].max()
+    v_min  = df_h['Vanilla Final (%)'].min()
+    s_mean = df_h['STATIC Final (%)'].mean()
+    s_max  = df_h['STATIC Final (%)'].max()
+    s_min  = df_h['STATIC Final (%)'].min()
 
     fig = go.Figure()
-    fig.add_trace(go.Box(
-        y=v_daily, x0=1.0, name='<b>Vanilla RL</b>',
-        line=dict(color='#e05050', width=3), fillcolor='rgba(224,80,80,0.05)',
-        boxmean=True, width=0.5
-    ))
-    fig.add_trace(go.Box(
-        y=s_daily, x0=2.25, name='<b>STATIC RL (Ours)</b>',
-        line=dict(color='#4a90d9', width=3), fillcolor='rgba(74,144,217,0.05)',
-        boxmean=True, width=0.5
-    ))
+    fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['Vanilla Final (%)'],
+        mode='lines+markers', name='<b>Vanilla Return</b>',
+        line=dict(color='#e05050', width=2), marker=dict(size=8)))
+    fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['STATIC Final (%)'],
+        mode='lines+markers', name='<b>STATIC Return (Ours)</b>',
+        line=dict(color='#4a90d9', width=2), marker=dict(size=8)))
 
-    fig.add_annotation(x=0.75, y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
-                       showarrow=False, xshift=-4, yshift=8, xanchor='right',
-                       font=dict(color='#e05050', size=12, family="Arial Black"))
-    fig.add_annotation(x=0.75, y=med_v, text=f"<b>Median: {med_v:.2f}%</b>",
-                       showarrow=False, xshift=-4, yshift=-8, xanchor='right',
-                       font=dict(color='#e05050', size=12, family="Arial Black"))
-    fig.add_annotation(x=2.5, y=med_s, text=f"<b>Median: {med_s:.2f}%</b>",
-                       showarrow=False, xshift=4, yshift=8, xanchor='left',
-                       font=dict(color='#4a90d9', size=12, family="Arial Black"))
-    fig.add_annotation(x=2.5, y=s_mean, text=f"<b>Mean: {s_mean:.2f}%</b>",
-                       showarrow=False, xshift=4, yshift=-8, xanchor='left',
-                       font=dict(color='#4a90d9', size=12, family="Arial Black"))
-
-    fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
-    fig.add_annotation(
-        x=1.625, xref="x", y=avg_market,
-        text=f"<b>Market Daily Avg<br>{avg_market:.2f}%</b>",
-        showarrow=False, yshift=18, xanchor='center', align='center',
-        font=dict(color="green", size=12, family="Arial Black"), bgcolor="rgba(0,0,0,0)"
-    )
+    for y, dash, color, label, pos in [
+        (v_mean, "solid",  "#e05050", "Vanilla Mean", "top right"),
+        (v_max,  "dot",    "#e05050", "Vanilla Max",  "top right"),
+        (v_min,  "dot",    "#e05050", "Vanilla Min",  "bottom right"),
+        (s_mean, "solid",  "#4a90d9", "STATIC Mean",  "top left"),
+        (s_max,  "dot",    "#4a90d9", "STATIC Max",   "top left"),
+        (s_min,  "dot",    "#4a90d9", "STATIC Min",   "bottom left"),
+    ]:
+        fig.add_hline(y=y, line_dash=dash, line_color=color, opacity=0.4,
+                      annotation_text=label, annotation_position=pos)
 
     fig.update_layout(
-        title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>",
+        title=dict(text="<b>Trial-by-Trial Return Progression & Stability</b>",
+                   font=dict(size=20, family="Arial Black")),
+        xaxis=dict(title="<b>Trial Number</b>", tickmode='linear', dtick=1),
+        yaxis=dict(title="<b>Final Return (%)</b>"),
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        height=380, margin=dict(t=60, b=40, l=40, r=100)
+    )
+    fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
+    return fig
+
+
+def _make_trial_box_fig(df_h):
+    """구버전 fig_box: Return Distribution across Trials"""
+    v_mean     = df_h['Vanilla Final (%)'].mean()
+    s_mean     = df_h['STATIC Final (%)'].mean()
+    med_v      = df_h['Vanilla Final (%)'].median()
+    med_s      = df_h['STATIC Final (%)'].median()
+    avg_market = df_h['Market Final (%)'].mean()
+
+    fig = go.Figure()
+    fig.add_trace(go.Box(y=df_h['Vanilla Final (%)'], x0=1.0,
+        name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=3),
+        fillcolor='rgba(224,80,80,0.05)', boxmean=True, width=0.5))
+    fig.add_trace(go.Box(y=df_h['STATIC Final (%)'], x0=2.25,
+        name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=3),
+        fillcolor='rgba(74,144,217,0.05)', boxmean=True, width=0.5))
+
+    fig.add_annotation(x=0.75, y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
+        showarrow=False, xshift=-4, yshift=8, xanchor='right',
+        font=dict(color='#e05050', size=13, family="Arial Black"))
+    fig.add_annotation(x=0.75, y=med_v, text=f"<b>Median: {med_v:.2f}%</b>",
+        showarrow=False, xshift=-4, yshift=-8, xanchor='right',
+        font=dict(color='#e05050', size=13, family="Arial Black"))
+    fig.add_annotation(x=2.5, y=med_s, text=f"<b>Median: {med_s:.2f}%</b>",
+        showarrow=False, xshift=4, yshift=8, xanchor='left',
+        font=dict(color='#4a90d9', size=13, family="Arial Black"))
+    fig.add_annotation(x=2.5, y=s_mean, text=f"<b>Mean: {s_mean:.2f}%</b>",
+        showarrow=False, xshift=4, yshift=-8, xanchor='left',
+        font=dict(color='#4a90d9', size=13, family="Arial Black"))
+
+    fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
+    fig.add_annotation(x=1.625, xref="x", y=avg_market,
+        text=f"<b>Market (Buy&Hold)<br>{avg_market:.2f}%</b>",
+        showarrow=False, yshift=18, xanchor='center', align='center',
+        font=dict(color="green", size=13, family="Arial Black"), bgcolor="rgba(0,0,0,0)")
+
+    fig.update_layout(
+        title=dict(text="<b>Return Distribution across Trials</b>",
                    font=dict(size=22, family="Arial Black")),
-        yaxis=dict(title=dict(text="<b>Daily Return (%)</b>", font=dict(size=16, family="Arial Black"))),
+        yaxis=dict(title=dict(text="<b>Final Return (%)</b>", font=dict(size=18, family="Arial Black"))),
         xaxis=dict(
-            title=dict(text="<b>Performance Metrics</b>", font=dict(size=16, family="Arial Black")),
+            title=dict(text="<b>Performance Metrics</b>", font=dict(size=18, family="Arial Black")),
             tickmode='array', tickvals=[1.0, 2.25],
-            ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'],
-            range=[0, 3.0]
+            ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'], range=[0, 3.0]
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=420, margin=dict(t=80, b=80, l=60, r=60)
+        height=500, margin=dict(t=80, b=80, l=60, r=60)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
     return fig
 
 
 def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed):
-    """시뮬레이션을 1회만 실행하여 원시 데이터를 반환"""
+    """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환"""
     df_full = fetch_stock_data(ticker, period="2y")
     if df_full.empty or len(df_full) < 10:
-        return None, None, None, None, 0.0
+        return None, None, None, None, 0.0, [], []
     df = df_full.tail(episodes).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-    v_trace = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=False, seed=seed)
-    s_trace = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
+    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, epsilon, episodes=episodes, use_static=False, seed=seed)
+    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
     s_mdd = calculate_mdd(s_trace)
-    return df, v_trace, s_trace, real_ret_trace, s_mdd
+    return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
 
 # --- 이전 결과 표시 (로딩 중 사라짐 방지) ---
 if st.session_state.prev_final_contributions:
@@ -345,34 +372,39 @@ for m_config in sorted_modules:
                 ticker = get_ticker_by_name(stock_name)
                 stock_idx = name_to_index.get(stock_name)
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
+                hist_key = f"{m_name}_{stock_name}"
 
-                # ── 파라미터: 접힌 expander에 수평 5열 배치 ──
+                # ── 파라미터: 접힌 expander에 수평 배치 ──
                 with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
-                    pc1, pc2, pc3, pc4, pc5 = st.columns(5)
+                    pc1, pc2, pc3, pc4, pc5, pc6 = st.columns(6)
                     with pc1:
                         l_epi = st.slider("Trading Days", 10, 500,
                                           int(p_settings.get("episodes", global_episodes)),
                                           key=f"epi_{m_name}_{stock_name}")
                     with pc2:
-                        l_seed = st.number_input("Seed",
+                        l_seed = st.number_input("Base Seed",
                                                  value=int(p_settings.get("seed", global_seed)),
                                                  step=1, key=f"seed_{m_name}_{stock_name}")
                     with pc3:
-                        l_lr = st.slider("LR", 0.001, 0.1,
+                        l_lr = st.slider("LR (α)", 0.001, 0.1,
                                          float(p_settings.get("lr", global_lr)),
                                          step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}")
                     with pc4:
-                        l_gamma = st.slider("Gamma", 0.1, 0.99,
+                        l_gamma = st.slider("Gamma (γ)", 0.1, 0.99,
                                             float(p_settings.get("gamma", global_gamma)),
                                             key=f"gamma_{m_name}_{stock_name}")
                     with pc5:
-                        l_epsilon = st.slider("Epsilon", 0.01, 0.5,
+                        l_epsilon = st.slider("Epsilon (ε)", 0.01, 0.5,
                                               float(p_settings.get("epsilon", global_epsilon)),
                                               key=f"eps_{m_name}_{stock_name}")
+                    with pc6:
+                        l_auto_runs = st.number_input("Auto Run Count", min_value=1, value=1, step=1,
+                                                      key=f"autoruns_{m_name}_{stock_name}",
+                                                      help="Run Evaluation 클릭 시 자동 반복 횟수")
 
-                # ── 시뮬레이션 1회 실행 ──
-                with st.spinner(f"📡 Processing {stock_name}..."):
-                    df_stock, v_trace, s_trace, real_ret_trace, s_mdd = get_rl_data(
+                # ── 시뮬레이션 실행 (현재 파라미터 기준) ──
+                with st.spinner(f"Processing {stock_name}..."):
+                    df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
                         ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed
                     )
 
@@ -380,46 +412,150 @@ for m_config in sorted_modules:
                     st.warning(f"데이터를 불러올 수 없습니다: {stock_name}")
                     continue
 
-                s_final = float(s_trace[-1])
-                v_final = float(v_trace[-1])
+                s_final      = float(s_trace[-1])
+                v_final      = float(v_trace[-1])
                 market_final = float(real_ret_trace.iloc[-1])
-                alpha_s = s_final - market_final
-                alpha_v = v_final - market_final
+                # 마지막 스텝 일별 수익 (delta용)
+                v_last_day = float(v_trace[-1] - v_trace[-2]) if len(v_trace) > 1 else 0.0
+                s_last_day = float(s_trace[-1] - s_trace[-2]) if len(s_trace) > 1 else 0.0
+                m_last_day = float(real_ret_trace.iloc[-1] - real_ret_trace.iloc[-2]) if len(real_ret_trace) > 1 else 0.0
 
-                # ── 차트 좌우 배치 ──
-                chart_left, chart_right = st.columns(2)
+                # ── 메인 2컬럼 레이아웃 ──
+                col_left, col_right = st.columns([1.35, 1])
 
-                with chart_left:
+                # ══════════════════════════════════════════
+                # 왼쪽: S&P 500 Performance 스타일
+                # ══════════════════════════════════════════
+                with col_left:
+                    st.markdown(f"#### {stock_name} Performance")
+
+                    # 누적 수익 차트 (구버전 fig_main 스타일)
                     fig_cum = _make_cumulative_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
                     st.plotly_chart(fig_cum, use_container_width=True, key=f"chart_cum_{m_name}_{stock_name}")
 
-                with chart_right:
-                    # Alpha 배너 (구버전 st.success 스타일)
-                    st.success(
-                        f"시장 대비 **Alpha 기대치**: STATIC **{alpha_s:+.2f}%p** | Vanilla **{alpha_v:+.2f}%p**"
-                    )
-                    # 박스 플롯 (구버전 fig_box 스타일)
-                    fig_stats = _make_stats_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
-                    st.plotly_chart(fig_stats, use_container_width=True, key=f"chart_stats_{m_name}_{stock_name}")
+                    # 3 지표 카드 (구버전 metric 스타일)
+                    mc1, mc2, mc3 = st.columns(3)
+                    mc1.metric(label="Unconstrained Return", value=f"{v_final:.2f}%", delta=f"{v_last_day:.2f}%")
+                    mc2.metric(label=f"STATIC Return", value=f"{s_final:.2f}%", delta=f"{s_last_day:.2f}%")
+                    mc3.metric(label="Market (Buy&Hold)", value=f"{market_final:.2f}%", delta=f"{m_last_day:.2f}%")
 
-                    # 통계 요약 카드 (구버전 col_tbl_h 스타일)
-                    v_daily = np.diff(np.array(v_trace))
-                    s_daily = np.diff(np.array(s_trace))
-                    v_std = float(np.std(v_daily)) if len(v_daily) > 1 else 0.0
-                    s_std = float(np.std(s_daily)) if len(s_daily) > 1 else 0.0
-                    st.markdown(f"""
-<div style='background-color:var(--secondary-background-color);padding:14px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);'>
+                    # Agent Decision Analysis
+                    st.markdown("---")
+                    st.markdown("#### Agent Decision Analysis")
+
+                    if v_log and s_log:
+                        df_v = pd.DataFrame(v_log).rename(columns={"Action": "Vanilla Action", "Daily_Return(%)": "Vanilla Return(%)"})
+                        df_s = pd.DataFrame(s_log).rename(columns={"Action": "STATIC Action",  "Daily_Return(%)": "STATIC Return(%)"})
+                        df_log = df_v.merge(df_s, on="Day").set_index("Day")
+
+                        def _style_log(val):
+                            if isinstance(val, (int, float)):
+                                return 'color: #e05050; font-weight: bold; font-size: 15px;' if val < 0 else 'font-weight: bold; font-size: 15px;'
+                            if val == "BUY":
+                                return 'color: #4a90d9; font-weight: bold;'
+                            if val == "CASH":
+                                return 'color: #e05050; font-weight: bold;'
+                            return 'font-weight: bold;'
+
+                        styled_log = df_log.style.map(_style_log).format(
+                            {"Vanilla Return(%)": "{:.2f}", "STATIC Return(%)": "{:.2f}"}
+                        )
+                        st.dataframe(styled_log, height=300, use_container_width=True)
+
+                        # STATIC Action Frequency 바 차트
+                        action_counts = df_log["STATIC Action"].value_counts().reset_index()
+                        action_counts.columns = ["Action", "Count"]
+                        fig_bar = px.bar(action_counts, x="Action", y="Count",
+                                         title="<b>STATIC: Action Frequency</b>",
+                                         color="Action",
+                                         color_discrete_map={"BUY": "#4a90d9", "CASH": "#e05050"})
+                        fig_bar.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', height=280,
+                                              showlegend=False, margin=dict(t=50, b=40, l=40, r=20))
+                        st.plotly_chart(fig_bar, use_container_width=True, key=f"bar_{m_name}_{stock_name}")
+
+                    # Run Evaluation 버튼
+                    st.markdown("---")
+                    if st.button("Run Evaluation", key=f"run_btn_{m_name}_{stock_name}", type="primary"):
+                        trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
+                        for run_i in range(int(l_auto_runs)):
+                            trial_seed = int(l_seed) + len(trials) + run_i
+                            _, vt, st_, mkt, _, _, _ = get_rl_data(
+                                ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed
+                            )
+                            if vt is not None:
+                                trials.append({
+                                    "Trial": len(trials) + 1,
+                                    "Seed": trial_seed,
+                                    "Vanilla Final (%)": float(vt[-1]),
+                                    "STATIC Final (%)":  float(st_[-1]),
+                                    "Market Final (%)":  float(mkt.iloc[-1]),
+                                })
+                        st.rerun()
+
+                # ══════════════════════════════════════════
+                # 오른쪽: Trial History Statistical Analysis 스타일
+                # ══════════════════════════════════════════
+                with col_right:
+                    st.markdown("### Trial History: Statistical Analysis (Alpha Performance)")
+                    trials = st.session_state.stock_trial_history.get(hist_key, [])
+
+                    if not trials:
+                        st.markdown("""
+<div style='background:var(--secondary-background-color);padding:40px;border-radius:10px;
+border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
+<h4 style='color:rgba(128,128,128,0.6);margin-bottom:8px;'>Trial History 없음</h4>
+<p style='color:rgba(128,128,128,0.4);font-size:14px;'>좌측 <b>Run Evaluation</b>을 클릭하여<br>Trial History를 누적하세요</p>
+</div>""", unsafe_allow_html=True)
+                    else:
+                        df_h = pd.DataFrame(trials)
+                        v_mean = df_h['Vanilla Final (%)'].mean()
+                        s_mean = df_h['STATIC Final (%)'].mean()
+                        v_std  = df_h['Vanilla Final (%)'].std(ddof=0) if len(df_h) > 1 else 0.0
+                        s_std  = df_h['STATIC Final (%)'].std(ddof=0) if len(df_h) > 1 else 0.0
+                        v_min, v_max = df_h['Vanilla Final (%)'].min(), df_h['Vanilla Final (%)'].max()
+                        s_min, s_max = df_h['STATIC Final (%)'].min(), df_h['STATIC Final (%)'].max()
+                        avg_mkt = df_h['Market Final (%)'].mean()
+
+                        # Alpha 배너
+                        st.success(
+                            f"시장 평균 대비 **Alpha 기대치(Expected Value)**: "
+                            f"STATIC **{s_mean - avg_mkt:.2f}%p** | Vanilla **{v_mean - avg_mkt:.2f}%p**"
+                        )
+
+                        # Trial-by-Trial 추이 차트
+                        st.plotly_chart(_make_trend_fig(df_h), use_container_width=True,
+                                        key=f"trend_{m_name}_{stock_name}")
+
+                        # 박스 플롯 + 통계 카드 2열
+                        box_col, stat_col = st.columns([2, 1])
+                        with box_col:
+                            st.plotly_chart(_make_trial_box_fig(df_h), use_container_width=True,
+                                            key=f"tribox_{m_name}_{stock_name}")
+                        with stat_col:
+                            st.markdown(f"""
+<div style='background:var(--secondary-background-color);padding:14px;border-radius:10px;
+border:1px solid rgba(128,128,128,0.3);margin-top:10px;'>
 <h4 style='margin-top:0;font-weight:900;'>통계 요약 (Expected & Risk)</h4>
-<ul style='font-size:14px;margin-bottom:0;'>
-<li><b style='color:#e05050;'>Vanilla 최종 수익:</b> {v_final:.2f}% (일간 σ={v_std:.2f}%)</li>
-<li><b style='color:#e05050;'>Vanilla Alpha:</b> {alpha_v:+.2f}%p vs Market</li>
+<ul style='font-size:13px;margin-bottom:8px;'>
+<li><b style='color:#e05050;'>Vanilla 평균(기대치):</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
+<li><b style='color:#e05050;'>Vanilla 범위:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
 <hr style='margin:6px 0;border-color:rgba(128,128,128,0.3);'>
-<li><b style='color:#4a90d9;'>STATIC 최종 수익:</b> {s_final:.2f}% (일간 σ={s_std:.2f}%)</li>
-<li><b style='color:#4a90d9;'>STATIC Alpha:</b> {alpha_s:+.2f}%p vs Market</li>
-<li><b style='color:#4a90d9;'>MDD:</b> {s_mdd:.2f}%</li>
-<hr style='margin:6px 0;border-color:rgba(128,128,128,0.3);'>
-<li><b style='color:green;'>Market (Buy&Hold):</b> {market_final:.2f}%</li>
+<li><b style='color:#4a90d9;'>STATIC 평균(기대치):</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
+<li><b style='color:#4a90d9;'>STATIC 범위:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
 </ul></div>""", unsafe_allow_html=True)
+                            st.markdown("<br>", unsafe_allow_html=True)
+
+                            def _color_neg(val):
+                                if isinstance(val, (int, float)) and val < 0:
+                                    return 'color: #e05050; font-weight: bold;'
+                                return 'font-weight: bold;'
+
+                            st.dataframe(
+                                df_h.set_index("Trial").style.map(_color_neg).format(
+                                    {"Vanilla Final (%)": "{:.2f}", "STATIC Final (%)": "{:.2f}",
+                                     "Market Final (%)": "{:.2f}", "Seed": "{:.0f}"}
+                                ), height=280, use_container_width=True
+                            )
 
                 total_episodes_run += l_epi
                 rendered_count += 1
