@@ -72,19 +72,19 @@ st.markdown("""
     margin: 0 !important;
     padding: 0 !important;
 }
-/* 두 버튼이 담긴 stVerticalBlock을 가로 배치로 전환 */
-[data-testid="stVerticalBlock"]:has(.btn-pair-marker) {
+/* 두 버튼이 담긴 stVerticalBlock을 가로 배치로 전환 — > 직접 자식으로 범위 제한 */
+[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) {
     flex-direction: row !important;
     align-items: flex-end !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
 }
 /* Simulation 버튼 보라색 — 버튼 쌍 중 마지막 primary 버튼 */
-[data-testid="stVerticalBlock"]:has(.btn-pair-marker) > .element-container:last-child button[kind="primary"] {
+[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) > .element-container:last-child button[kind="primary"] {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="stVerticalBlock"]:has(.btn-pair-marker) > .element-container:last-child button[kind="primary"]:hover {
+[data-testid="stVerticalBlock"]:has(> .element-container > [data-testid="stMarkdownContainer"] .btn-pair-marker) > .element-container:last-child button[kind="primary"]:hover {
     background-color: #6322A3 !important;
     border-color: #6322A3 !important;
 }
