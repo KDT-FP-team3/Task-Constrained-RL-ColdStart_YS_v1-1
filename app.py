@@ -434,6 +434,15 @@ for m_config in sorted_modules:
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                 hist_key = f"{m_name}_{stock_name}"
 
+                # ── Simulation pending: 슬라이더 렌더링 전에 키 사전 설정 ──
+                _sim_pend_key = f"sim_pending_{hist_key}"
+                if _sim_pend_key in st.session_state:
+                    _pend = st.session_state.pop(_sim_pend_key)
+                    st.session_state[f"lr_{m_name}_{stock_name}"]    = _pend["lr"]
+                    st.session_state[f"gamma_{m_name}_{stock_name}"] = _pend["gamma"]
+                    st.session_state[f"eps_{m_name}_{stock_name}"]   = _pend["epsilon"]
+                    st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
+
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
                     # ─ 행 1: System Parameters ─
@@ -620,39 +629,36 @@ for m_config in sorted_modules:
                             param_hist[_k].append(candidate[_k])
 
                         # 실시간 디스플레이
-                        with sim_display.container():
-                            _prog = (_i + 1) / n_iters
-                            _goal_txt = "  ✅" if best["gap"] >= 5.0 else ""
+                        with sim_display.container(border=True):
+                            _prog     = (_i + 1) / n_iters
+                            _goal_txt = " ✅" if best["gap"] >= 5.0 else ""
                             st.progress(_prog,
-                                text=f"{phase_name}  {_i+1}/{n_iters}  |  Best Gap: {best['gap']:+.1f}%{_goal_txt}")
+                                text=f"{phase_name}  {_i+1}/{n_iters}  |  "
+                                     f"STATIC {best['s_final']:+.2f}%  "
+                                     f"Vanilla {best['v_final']:+.2f}%  "
+                                     f"Gap {best['gap']:+.1f}%{_goal_txt}")
                             _pc1, _pc2, _pc3, _pc4 = st.columns(4)
-                            _prev_lr  = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate["lr"]
-                            _prev_g   = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate["gamma"]
-                            _prev_e   = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate["epsilon"]
-                            _prev_ve  = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate["v_epsilon"]
-                            _pc1.metric("Learning Rate (α)",  f'{candidate["lr"]:.4f}',        f'{candidate["lr"]        - _prev_lr:+.4f}')
-                            _pc2.metric("Discount Factor (γ)", f'{candidate["gamma"]:.4f}',    f'{candidate["gamma"]     - _prev_g:+.4f}')
-                            _pc3.metric("STATIC ε",            f'{candidate["epsilon"]:.4f}',  f'{candidate["epsilon"]   - _prev_e:+.4f}')
-                            _pc4.metric("Vanilla ε",           f'{candidate["v_epsilon"]:.4f}',f'{candidate["v_epsilon"] - _prev_ve:+.4f}')
-                            _bc1, _bc2, _bc3 = st.columns(3)
-                            _bc1.metric("Best STATIC",  f'{best["s_final"]:+.2f}%')
-                            _bc2.metric("Best Vanilla", f'{best["v_final"]:+.2f}%')
-                            _bc3.metric("Best Gap", f'{best["gap"]:+.2f}%',
-                                        delta="✅ 목표 달성" if best["gap"] >= 5.0 else "⏳ 탐색 중")
+                            _prev_lr = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate["lr"]
+                            _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate["gamma"]
+                            _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate["epsilon"]
+                            _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate["v_epsilon"]
+                            _pc1.metric("α (LR)",    f'{candidate["lr"]:.4f}',        f'{candidate["lr"]        - _prev_lr:+.4f}')
+                            _pc2.metric("γ",          f'{candidate["gamma"]:.4f}',    f'{candidate["gamma"]     - _prev_g:+.4f}')
+                            _pc3.metric("ε STATIC",   f'{candidate["epsilon"]:.4f}',  f'{candidate["epsilon"]   - _prev_e:+.4f}')
+                            _pc4.metric("ε Vanilla",  f'{candidate["v_epsilon"]:.4f}',f'{candidate["v_epsilon"] - _prev_ve:+.4f}')
                             if len(gap_history) > 1:
                                 _fig_sim = go.Figure()
                                 _fig_sim.add_trace(go.Scatter(
                                     x=list(range(1, len(gap_history) + 1)),
                                     y=gap_history,
-                                    mode="lines+markers",
+                                    mode="lines",
                                     line=dict(color="#4a90d9", width=2),
-                                    marker=dict(size=4)
                                 ))
                                 _fig_sim.add_hline(y=5.0, line_dash="dash",
                                                    line_color="#50c878",
                                                    annotation_text="목표 +5%")
                                 _fig_sim.update_layout(
-                                    height=180, margin=dict(l=0, r=0, t=20, b=0),
+                                    height=150, margin=dict(l=0, r=0, t=10, b=0),
                                     xaxis_title="Iteration", yaxis_title="Gap (%)",
                                     showlegend=False,
                                     paper_bgcolor="rgba(0,0,0,0)",
@@ -661,13 +667,15 @@ for m_config in sorted_modules:
                                 st.plotly_chart(_fig_sim, use_container_width=True,
                                                 key=f"sim_chart_{m_name}_{stock_name}_{_i}")
 
-                    # 완료: 최적 파라미터 자동 적용 + Run Evaluation 자동 실행
+                    # 완료: sim_pending으로 저장 후 rerun (슬라이더 렌더링 전 적용됨)
                     best["found"] = best["gap"] >= 5.0
                     st.session_state.sim_result[hist_key] = best
-                    st.session_state[f"lr_{m_name}_{stock_name}"]    = best["lr"]
-                    st.session_state[f"gamma_{m_name}_{stock_name}"] = best["gamma"]
-                    st.session_state[f"eps_{m_name}_{stock_name}"]   = best["epsilon"]
-                    st.session_state[f"v_eps_{m_name}_{stock_name}"] = best["v_epsilon"]
+                    st.session_state[f"sim_pending_{hist_key}"] = {
+                        "lr":        best["lr"],
+                        "gamma":     best["gamma"],
+                        "epsilon":   best["epsilon"],
+                        "v_epsilon": best["v_epsilon"],
+                    }
                     st.session_state.stocks_reverted.add(hist_key)
                     st.session_state[f"auto_run_{hist_key}"] = True
                     sim_display.empty()
