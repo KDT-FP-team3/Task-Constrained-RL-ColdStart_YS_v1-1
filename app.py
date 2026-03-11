@@ -167,8 +167,13 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
 # ==========================================
 # 3. 시뮬레이션 및 차트 생성
 # ==========================================
-def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
+def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace, full_width=False):
     """구버전 'S&P 500 Performance' fig_main 스타일: Cumulative Return Comparison"""
+    height = 550 if full_width else 420
+    title_size = 28 if full_width else 22
+    axis_size = 18 if full_width else 16
+    legend_size = 16 if full_width else 14
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df.index, y=v_trace, mode='lines+markers', name='<b>Vanilla RL</b>',
@@ -183,13 +188,13 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
         line=dict(color='green', width=2, dash='dot'), marker=dict(symbol='diamond-open', size=6)
     ))
     fig.update_layout(
-        title=dict(text=f"<b>{stock_name} (Lookback: {len(df)} Days)</b>", font=dict(size=22)),
-        xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=16)), showgrid=True),
-        yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=16)), showgrid=True),
-        legend=dict(font=dict(size=14), x=0.01, y=0.99,
+        title=dict(text=f"<b>Cumulative Return Comparison ({stock_name})</b>", font=dict(size=title_size)),
+        xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=axis_size)), showgrid=True),
+        yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=axis_size)), showgrid=True),
+        legend=dict(font=dict(size=legend_size), x=0.01, y=0.99,
                     bgcolor='rgba(128,128,128,0.15)', bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=420, margin=dict(t=70, b=70, l=70, r=30)
+        height=height, margin=dict(t=80, b=80, l=80, r=40)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
     return fig
@@ -262,25 +267,17 @@ def _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
     return fig
 
 
-def create_real_rl_chart(stock_name, ticker, lr, gamma, epsilon, episodes, seed, chart_type='cumulative'):
+def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed):
+    """시뮬레이션을 1회만 실행하여 원시 데이터를 반환"""
     df_full = fetch_stock_data(ticker, period="2y")
     if df_full.empty or len(df_full) < 10:
-        return go.Figure(), 0.0, 0.0, 0.0
-
-    # Trading Days 만큼 최근 데이터를 잘라 차트 범위로 사용
+        return None, None, None, None, 0.0
     df = df_full.tail(episodes).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-
     v_trace = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=False, seed=seed)
     s_trace = run_rl_simulation(df, lr, gamma, epsilon, episodes=episodes, use_static=True, seed=seed)
     s_mdd = calculate_mdd(s_trace)
-
-    if chart_type == 'stats':
-        fig = _make_stats_fig(stock_name, df, v_trace, s_trace, real_ret_trace)
-    else:
-        fig = _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace)
-
-    return fig, s_trace[-1], v_trace[-1], s_mdd
+    return df, v_trace, s_trace, real_ret_trace, s_mdd
 
 # --- 이전 결과 표시 (로딩 중 사라짐 방지) ---
 if st.session_state.prev_final_contributions:
@@ -344,54 +341,95 @@ for m_config in sorted_modules:
 
         mem_s_rets, mem_v_rets, mem_mdds = [], [], []
         if selected_stock_names:
-            cols = st.columns(2)
-            for j, stock_name in enumerate(selected_stock_names):
-                with cols[j % 2]:
-                    ticker = get_ticker_by_name(stock_name)
-                    stock_idx = name_to_index.get(stock_name)
-                    p_settings = m_params.get(stock_idx, m_params.get("default", {}))
+            for stock_name in selected_stock_names:
+                ticker = get_ticker_by_name(stock_name)
+                stock_idx = name_to_index.get(stock_name)
+                p_settings = m_params.get(stock_idx, m_params.get("default", {}))
 
-                    with st.expander(f"{stock_name} Parameters", expanded=True):
-                        sc1, sc2 = st.columns(2)
-                        with sc1:
-                            l_epi = st.slider("Trading Days", 10, 500,
-                                              int(p_settings.get("episodes", global_episodes)),
-                                              key=f"epi_{m_name}_{stock_name}")
-                            l_seed = st.number_input("Seed",
-                                                     value=int(p_settings.get("seed", global_seed)),
-                                                     step=1, key=f"seed_{m_name}_{stock_name}")
-                        with sc2:
-                            l_lr = st.slider("LR", 0.001, 0.1,
-                                             float(p_settings.get("lr", global_lr)),
-                                             step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}")
-                            l_gamma = st.slider("Gamma", 0.1, 0.99,
-                                                float(p_settings.get("gamma", global_gamma)),
-                                                key=f"gamma_{m_name}_{stock_name}")
-                            l_epsilon = st.slider("Epsilon", 0.01, 0.5,
-                                                  float(p_settings.get("epsilon", global_epsilon)),
-                                                  key=f"eps_{m_name}_{stock_name}")
+                # ── 파라미터: 접힌 expander에 수평 5열 배치 ──
+                with st.expander(f"⚙️ {stock_name} Parameters", expanded=False):
+                    pc1, pc2, pc3, pc4, pc5 = st.columns(5)
+                    with pc1:
+                        l_epi = st.slider("Trading Days", 10, 500,
+                                          int(p_settings.get("episodes", global_episodes)),
+                                          key=f"epi_{m_name}_{stock_name}")
+                    with pc2:
+                        l_seed = st.number_input("Seed",
+                                                 value=int(p_settings.get("seed", global_seed)),
+                                                 step=1, key=f"seed_{m_name}_{stock_name}")
+                    with pc3:
+                        l_lr = st.slider("LR", 0.001, 0.1,
+                                         float(p_settings.get("lr", global_lr)),
+                                         step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}")
+                    with pc4:
+                        l_gamma = st.slider("Gamma", 0.1, 0.99,
+                                            float(p_settings.get("gamma", global_gamma)),
+                                            key=f"gamma_{m_name}_{stock_name}")
+                    with pc5:
+                        l_epsilon = st.slider("Epsilon", 0.01, 0.5,
+                                              float(p_settings.get("epsilon", global_epsilon)),
+                                              key=f"eps_{m_name}_{stock_name}")
 
-                    # 짝수 컬럼(왼쪽): Cumulative Return 스타일, 홀수 컬럼(오른쪽): Stats 스타일
-                    chart_type = 'cumulative' if j % 2 == 0 else 'stats'
-                    with st.spinner(f"📡 Processing {stock_name}..."):
-                        fig, s_final, v_final, s_mdd = create_real_rl_chart(
-                            stock_name, ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed,
-                            chart_type=chart_type
-                        )
-                        st.plotly_chart(fig, use_container_width=True, key=f"chart_{m_name}_{stock_name}")
+                # ── 시뮬레이션 1회 실행 ──
+                with st.spinner(f"📡 Processing {stock_name}..."):
+                    df_stock, v_trace, s_trace, real_ret_trace, s_mdd = get_rl_data(
+                        ticker, l_lr, l_gamma, l_epsilon, l_epi, l_seed
+                    )
 
-                    total_episodes_run += l_epi
-                    rendered_count += 1
+                if df_stock is None:
+                    st.warning(f"데이터를 불러올 수 없습니다: {stock_name}")
+                    continue
 
-                    # [핵심 수정] update_gauge를 루프 안에서 호출하지 않음 (DuplicateElementId 방지)
-                    # 진행 상황은 메인 영역의 progress bar로만 표시
-                    if master_pbar is not None:
-                        pct = min(rendered_count / total_charts, 1.0)
-                        master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct * 100)}%)")
+                s_final = float(s_trace[-1])
+                v_final = float(v_trace[-1])
+                market_final = float(real_ret_trace.iloc[-1])
+                alpha_s = s_final - market_final
+                alpha_v = v_final - market_final
 
-                    mem_s_rets.append(s_final)
-                    mem_v_rets.append(v_final)
-                    mem_mdds.append(s_mdd)
+                # ── 차트 좌우 배치 ──
+                chart_left, chart_right = st.columns(2)
+
+                with chart_left:
+                    fig_cum = _make_cumulative_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
+                    st.plotly_chart(fig_cum, use_container_width=True, key=f"chart_cum_{m_name}_{stock_name}")
+
+                with chart_right:
+                    # Alpha 배너 (구버전 st.success 스타일)
+                    st.success(
+                        f"시장 대비 **Alpha 기대치**: STATIC **{alpha_s:+.2f}%p** | Vanilla **{alpha_v:+.2f}%p**"
+                    )
+                    # 박스 플롯 (구버전 fig_box 스타일)
+                    fig_stats = _make_stats_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
+                    st.plotly_chart(fig_stats, use_container_width=True, key=f"chart_stats_{m_name}_{stock_name}")
+
+                    # 통계 요약 카드 (구버전 col_tbl_h 스타일)
+                    v_daily = np.diff(np.array(v_trace))
+                    s_daily = np.diff(np.array(s_trace))
+                    v_std = float(np.std(v_daily)) if len(v_daily) > 1 else 0.0
+                    s_std = float(np.std(s_daily)) if len(s_daily) > 1 else 0.0
+                    st.markdown(f"""
+<div style='background-color:var(--secondary-background-color);padding:14px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);'>
+<h4 style='margin-top:0;font-weight:900;'>통계 요약 (Expected & Risk)</h4>
+<ul style='font-size:14px;margin-bottom:0;'>
+<li><b style='color:#e05050;'>Vanilla 최종 수익:</b> {v_final:.2f}% (일간 σ={v_std:.2f}%)</li>
+<li><b style='color:#e05050;'>Vanilla Alpha:</b> {alpha_v:+.2f}%p vs Market</li>
+<hr style='margin:6px 0;border-color:rgba(128,128,128,0.3);'>
+<li><b style='color:#4a90d9;'>STATIC 최종 수익:</b> {s_final:.2f}% (일간 σ={s_std:.2f}%)</li>
+<li><b style='color:#4a90d9;'>STATIC Alpha:</b> {alpha_s:+.2f}%p vs Market</li>
+<li><b style='color:#4a90d9;'>MDD:</b> {s_mdd:.2f}%</li>
+<hr style='margin:6px 0;border-color:rgba(128,128,128,0.3);'>
+<li><b style='color:green;'>Market (Buy&Hold):</b> {market_final:.2f}%</li>
+</ul></div>""", unsafe_allow_html=True)
+
+                total_episodes_run += l_epi
+                rendered_count += 1
+                if master_pbar is not None:
+                    pct = min(rendered_count / total_charts, 1.0)
+                    master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct * 100)}%)")
+
+                mem_s_rets.append(s_final)
+                mem_v_rets.append(v_final)
+                mem_mdds.append(s_mdd)
 
         if mem_s_rets:
             avg_s, avg_v = np.mean(mem_s_rets), np.mean(mem_v_rets)
