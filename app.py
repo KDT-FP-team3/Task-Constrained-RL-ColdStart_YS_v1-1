@@ -129,7 +129,7 @@ def update_gauge(episodes_run, placeholder, is_loading=False):
     if is_loading:
         fig_gauge.add_annotation(
             text="⏳  Loading...",
-            x=0.5, y=0.08,
+            x=0.5, y=0.45,
             xref="paper", yref="paper",
             showarrow=False,
             font=dict(size=12, color="#ff9800"),
