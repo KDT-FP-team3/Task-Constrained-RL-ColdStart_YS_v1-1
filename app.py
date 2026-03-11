@@ -606,7 +606,7 @@ for m_config in sorted_modules:
                     # 3 지표 카드 – 색상 커스터마이징 (HTML)
                     st.markdown(
                         "<p style='margin:6px 0 2px 0;font-size:12px;font-weight:700;"
-                        "color:rgba(180,180,180,0.8);letter-spacing:0.05em;'>이곳에 최종 누적 수익률</p>",
+                        "color:rgba(180,180,180,0.8);letter-spacing:0.05em;'>Final Cumulative Return</p>",
                         unsafe_allow_html=True
                     )
                     mc1, mc2, mc3 = st.columns(3)
