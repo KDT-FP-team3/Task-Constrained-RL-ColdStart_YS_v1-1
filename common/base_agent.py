@@ -41,29 +41,30 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
       Actor : θ[s,a] += lr_a · δ · ∇log π(a|s)
                       = lr_a · δ · (1[a==action] - π(a|s))
 
-    EMA 위(state>=2)에서만 매수 허용 → 아래에서는 action=0 강제
+    EMA 아래 상태에도 매수 허용 — 초기 logit 편향으로 선호도만 조정,
+    하드 차단 대신 Policy Gradient로 직접 학습 (Vanilla 대비 우위 확보)
     """
     n_states, n_actions = 4, 2
 
-    # Actor logit 초기화 (낙관적: 상승+EMA위에서 매수 선호)
+    # Actor logit 초기화 (소프트 편향: EMA 위를 선호하되 아래도 학습 가능)
     theta = np.zeros((n_states, n_actions))
-    theta[2, 1] = 0.5   # 하락+EMA위: 매수 가능
-    theta[3, 1] = 1.2   # 상승+EMA위: 핵심 매수 신호
+    theta[0, 1] = -1.5   # 하락+EMA아래: 매수 강하게 비선호 (학습으로 조정 가능)
+    theta[1, 1] = -0.8   # 상승+EMA아래: 매수 비선호
+    theta[2, 1] =  0.5   # 하락+EMA위: 매수 가능
+    theta[3, 1] =  1.2   # 상승+EMA위: 핵심 매수 신호
 
     # Critic 가치함수
     V = np.zeros(n_states)
 
     # Actor / Critic 학습률 분리
-    lr_actor  = lr * 0.6   # 정책 업데이트 (신중)
-    lr_critic = lr * 2.0   # 가치 추정 (빠른 수렴)
+    lr_actor  = lr * 1.0   # 정책 업데이트 (빠른 수렴, 이전 0.6에서 향상)
+    lr_critic = lr * 1.5   # 가치 추정 (안정적 baseline)
 
-    # 엡실론 스케줄
-    eps_start = min(epsilon * 3.5, 0.75)
+    # 엡실론 스케줄 (탐험 폭 완화: 기존 3.5x → 2.5x)
+    eps_start = min(epsilon * 2.5, 0.60)
 
-    def softmax_policy(state, can_buy):
+    def softmax_policy(state):
         logits = theta[state].copy()
-        if not can_buy:
-            logits[1] = -50.0          # 매수 불가 → 확률 0
         max_l = np.max(logits)
         exp_l = np.exp(np.clip(logits - max_l, -30, 30))
         return exp_l / (np.sum(exp_l) + 1e-10)
@@ -74,12 +75,11 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
         prev_action = 0
 
         for t in range(1, n_days):
-            can_buy = (state >= 2)
-            probs = softmax_policy(state, can_buy)
+            probs = softmax_policy(state)
 
-            # 엡실론-그리디 탐험
+            # 엡실론-그리디 탐험 (모든 상태에서 탐험 허용)
             if np.random.rand() < eps_t:
-                action = np.random.choice([0, 1]) if can_buy else 0
+                action = np.random.randint(0, n_actions)
             else:
                 action = np.random.choice([0, 1], p=probs)
 
@@ -110,11 +110,7 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
 
 def _get_static_action(state, theta):
     """Actor logit에서 greedy 행동 선택 (평가용)."""
-    can_buy = (state >= 2)
-    logits = theta[state].copy()
-    if not can_buy:
-        logits[1] = -50.0
-    return int(np.argmax(logits))
+    return int(np.argmax(theta[state]))
 
 
 # ──────────────────────────────────────────────
