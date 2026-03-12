@@ -1,139 +1,222 @@
 import numpy as np
 
 
-def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026, fee_rate=0.0):
+# ──────────────────────────────────────────────
+# 상태 계산 함수 (모듈 수준)
+# ──────────────────────────────────────────────
+
+def _make_state_static(ret, price, ema):
+    """STATIC RL 상태: 4상태 (is_bull + 2*is_above_ema)
+    0: 하락+EMA아래  1: 상승+EMA아래  2: 하락+EMA위  3: 상승+EMA위
     """
-    Q-Learning 알고리즘을 지정된 에피소드(episodes) 횟수만큼 반복 학습한 후,
-    최종 누적 수익률 배열을 반환합니다.
-    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
+    is_bull = 1 if ret > 0 else 0
+    is_above_ema = 1 if price >= ema else 0
+    return is_bull + 2 * is_above_ema
+
+
+def _make_state_vanilla(ret, price, ema):
+    """Vanilla RL 상태: 2상태 (0: 하락, 1: 상승)"""
+    return 1 if ret > 0 else 0
+
+
+# ──────────────────────────────────────────────
+# STATIC RL: Actor-Critic (Policy Gradient Theorem 기반)
+# ──────────────────────────────────────────────
+
+def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
+                                train_episodes, n_days, fee_rate):
     """
-    np.random.seed(seed)
-    n_days = len(df)
+    STATIC RL 훈련 — Actor-Critic (온라인 TD)
 
-    returns = df['Daily_Return'].values
-    prices = df['Close'].values
-    emas = df['EMA_10'].values  # [수정] EMA_20 → EMA_10: data_loader 변경에 맞춰 업데이트
+    Policy Gradient Theorem 적용:
+    ─────────────────────────────
+    • Actor: softmax 정책 π_θ(a|s) = softmax(θ[s,:])
+      ∇log π(a|s) = e_a - π(·|s)   [score function]
 
-    # ==========================================
-    # 상태 공간 정의
-    # ==========================================
-    # Vanilla: 2 상태 (0: 하락추세, 1: 상승추세)
-    # STATIC: 4 상태 → EMA 위치 정보를 상태에 통합하여 학습 신호 분리
-    #   state = is_bull + 2 * is_above_ema
-    #   0: 하락추세 + EMA 아래 → 매수 금지
-    #   1: 상승추세 + EMA 아래 → 매수 금지
-    #   2: 하락추세 + EMA 위   → 매수 가능 (하락 주의)
-    #   3: 상승추세 + EMA 위   → 매수 가능 (핵심 매수 신호)
+    • Critic: TD(0) 가치함수 V(s)   [baseline]
 
-    if use_static:
-        n_states = 4
-        q_table = np.zeros((n_states, 2))
-        # [수정] 비대칭 낙관적 초기화 값 대폭 상향:
-        # 기존 Q[2,1]=0.005, Q[3,1]=0.01 → Q[2,1]=0.05, Q[3,1]=0.05
-        # 이유: 초기값이 작으면 훈련 중 몇 번의 손실로도 Q[state,1]이 음수로 전락하여
-        # 평가 시 영구 현금보유(수평 직선)가 됩니다. 높은 초기값은 더 많은 실제 경험
-        # 데이터가 쌓인 후에야 매수 선호를 포기하도록 하여 빠른 수렴을 유도합니다.
-        q_table[2, 1] = 0.08   # 하락+EMA위: 매수 가능, 불확실 구간 (상향)
-        q_table[3, 1] = 0.15   # 상승+EMA위: 핵심 매수 신호, 강한 초기 매수 선호 (대폭 상향)
+    • REINFORCE with baseline:
+      δ = r + γ·V(s') - V(s)       [TD 오차 = advantage 근사]
+      Critic: V(s) += lr_c · δ
+      Actor : θ[s,a] += lr_a · δ · ∇log π(a|s)
+                      = lr_a · δ · (1[a==action] - π(a|s))
 
-        # [수정] STATIC 추가 학습 반복: max(episodes * 3, 500)
-        # EMA 위 상태(state 2,3) 방문 횟수가 적을 수 있으므로 더 많은 반복으로
-        # Q[3,1]이 실제 보상을 충분히 반영하도록 합니다.
-        train_episodes = max(episodes * 3, 500)
-    else:
-        n_states = 2
-        q_table = np.zeros((n_states, 2))
-        # [수정] Vanilla 낙관적 초기화: 상승 상태(state=1)에서 매수 Q값을 소폭 높게 설정
-        # np.zeros 초기화 시 argmax([0,0])=0 → 항상 현금보유로 수렴하는 편향 제거
-        # state=0 (하락추세): 매수 Q값 미설정 (현금보유 선호 유지)
-        # state=1 (상승추세): 매수 Q값 0.05 설정 → 상승장에서 초기 매수 시도 유도
-        q_table[1, 1] = 0.05   # 상승추세: 초기 매수 선호 (상향)
-        train_episodes = episodes
+    EMA 위(state>=2)에서만 매수 허용 → 아래에서는 action=0 강제
+    """
+    n_states, n_actions = 4, 2
 
-    def make_state(ret, price, ema):
-        """시장 관측치로부터 상태 인덱스를 계산"""
-        is_bull = 1 if ret > 0 else 0
-        if use_static:
-            is_above_ema = 1 if price >= ema else 0
-            return is_bull + 2 * is_above_ema  # 0, 1, 2, 3
-        return is_bull
+    # Actor logit 초기화 (낙관적: 상승+EMA위에서 매수 선호)
+    theta = np.zeros((n_states, n_actions))
+    theta[2, 1] = 0.5   # 하락+EMA위: 매수 가능
+    theta[3, 1] = 1.2   # 상승+EMA위: 핵심 매수 신호
 
-    # ==========================================
-    # 1. 훈련 (Training) 단계
-    # ==========================================
-    # 엡실론 감쇠: 초반 탐험 강화 → 후반 활용 집중
-    eps_start = min(epsilon * 4.0, 0.8) if use_static else min(epsilon * 3.0, 0.6)
+    # Critic 가치함수
+    V = np.zeros(n_states)
+
+    # Actor / Critic 학습률 분리
+    lr_actor  = lr * 0.6   # 정책 업데이트 (신중)
+    lr_critic = lr * 2.0   # 가치 추정 (빠른 수렴)
+
+    # 엡실론 스케줄
+    eps_start = min(epsilon * 3.5, 0.75)
+
+    def softmax_policy(state, can_buy):
+        logits = theta[state].copy()
+        if not can_buy:
+            logits[1] = -50.0          # 매수 불가 → 확률 0
+        max_l = np.max(logits)
+        exp_l = np.exp(np.clip(logits - max_l, -30, 30))
+        return exp_l / (np.sum(exp_l) + 1e-10)
+
     for ep in range(train_episodes):
         eps_t = eps_start - (eps_start - epsilon) * ep / max(train_episodes - 1, 1)
-        state = make_state(returns[0], prices[0], emas[0])
-        prev_action = 0  # 에피소드 시작: 현금 보유 상태
+        state = _make_state_static(returns[0], prices[0], emas[0])
+        prev_action = 0
 
         for t in range(1, n_days):
-            # STATIC: 상태 자체에 EMA 위치가 인코딩됨 (state >= 2 → EMA 위 → 매수 가능)
-            # Vanilla: 항상 매수 가능
-            can_buy = (state >= 2) if use_static else True
+            can_buy = (state >= 2)
+            probs = softmax_policy(state, can_buy)
 
-            # Epsilon-Greedy 행동 선택 (탐험 시에도 STATIC 제약 적용)
+            # 엡실론-그리디 탐험
             if np.random.rand() < eps_t:
                 action = np.random.choice([0, 1]) if can_buy else 0
             else:
-                q_values = q_table[state].copy()
-                if not can_buy:
-                    q_values[1] = -np.inf
-                action = np.argmax(q_values)
+                action = np.random.choice([0, 1], p=probs)
 
-            # 수수료: CASH→BUY 진입 시 왕복 수수료 1회 부과
+            # 보상 (수수료 + 클리핑)
             _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
             raw_reward = (returns[t] if action == 1 else 0.0) - _fee
-            reward = max(min(raw_reward, 0.03), -0.025)  # 훈련 보상 클리핑 (Q값 발산 방지)
+            reward = max(min(raw_reward, 0.03), -0.025)
             prev_action = action
 
-            next_state = make_state(returns[t], prices[t], emas[t])
-            next_can_buy = (next_state >= 2) if use_static else True
+            next_state = _make_state_static(returns[t], prices[t], emas[t])
 
-            # Q-Table 업데이트 (벨만 방정식)
-            next_q_values = q_table[next_state].copy()
-            if not next_can_buy:
-                next_q_values[1] = -np.inf
+            # TD 오차 (advantage 근사)
+            td_error = reward + gamma * V[next_state] - V[state]
 
-            best_next_action = np.argmax(next_q_values)
-            td_target = reward + gamma * q_table[next_state, best_next_action]
-            q_table[state, action] += lr * (td_target - q_table[state, action])
+            # Critic 업데이트: V(s) += lr_c · δ
+            V[state] += lr_critic * td_error
+
+            # Actor 업데이트: Policy Gradient Theorem
+            # θ[s,a] += lr_a · δ · (1[a==action] - π(a|s))
+            for a in range(n_actions):
+                grad = (1.0 if a == action else 0.0) - probs[a]
+                theta[state, a] += lr_actor * td_error * grad
 
             state = next_state
 
-    # ==========================================
-    # 2. 평가 (Evaluation) 단계
-    # ==========================================
-    # 학습이 끝난 최적의 Q-Table을 바탕으로 최종 시뮬레이션을 수행합니다.
+    return theta, V
+
+
+def _get_static_action(state, theta):
+    """Actor logit에서 greedy 행동 선택 (평가용)."""
+    can_buy = (state >= 2)
+    logits = theta[state].copy()
+    if not can_buy:
+        logits[1] = -50.0
+    return int(np.argmax(logits))
+
+
+# ──────────────────────────────────────────────
+# Vanilla RL: Q-Learning (비교 기준선)
+# ──────────────────────────────────────────────
+
+def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
+                              train_episodes, n_days, fee_rate):
+    """
+    Vanilla RL 훈련 — Tabular Q-Learning (2상태)
+    STATIC RL과의 비교를 위해 간단한 알고리즘 유지.
+    """
+    n_states, n_actions = 2, 2
+    q_table = np.zeros((n_states, n_actions))
+    q_table[1, 1] = 0.05   # 상승 상태 초기 매수 선호
+
+    eps_start = min(epsilon * 3.0, 0.6)
+
+    for ep in range(train_episodes):
+        eps_t = eps_start - (eps_start - epsilon) * ep / max(train_episodes - 1, 1)
+        state = _make_state_vanilla(returns[0], prices[0], emas[0])
+        prev_action = 0
+
+        for t in range(1, n_days):
+            if np.random.rand() < eps_t:
+                action = np.random.randint(0, n_actions)
+            else:
+                action = int(np.argmax(q_table[state]))
+
+            _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            raw_reward = (returns[t] if action == 1 else 0.0) - _fee
+            reward = max(min(raw_reward, 0.03), -0.025)
+            prev_action = action
+
+            next_state = _make_state_vanilla(returns[t], prices[t], emas[t])
+            best_next = int(np.argmax(q_table[next_state]))
+            td_target = reward + gamma * q_table[next_state, best_next]
+            q_table[state, action] += lr * (td_target - q_table[state, action])
+            state = next_state
+
+    return q_table
+
+
+# ──────────────────────────────────────────────
+# 공개 API: run_rl_simulation
+# ──────────────────────────────────────────────
+
+def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
+                      use_static=False, seed=2026, fee_rate=0.0):
+    """
+    RL 시뮬레이션 실행 후 누적수익률 배열 반환.
+
+    use_static=True  → Actor-Critic (Policy Gradient Theorem + REINFORCE with baseline)
+    use_static=False → Q-Learning (Vanilla RL 기준선)
+    """
+    np.random.seed(seed)
+    n_days = len(df)
+    returns = df['Daily_Return'].values
+    prices  = df['Close'].values
+    emas    = df['EMA_10'].values
+
+    if use_static:
+        train_episodes = max(episodes * 3, 500)
+        theta, _ = _train_actor_critic_static(
+            returns, prices, emas, lr, gamma, epsilon,
+            train_episodes, n_days, fee_rate
+        )
+        def get_action(state):
+            return _get_static_action(state, theta)
+        make_state = _make_state_static
+    else:
+        q_table = _train_qlearning_vanilla(
+            returns, prices, emas, lr, gamma, epsilon,
+            episodes, n_days, fee_rate
+        )
+        def get_action(state):
+            return int(np.argmax(q_table[state]))
+        make_state = _make_state_vanilla
+
+    # 평가 단계
     cumulative_return = np.zeros(n_days)
     current_capital = 1.0
     state = make_state(returns[0], prices[0], emas[0])
     prev_action = 0
 
     for t in range(1, n_days):
-        can_buy = (state >= 2) if use_static else True
-        q_values = q_table[state].copy()
-        if not can_buy:
-            q_values[1] = -np.inf
-        action = np.argmax(q_values)
-
+        action = get_action(state)
         _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
         reward = (returns[t] if action == 1 else 0.0) - _fee
         current_capital *= (1 + reward)
         cumulative_return[t] = (current_capital - 1) * 100
         prev_action = action
-
         state = make_state(returns[t], prices[t], emas[t])
 
     return cumulative_return
 
 
-def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_static=False, seed=2026, fee_rate=0.0):
+def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
+                                use_static=False, seed=2026, fee_rate=0.0):
     """
-    run_rl_simulation과 동일한 훈련 로직으로 평가 단계에서
-    누적수익 배열 + 일별 행동 로그를 함께 반환합니다.
-    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
+    run_rl_simulation과 동일한 훈련 로직으로 누적수익 + 일별 행동 로그 반환.
+
     Returns:
         cumulative_return: np.ndarray (n_days,)
         action_log: list of dicts {Day, Action, Daily_Return(%)}
@@ -141,56 +224,28 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
     np.random.seed(seed)
     n_days = len(df)
     returns = df['Daily_Return'].values
-    prices = df['Close'].values
-    emas = df['EMA_10'].values
+    prices  = df['Close'].values
+    emas    = df['EMA_10'].values
 
     if use_static:
-        n_states = 4
-        q_table = np.zeros((n_states, 2))
-        q_table[2, 1] = 0.08
-        q_table[3, 1] = 0.15
         train_episodes = max(episodes * 3, 500)
+        theta, _ = _train_actor_critic_static(
+            returns, prices, emas, lr, gamma, epsilon,
+            train_episodes, n_days, fee_rate
+        )
+        def get_action(state):
+            return _get_static_action(state, theta)
+        make_state = _make_state_static
     else:
-        n_states = 2
-        q_table = np.zeros((n_states, 2))
-        q_table[1, 1] = 0.05
-        train_episodes = episodes
+        q_table = _train_qlearning_vanilla(
+            returns, prices, emas, lr, gamma, epsilon,
+            episodes, n_days, fee_rate
+        )
+        def get_action(state):
+            return int(np.argmax(q_table[state]))
+        make_state = _make_state_vanilla
 
-    def make_state(ret, price, ema):
-        is_bull = 1 if ret > 0 else 0
-        if use_static:
-            is_above_ema = 1 if price >= ema else 0
-            return is_bull + 2 * is_above_ema
-        return is_bull
-
-    eps_start = min(epsilon * 4.0, 0.8) if use_static else min(epsilon * 3.0, 0.6)
-    for ep in range(train_episodes):
-        eps_t = eps_start - (eps_start - epsilon) * ep / max(train_episodes - 1, 1)
-        state = make_state(returns[0], prices[0], emas[0])
-        prev_action = 0
-        for t in range(1, n_days):
-            can_buy = (state >= 2) if use_static else True
-            if np.random.rand() < eps_t:
-                action = np.random.choice([0, 1]) if can_buy else 0
-            else:
-                q_values = q_table[state].copy()
-                if not can_buy:
-                    q_values[1] = -np.inf
-                action = np.argmax(q_values)
-            _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
-            raw_reward = (returns[t] if action == 1 else 0.0) - _fee
-            reward = max(min(raw_reward, 0.03), -0.025)
-            prev_action = action
-            next_state = make_state(returns[t], prices[t], emas[t])
-            next_can_buy = (next_state >= 2) if use_static else True
-            next_q_values = q_table[next_state].copy()
-            if not next_can_buy:
-                next_q_values[1] = -np.inf
-            best_next_action = np.argmax(next_q_values)
-            td_target = reward + gamma * q_table[next_state, best_next_action]
-            q_table[state, action] += lr * (td_target - q_table[state, action])
-            state = next_state
-
+    # 평가 + 로그
     cumulative_return = np.zeros(n_days)
     current_capital = 1.0
     state = make_state(returns[0], prices[0], emas[0])
@@ -198,11 +253,7 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
     action_log = []
 
     for t in range(1, n_days):
-        can_buy = (state >= 2) if use_static else True
-        q_values = q_table[state].copy()
-        if not can_buy:
-            q_values[1] = -np.inf
-        action = np.argmax(q_values)
+        action = get_action(state)
         _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
         reward = (returns[t] if action == 1 else 0.0) - _fee
         current_capital *= (1 + reward)

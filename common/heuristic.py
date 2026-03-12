@@ -1,18 +1,32 @@
 """
-Bayesian Optimization Engine — numpy 전용 GP + UCB Acquisition
-================================================================
+RL 하이퍼파라미터 탐색 엔진
+============================
+두 가지 옵티마이저 제공:
+
+1. BayesianOptimizer  — RBF 커널 GP + UCB Acquisition (numpy 전용)
+2. PGActorCriticOptimizer — Policy Gradient Theorem + REINFORCE with baseline
+                            + Actor-Critic 기반 탐색 (numpy 전용)
+
 의존성: numpy 만 사용 (scipy 불필요)
 Python 3.9+ 호환: from __future__ import annotations 로 타입 힌트 지연 평가
 
-알고리즘 개요
------------
-1. 초기 탐색(n_random_start 회): 균등 랜덤 샘플링
-2. 이후: RBF 커널 GP를 관측값에 피팅 →
-   UCB(Upper Confidence Bound) 획득 함수로 다음 후보 제안
-3. 모든 파라미터는 내부적으로 [0,1] 정규화 후 연산
+PGActorCriticOptimizer 이론
+────────────────────────────
+• Policy Gradient Theorem:
+    ∇J(θ) = E[∇log π_θ(a|s) · Q^π(s,a)]
+  파라미터 공간에서 Gaussian 정책 π_θ(Δ|μ,σ)로 변화량 Δ 제안.
 
-수식
-----
+• REINFORCE with baseline:
+    A = gap - V(s)    [Critic 기준값 차감 → 분산 감소]
+    ∇log π(Δ|μ,σ) = (Δ - μ) / σ²
+
+• Actor-Critic:
+    Actor  : μ += lr_a · A · (Δ - μ) / σ²   [정책 평균 업데이트]
+    Critic : V  += lr_c · (gap - V)           [지수이동평균 baseline]
+    σ 자동 스케줄링: A>0 → σ 감소(수렴), A<0 → σ 증가(탐험)
+
+BayesianOptimizer 이론
+──────────────────────
   K(x,x') = σ²·exp(-||x-x'||² / (2·l²))    [RBF 커널]
   GP posterior: μ* = k*ᵀ(K+σₙ²I)⁻¹y
                 σ*² = k** - k*ᵀ(K+σₙ²I)⁻¹k*
@@ -205,3 +219,176 @@ class BayesianOptimizer:
         acq_values   = self._ucb_acquisition(X_candidates)
         best_idx     = int(np.argmax(acq_values))
         return X_candidates[best_idx]
+
+
+# ══════════════════════════════════════════════════════════════════════
+# PGActorCriticOptimizer
+# ══════════════════════════════════════════════════════════════════════
+
+class PGActorCriticOptimizer:
+    """
+    Policy Gradient + REINFORCE with baseline + Actor-Critic 기반 하이퍼파라미터 탐색.
+
+    이론 요약
+    ─────────
+    1. Policy Gradient Theorem
+       ∇J(θ) = E[∇log π_θ(Δ|μ,σ) · A]
+       Gaussian 정책에서 ∇log π(Δ|μ,σ) = (Δ-μ)/σ²
+
+    2. REINFORCE with baseline (분산 감소)
+       A = gap - V(s)          V: Critic 추정값
+
+    3. Actor-Critic 업데이트
+       Actor : μ += lr_actor · A · (Δ-μ)/σ²   [정책 평균 이동]
+       Critic: V += value_alpha · (gap - V)     [TD(0) baseline 갱신]
+
+    4. σ 자동 스케줄링
+       A > 0 → σ 축소 (좋은 방향으로 수렴)
+       A < 0 → σ 확대 (더 넓게 탐험)
+
+    Parameters
+    ----------
+    bounds : dict  {param_name: (lo, hi)}
+    lr_actor : float  Actor 학습률 (default 0.12)
+    sigma_init : float  초기 탐험 폭 (default 0.18)
+    sigma_min : float  최소 σ (default 0.02)
+    sigma_max : float  최대 σ (default 0.45)
+    value_alpha : float  Critic EMA 속도 (default 0.25)
+    seed : int  재현성 시드
+    """
+
+    def __init__(
+        self,
+        bounds: dict,
+        lr_actor: float = 0.12,
+        sigma_init: float = 0.18,
+        sigma_min: float = 0.02,
+        sigma_max: float = 0.45,
+        value_alpha: float = 0.25,
+        seed: int = 2026,
+    ):
+        self.bounds = bounds
+        self.param_names = list(bounds.keys())
+        n = len(self.param_names)
+
+        # Actor: 정규화[0,1] 공간에서 정책 평균 μ (중간값 초기화)
+        self.mu = np.full(n, 0.5)
+        # Actor: 탐험 폭 σ (파라미터별 독립)
+        self.sigma = np.full(n, float(sigma_init))
+
+        self.sigma_min   = float(sigma_min)
+        self.sigma_max   = float(sigma_max)
+        self.lr_actor    = float(lr_actor)
+        self.value_alpha = float(value_alpha)
+
+        # Critic: 지수이동평균 가치추정 V (baseline)
+        self.value_estimate: float = 0.0
+        self._critic_initialized: bool = False
+
+        # 마지막 샘플에서의 Δ (업데이트 계산용)
+        self._last_delta: np.ndarray | None = None
+
+        # 베스트 추적
+        self._best_params: dict | None = None
+        self._best_score: float = -np.inf
+
+        # 히스토리
+        self._X: list[dict] = []
+        self._y: list[float] = []
+        self._mu_history: list[dict] = []   # 반복마다 μ 스냅샷 (정규화 해제)
+
+        self._rng = np.random.default_rng(seed)
+
+    # ------------------------------------------------------------------
+    # 공개 API
+    # ------------------------------------------------------------------
+
+    def suggest_next(self) -> dict:
+        """Actor 정책에서 다음 파라미터 후보 샘플링.
+        x = clip(μ + σ·ε, 0, 1),  ε ~ N(0,1)
+        """
+        delta = self._rng.normal(0.0, self.sigma)
+        x_new = np.clip(self.mu + delta, 0.0, 1.0)
+        self._last_delta = delta
+        # μ 스냅샷 (현재 정책 평균을 원본 공간으로 변환해 기록)
+        self._mu_history.append(self._denormalize(self.mu.copy()))
+        return self._denormalize(x_new)
+
+    def update(self, params: dict, score: float) -> None:
+        """관측 결과로 Actor-Critic 업데이트.
+
+        1) Critic: V += value_alpha · (score - V)
+        2) A = score - V
+        3) Actor: μ += lr_actor · A · Δ/σ²
+        4) σ 자동 스케줄링
+        """
+        # ── Critic 업데이트 ──
+        if not self._critic_initialized:
+            self.value_estimate = float(score)
+            self._critic_initialized = True
+        else:
+            self.value_estimate += self.value_alpha * (float(score) - self.value_estimate)
+
+        # ── Advantage (REINFORCE baseline) ──
+        advantage = float(score) - self.value_estimate
+
+        # ── Actor 업데이트 (Policy Gradient) ──
+        if self._last_delta is not None:
+            pg_grad = self._last_delta / (self.sigma ** 2 + 1e-8)
+            self.mu = np.clip(self.mu + self.lr_actor * advantage * pg_grad, 0.0, 1.0)
+
+        # ── σ 자동 스케줄링 ──
+        if advantage > 0:
+            # 성능 향상 → σ 축소 (수렴)
+            self.sigma = np.maximum(self.sigma * 0.96, self.sigma_min)
+        else:
+            # 성능 저하 → σ 확대 (탐험)
+            self.sigma = np.minimum(self.sigma * 1.04, self.sigma_max)
+
+        # ── 베스트 / 히스토리 갱신 ──
+        self._X.append(params)
+        self._y.append(float(score))
+        if float(score) > self._best_score:
+            self._best_score = float(score)
+            self._best_params = {k: float(v) for k, v in params.items()}
+
+    @property
+    def best_params(self) -> dict | None:
+        return self._best_params
+
+    @property
+    def best_score(self) -> float:
+        return self._best_score
+
+    @property
+    def n_observations(self) -> int:
+        return len(self._X)
+
+    @property
+    def mu_history(self) -> list[dict]:
+        """반복마다 기록된 정책 평균 μ 이력 (원본 공간)."""
+        return self._mu_history
+
+    @property
+    def sigma_mean(self) -> float:
+        """현재 평균 탐험 폭."""
+        return float(np.mean(self.sigma))
+
+    # ------------------------------------------------------------------
+    # 내부 헬퍼
+    # ------------------------------------------------------------------
+
+    def _normalize(self, params: dict) -> np.ndarray:
+        lo_hi = [self.bounds[k] for k in self.param_names]
+        vals  = [params[k] for k in self.param_names]
+        return np.array([
+            (v - lo) / (hi - lo) if hi != lo else 0.5
+            for v, (lo, hi) in zip(vals, lo_hi)
+        ], dtype=float)
+
+    def _denormalize(self, x_norm: np.ndarray) -> dict:
+        result = {}
+        for i, k in enumerate(self.param_names):
+            lo, hi = self.bounds[k]
+            result[k] = float(np.clip(lo + x_norm[i] * (hi - lo), lo, hi))
+        return result

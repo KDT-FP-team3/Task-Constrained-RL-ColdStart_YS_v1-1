@@ -11,7 +11,7 @@ from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name, get_fee_in
 from common.data_loader import fetch_stock_data
 from common.base_agent import run_rl_simulation_with_log
 from common.evaluator import calculate_ctpt_and_color, calculate_mdd, calculate_softmax_weights
-from common.heuristic import BayesianOptimizer
+from common.heuristic import PGActorCriticOptimizer
 
 # 루트 경로 설정
 root_path = os.path.dirname(os.path.abspath(__file__))
@@ -328,8 +328,10 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
         current_summary[m_name] = {'return': c_ret}
         delta = c_ret - v_ret
         delta_str = f"+{delta:.1f}%" if delta > 0 else f"{delta:.1f}%"
+        _stocks_no_trace = row.get('Stocks', '-') if 'Stocks' in row.index else '-'
         table_data.append({
-            "Member": m_name, "Persona": row['CTPT_Code'], "Capital ($)": f"{row['Final_Capital']:.2f}$",
+            "Member": m_name, "Stocks": _stocks_no_trace,
+            "Persona": row['CTPT_Code'], "Capital ($)": f"{row['Final_Capital']:.2f}$",
             "STATIC (%)": f"{c_ret:.2f}", "Vanilla (%)": f"{v_ret:.2f}",
             "Alpha (Gap)": f"{delta_str}", "STATIC MDD": f"{row['Avg_MDD']:.2f}%"
         })
@@ -429,11 +431,12 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                 weight_str = f"{weights_arr[idx]*100:.1f}%" if idx >= 0 else "-"
                 stocks_str = ", ".join(member_traces_snap[m_name].get('stocks', [])) if m_name in member_traces_snap else "-"
                 merged_rows.append({
-                    "Member": m_name, "Persona": row['CTPT_Code'],
+                    "Member": m_name, "Stocks": stocks_str,
+                    "Persona": row['CTPT_Code'],
                     "Capital ($)": f"{row['Final_Capital']:.2f}$",
                     "STATIC (%)": f"{c_ret:.2f}", "Vanilla (%)": f"{v_ret:.2f}",
                     "Alpha (Gap)": delta_str, "MDD": f"{row['Avg_MDD']:.2f}%",
-                    "Score": score_str, "Weight %": weight_str, "Stocks": stocks_str,
+                    "Score": score_str, "Weight %": weight_str,
                 })
 
             def color_neg(val):
@@ -859,7 +862,10 @@ for m_config in sorted_modules:
                 # ── 이전 Simulation 결과 배너 ──
                 if hist_key in st.session_state.sim_result:
                     sr = st.session_state.sim_result[hist_key]
-                    _status = "✅ 목표 달성" if sr.get("found") else "⚠️ 최선값"
+                    _gap_val = sr.get("gap", -999.0)
+                    _status = ("🏆 25%+ 달성" if _gap_val >= 25.0
+                               else "✅ 목표 달성(≥1%)" if sr.get("found")
+                               else "⚠️ 최선값")
                     st.caption(
                         f"🔍 최근 Simulation (Bayesian Opt) — {_status}  |  "
                         f"LR={sr['lr']:.4f}  γ={sr['gamma']:.4f}  "
@@ -895,39 +901,54 @@ for m_config in sorted_modules:
                     trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
                     n_runs = int(l_auto_runs)
                     _interrupted = False
-                    for run_i in range(n_runs):
-                        if st.session_state.get('interrupt_requested', False):
-                            st.session_state.interrupt_requested = False
-                            run_prog_slot.warning(f"⛔ 중단됨 ({run_i}/{n_runs} 완료)")
-                            _interrupted = True
-                            break
-                        trial_seed = int(l_seed) + len(trials) + run_i
-                        run_prog_slot.progress(
-                            run_i / n_runs,
-                            text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
-                        )
-                        _, vt, st_t, mkt, _, _, _ = get_rl_data(
-                            ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
-                            v_epsilon=l_v_epsilon, fee_rate=fee_rate
-                        )
-                        if vt is not None:
-                            trials.append({
-                                "Trial": len(trials) + 1,
-                                "Seed": trial_seed,
-                                "Vanilla Final (%)": float(vt[-1]),
-                                "STATIC Final (%)":  float(st_t[-1]),
-                                "Market Final (%)":  float(mkt.iloc[-1]),
-                            })
-                    if not _interrupted:
-                        run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
-                    # Run Eval. All 큐 팝 (rerun 전에 처리 완료 항목 제거)
-                    _rq = st.session_state.run_all_queue
-                    if _rq and _rq[0] == (m_name, stock_name):
-                        st.session_state.run_all_queue = _rq[1:]
-                    st.rerun()
+                    _run_err_msg = None
+                    try:
+                        for run_i in range(n_runs):
+                            if st.session_state.get('interrupt_requested', False):
+                                st.session_state.interrupt_requested = False
+                                run_prog_slot.warning(f"⛔ 중단됨 ({run_i}/{n_runs} 완료)")
+                                _interrupted = True
+                                break
+                            trial_seed = int(l_seed) + len(trials) + run_i
+                            run_prog_slot.progress(
+                                run_i / n_runs,
+                                text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
+                            )
+                            try:
+                                _, vt, s_tr, mkt, _, _, _ = get_rl_data(
+                                    ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
+                                    v_epsilon=l_v_epsilon, fee_rate=fee_rate
+                                )
+                            except Exception as _e:
+                                vt, s_tr, mkt = None, None, None
+                                _run_err_msg = str(_e)[:80]
+                            if vt is not None:
+                                trials.append({
+                                    "Trial": len(trials) + 1,
+                                    "Seed": trial_seed,
+                                    "Vanilla Final (%)": float(vt[-1]),
+                                    "STATIC Final (%)":  float(s_tr[-1]),
+                                    "Market Final (%)":  float(mkt.iloc[-1]),
+                                })
+                            elif not _interrupted:
+                                run_prog_slot.warning(
+                                    f"⚠️ Trial {run_i+1}: {ticker} 데이터 로드 실패"
+                                    + (f" — {_run_err_msg}" if _run_err_msg else "")
+                                )
+                        if not _interrupted:
+                            run_prog_slot.success(f"완료: {n_runs}회 실행 / 누적 {len(trials)}건")
+                    except Exception as _outer_e:
+                        run_prog_slot.error(f"Run Evaluation 오류: {str(_outer_e)[:100]}")
+                    finally:
+                        # 큐 팝은 항상 실행 (예외 발생 시에도 다음 멤버로 진행)
+                        _rq = st.session_state.run_all_queue
+                        if _rq and _rq[0] == (m_name, stock_name):
+                            st.session_state.run_all_queue = _rq[1:]
+                        st.rerun()
 
                 # ══════════════════════════════════════════
-                # Simulation: Bayesian Optimization 기반 파라미터 탐색
+                # Simulation: PG Actor-Critic 기반 파라미터 탐색
+                # Policy Gradient Theorem + REINFORCE with baseline + Actor-Critic
                 # ══════════════════════════════════════════
                 if sim_clicked:
                     if not _gauge_loading_set:
@@ -942,12 +963,15 @@ for m_config in sorted_modules:
                         "v_epsilon": (0.01,  0.5),
                     }
 
-                    # ── Bayesian Optimizer 초기화 ──
-                    n_random = max(8, n_iters // 5)   # 초기 랜덤 탐색 횟수
-                    optimizer = BayesianOptimizer(
+                    # ── PG Actor-Critic Optimizer 초기화 ──
+                    optimizer = PGActorCriticOptimizer(
                         bounds=param_bounds,
-                        n_random_start=n_random,
-                        kappa=2.0
+                        lr_actor=0.12,
+                        sigma_init=0.18,
+                        sigma_min=0.02,
+                        sigma_max=0.45,
+                        value_alpha=0.25,
+                        seed=int(l_seed),
                     )
 
                     best = {
@@ -955,17 +979,20 @@ for m_config in sorted_modules:
                         "epsilon": l_epsilon, "v_epsilon": l_v_epsilon,
                         "gap": -999.0, "s_final": 0.0, "v_final": 0.0
                     }
-                    gap_history    = []
-                    param_hist     = {k: [] for k in param_bounds}
-                    sim_display    = st.empty()
+                    gap_history = []          # best gap 추이
+                    mu_hist_norm = {k: [] for k in param_bounds}  # 정책 μ 정규화 값 추이
+                    sim_display  = st.empty()
 
                     # 복수 시드 평균으로 일반화 성능 측정
-                    _n_eval    = min(3, max(2, int(l_auto_runs) // 3))
+                    _n_eval     = min(3, max(2, int(l_auto_runs) // 3))
                     _eval_seeds = [int(l_seed) + _j for _j in range(_n_eval)]
 
                     # Ghost 미리보기용 best traces 저장
                     _best_v_trace = None
                     _best_s_trace = None
+
+                    # 페이즈 경계 (탐험→수렴)
+                    _explore_end = max(6, n_iters // 4)
 
                     for _i in range(n_iters):
                         # ─ 인터럽트 체크 ─
@@ -974,35 +1001,39 @@ for m_config in sorted_modules:
                             sim_display.empty()
                             st.warning(f"⛔ Simulation 중단됨 ({_i}/{n_iters} 반복 완료)")
                             break
-                        # ─ 페이즈 레이블 ─
-                        if _i < n_random:
-                            phase_name = "🔴 Exploring (Random)"
-                        elif _i < n_random + (n_iters - n_random) // 2:
-                            phase_name = "🟡 Bayesian UCB"
-                        else:
-                            phase_name = "🟢 Converging (UCB)"
 
-                        # ─ Bayesian Optimizer가 다음 후보 제안 ─
+                        # ─ 페이즈 레이블 ─
+                        _sigma_now = optimizer.sigma_mean
+                        if _i < _explore_end:
+                            phase_name = "🔴 PG Exploring"
+                        elif _sigma_now > 0.12:
+                            phase_name = "🟡 PG Actor-Critic"
+                        else:
+                            phase_name = "🟢 PG Converging"
+
+                        # ─ Actor: 다음 파라미터 후보 제안 (π_θ 샘플링) ─
                         candidate = optimizer.suggest_next()
 
                         # ─ 복수 시드로 평가 → 평균 gap ─
                         _gaps, _s_list, _v_list = [], [], []
                         _tmp_v_trace, _tmp_s_trace = None, None
                         for _eseed in _eval_seeds:
-                            _, _vt, _st_t, _, _, _, _ = get_rl_data(
-                                ticker,
-                                candidate["lr"], candidate["gamma"], candidate["epsilon"],
-                                int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
-                                fee_rate=fee_rate
-                            )
-                            if _vt is not None and _st_t is not None:
-                                _gaps.append(float(_st_t[-1]) - float(_vt[-1]))
-                                _s_list.append(float(_st_t[-1]))
+                            try:
+                                _, _vt, _s_tr, _, _, _, _ = get_rl_data(
+                                    ticker,
+                                    candidate["lr"], candidate["gamma"], candidate["epsilon"],
+                                    int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
+                                    fee_rate=fee_rate
+                                )
+                            except Exception:
+                                _vt, _s_tr = None, None
+                            if _vt is not None and _s_tr is not None:
+                                _gaps.append(float(_s_tr[-1]) - float(_vt[-1]))
+                                _s_list.append(float(_s_tr[-1]))
                                 _v_list.append(float(_vt[-1]))
-                                # 첫 번째 시드 trace를 대표 trace로 저장
                                 if _tmp_v_trace is None:
                                     _tmp_v_trace = _vt
-                                    _tmp_s_trace = _st_t
+                                    _tmp_s_trace = _s_tr
 
                         if _gaps:
                             _gap = float(np.mean(_gaps))
@@ -1010,7 +1041,7 @@ for m_config in sorted_modules:
                             candidate["s_final"] = float(np.mean(_s_list))
                             candidate["v_final"] = float(np.mean(_v_list))
 
-                            # Bayesian Optimizer 업데이트
+                            # ─ Critic + Actor 업데이트 (Policy Gradient) ─
                             optimizer.update(candidate, _gap)
 
                             if _gap > best["gap"]:
@@ -1019,31 +1050,43 @@ for m_config in sorted_modules:
                                 _best_s_trace = _tmp_s_trace
 
                         gap_history.append(best["gap"])
-                        for _k in param_bounds:
-                            param_hist[_k].append(candidate.get(_k, best.get(_k, 0.0)))
 
-                        # ─ 실시간 디스플레이: 좌(진행상황+파라미터) / 우(Gap 수렴 차트) ─
+                        # μ 정규화 추이 기록 (원본 값 → [0,1] 정규화)
+                        for _k, (_lo, _hi) in param_bounds.items():
+                            _mu_val = optimizer.mu_history[-1].get(_k, best.get(_k, 0.0)) \
+                                      if optimizer.mu_history else best.get(_k, 0.0)
+                            mu_hist_norm[_k].append(
+                                (_mu_val - _lo) / (_hi - _lo) if _hi != _lo else 0.5
+                            )
+
+                        # ─ 실시간 디스플레이 ─
                         with sim_display.container(border=True):
-                            _prog     = (_i + 1) / n_iters
-                            _goal_txt = " ✅" if best["gap"] >= 5.0 else ""
-
-                            _prev_lr = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate.get("lr", best["lr"])
-                            _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate.get("gamma", best["gamma"])
-                            _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate.get("epsilon", best["epsilon"])
-                            _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate.get("v_epsilon", best["v_epsilon"])
+                            _prog = (_i + 1) / n_iters
+                            if best["gap"] >= 25.0:
+                                _goal_txt = " 🏆 25%+"
+                            elif best["gap"] >= 1.0:
+                                _goal_txt = " ✅"
+                            else:
+                                _goal_txt = ""
 
                             _disp_lr  = candidate.get("lr",        best["lr"])
                             _disp_g   = candidate.get("gamma",     best["gamma"])
                             _disp_e   = candidate.get("epsilon",   best["epsilon"])
                             _disp_ve  = candidate.get("v_epsilon", best["v_epsilon"])
+                            _steps = len(mu_hist_norm["lr"])
+                            _prev_idx = -2 if _steps > 1 else -1
+                            _prev_lr  = mu_hist_norm["lr"][_prev_idx]        * (param_bounds["lr"][1]        - param_bounds["lr"][0])        + param_bounds["lr"][0]
+                            _prev_g   = mu_hist_norm["gamma"][_prev_idx]     * (param_bounds["gamma"][1]     - param_bounds["gamma"][0])     + param_bounds["gamma"][0]
+                            _prev_e   = mu_hist_norm["epsilon"][_prev_idx]   * (param_bounds["epsilon"][1]   - param_bounds["epsilon"][0])   + param_bounds["epsilon"][0]
+                            _prev_ve  = mu_hist_norm["v_epsilon"][_prev_idx] * (param_bounds["v_epsilon"][1] - param_bounds["v_epsilon"][0]) + param_bounds["v_epsilon"][0]
 
-                            # ── 2컬럼: 좌(진행+파라미터 카드) | 우(Gap 차트) ──
+                            # ── 2컬럼: 좌(진행+파라미터 카드) | 우(파라미터 수렴 차트) ──
                             _left_col, _right_col = st.columns([1, 2])
 
                             with _left_col:
                                 st.progress(_prog,
                                     text=f"{phase_name}  {_i+1}/{n_iters}  |  "
-                                         f"Gap {best['gap']:+.1f}%{_goal_txt}")
+                                         f"Gap {best['gap']:+.1f}%{_goal_txt}  σ={_sigma_now:.3f}")
                                 st.markdown(
                                     f"<div style='font-size:11px;color:rgba(180,180,180,0.7);"
                                     f"margin:2px 0 6px 0;'>"
@@ -1051,52 +1094,101 @@ for m_config in sorted_modules:
                                     f"Vanilla {best['v_final']:+.2f}%</div>",
                                     unsafe_allow_html=True
                                 )
-                                # 파라미터 카드 2×2 배치
                                 _r1c1, _r1c2 = st.columns(2)
                                 _r2c1, _r2c2 = st.columns(2)
-                                _r1c1.metric("Learning Rate (α)", f"{_disp_lr:.4f}",  f"{_disp_lr  - _prev_lr:+.4f}")
-                                _r1c2.metric("Discount Factor (γ)", f"{_disp_g:.4f}", f"{_disp_g   - _prev_g:+.4f}")
-                                _r2c1.metric("STATIC ε",  f"{_disp_e:.4f}",  f"{_disp_e  - _prev_e:+.4f}")
-                                _r2c2.metric("Vanilla ε", f"{_disp_ve:.4f}", f"{_disp_ve - _prev_ve:+.4f}")
+                                _r1c1.metric("Learning Rate (α)", f"{_disp_lr:.4f}",
+                                             f"{_disp_lr - _prev_lr:+.4f}")
+                                _r1c2.metric("Discount Factor (γ)", f"{_disp_g:.4f}",
+                                             f"{_disp_g - _prev_g:+.4f}")
+                                _r2c1.metric("STATIC ε",  f"{_disp_e:.4f}",
+                                             f"{_disp_e - _prev_e:+.4f}")
+                                _r2c2.metric("Vanilla ε", f"{_disp_ve:.4f}",
+                                             f"{_disp_ve - _prev_ve:+.4f}")
 
                             with _right_col:
-                                if len(gap_history) > 1:
+                                if _steps > 1:
+                                    _steps_x = list(range(1, _steps + 1))
+                                    _param_colors = {
+                                        "lr":        "#4a90d9",
+                                        "gamma":     "#e05050",
+                                        "epsilon":   "#50c878",
+                                        "v_epsilon": "#ff9800",
+                                    }
+                                    _param_labels = {
+                                        "lr":        "α (LR)",
+                                        "gamma":     "γ (Discount)",
+                                        "epsilon":   "ε STATIC",
+                                        "v_epsilon": "ε Vanilla",
+                                    }
                                     _fig_sim = go.Figure()
+
+                                    # ── 파라미터 수렴 라인 (정규화, 주축) ──
+                                    for _pk, _pc in _param_colors.items():
+                                        _fig_sim.add_trace(go.Scatter(
+                                            x=_steps_x,
+                                            y=mu_hist_norm[_pk],
+                                            mode="lines",
+                                            name=f"<b>{_param_labels[_pk]}</b>",
+                                            line=dict(color=_pc, width=2),
+                                            yaxis="y1",
+                                        ))
+
+                                    # ── Best Gap 라인 (보조축) ──
+                                    _gap_steps = list(range(1, len(gap_history) + 1))
                                     _fig_sim.add_trace(go.Scatter(
-                                        x=list(range(1, len(gap_history) + 1)),
+                                        x=_gap_steps,
                                         y=gap_history,
-                                        mode="lines+markers",
-                                        line=dict(color="#4a90d9", width=2),
-                                        marker=dict(size=4, color="#4a90d9"),
+                                        mode="lines",
+                                        name="<b>Best Gap (%)</b>",
+                                        line=dict(color="#ffffff", width=2.5, dash="dot"),
+                                        yaxis="y2",
                                     ))
-                                    _fig_sim.add_hline(y=5.0, line_dash="dash",
-                                                       line_color="#50c878",
-                                                       annotation_text="목표 +5%",
-                                                       annotation_position="top right")
-                                    # GP 전환점 수직선
-                                    if _i >= n_random:
-                                        _fig_sim.add_vline(
-                                            x=n_random,
-                                            line_dash="dot", line_color="#ff9800",
-                                            annotation_text="GP Start",
-                                            annotation_position="top left"
-                                        )
+
+                                    # 목표선 (보조축 기준)
+                                    _fig_sim.add_hline(
+                                        y=1.0, line_dash="dash", line_color="#50c878",
+                                        annotation_text="목표 +1%",
+                                        annotation_position="top right"
+                                    )
+                                    _fig_sim.add_hline(
+                                        y=25.0, line_dash="dot", line_color="#ffd700",
+                                        annotation_text="최고 +25%",
+                                        annotation_position="top right"
+                                    )
+
                                     _fig_sim.update_layout(
-                                        title=dict(text="<b>Gap Convergence (STATIC − Vanilla)</b>",
-                                                   font=dict(size=13)),
-                                        height=280,
-                                        margin=dict(l=10, r=20, t=36, b=36),
-                                        xaxis=dict(title="Iteration", showgrid=True),
-                                        yaxis=dict(title="Gap (%)", showgrid=True),
-                                        showlegend=False,
+                                        title=dict(
+                                            text="<b>파라미터 수렴(정책 μ) — x:Step, y:정규화값 [0-1]</b>",
+                                            font=dict(size=12)
+                                        ),
+                                        height=295,
+                                        margin=dict(l=10, r=55, t=36, b=36),
+                                        xaxis=dict(title="Step", showgrid=True),
+                                        yaxis=dict(
+                                            title="정규화 파라미터 [0-1]",
+                                            showgrid=True,
+                                            range=[-0.05, 1.05],
+                                        ),
+                                        yaxis2=dict(
+                                            title="Gap (%)",
+                                            overlaying="y",
+                                            side="right",
+                                            showgrid=False,
+                                        ),
+                                        legend=dict(
+                                            font=dict(size=9),
+                                            orientation="h",
+                                            yanchor="bottom", y=1.02,
+                                            xanchor="left", x=0,
+                                        ),
                                         paper_bgcolor="rgba(0,0,0,0)",
-                                        plot_bgcolor="rgba(0,0,0,0)"
+                                        plot_bgcolor="rgba(0,0,0,0)",
                                     )
                                     st.plotly_chart(_fig_sim, use_container_width=True,
                                                     key=f"sim_chart_{m_name}_{stock_name}_{_i}")
 
                     # ─ 완료: Ghost 데이터 저장 ─
-                    best["found"] = best["gap"] >= 5.0
+                    best["found"] = best["gap"] >= 1.0
                     st.session_state.sim_result[hist_key] = best
 
                     # Ghost Line 저장 (재실행 후에도 차트에 점선으로 표시됨)
@@ -1393,8 +1485,14 @@ border:1px solid rgba(128,128,128,0.3);'>
 
         if mem_s_rets:
             avg_s, avg_v = np.mean(mem_s_rets), np.mean(mem_v_rets)
+            # selected_stock_names는 현재 멤버 루프의 마지막 종목 목록
+            _m_stocks = st.session_state.get(f"ms_{m_name}", [
+                all_stock_names[i] for i in getattr(m_config, 'TARGET_INDICES', [])
+                if i in all_stock_names
+            ])
             final_contributions.append({
                 "Member": m_name,
+                "Stocks": ", ".join(_m_stocks),
                 "Final_Capital": 1.0 * (1 + avg_s / 100),
                 "Profit_Dollar": (1.0 * (1 + avg_s / 100)) - 1.0,
                 "Vanilla_Profit": (1.0 * (1 + avg_v / 100)) - 1.0,
