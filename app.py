@@ -1211,7 +1211,7 @@ for m_config in sorted_modules:
                             _prev_ve  = mu_hist_norm["v_epsilon"][_prev_idx] * (param_bounds["v_epsilon"][1] - param_bounds["v_epsilon"][0]) + param_bounds["v_epsilon"][0]
 
                             # ── 3컬럼: 좌(진행+파라미터 카드) | 중(파라미터 수렴) | 우(기대값 수렴) ──
-                            _left_col, _mid_col, _right_col = st.columns([1, 1.3, 0.9])
+                            _left_col, _mid_col, _right_col = st.columns([1, 1.1, 1.1])
 
                             with _left_col:
                                 st.progress(_prog,
@@ -1261,15 +1261,18 @@ for m_config in sorted_modules:
                                         ))
                                     _fig_sim.update_layout(
                                         title=dict(
-                                            text="<b>파라미터 수렴 (정책 μ, 정규화 [0-1])</b>",
+                                            text="<b>Parameter Convergence (Policy μ, Normalized [0-1])</b>",
                                             font=dict(size=12),
                                             x=0.5, xanchor="center",
                                         ),
                                         height=420,
                                         margin=dict(l=10, r=15, t=45, b=40),
-                                        xaxis=dict(title="<b>Step</b>", showgrid=True),
+                                        xaxis=dict(
+                                            title="<b>Step</b>", showgrid=True,
+                                            range=[0.5, _steps + 0.5],
+                                        ),
                                         yaxis=dict(
-                                            title="<b>정규화값 [0-1]</b>",
+                                            title="<b>Normalized Value [0-1]</b>",
                                             showgrid=True,
                                             range=[-0.05, 1.05],
                                         ),
@@ -1301,7 +1304,7 @@ for m_config in sorted_modules:
                                         _fig_gap.add_trace(go.Scatter(
                                             x=_vx, y=_vy,
                                             mode="lines",
-                                            name="<b>현재 기대값</b>",
+                                            name="<b>Current Expected</b>",
                                             line=dict(color="rgba(150,200,255,0.6)", width=1.2),
                                         ))
 
@@ -1309,7 +1312,7 @@ for m_config in sorted_modules:
                                     _fig_gap.add_trace(go.Scatter(
                                         x=_gap_steps, y=gap_history,
                                         mode="lines",
-                                        name="<b>최적 기대값</b>",
+                                        name="<b>Best Expected</b>",
                                         line=dict(color="#ffffff", width=2.2),
                                         fill="tozeroy",
                                         fillcolor="rgba(80,200,120,0.07)",
@@ -1318,26 +1321,29 @@ for m_config in sorted_modules:
                                     # 목표선
                                     _fig_gap.add_hline(
                                         y=1.0, line_dash="dash", line_color="#50c878",
-                                        annotation_text="목표 +1%",
-                                        annotation_position="top left",
+                                        annotation_text="Target +1%",
+                                        annotation_position="top right",
                                         annotation_font_size=10,
                                     )
                                     _fig_gap.add_hline(
                                         y=25.0, line_dash="dot", line_color="#ffd700",
-                                        annotation_text="최고 +25%",
-                                        annotation_position="top left",
+                                        annotation_text="Best +25%",
+                                        annotation_position="top right",
                                         annotation_font_size=10,
                                     )
 
                                     _fig_gap.update_layout(
                                         title=dict(
-                                            text="<b>기대값 → 목표 수렴</b>",
+                                            text="<b>Expected Value → Target Convergence</b>",
                                             font=dict(size=12),
                                             x=0.5, xanchor="center",
                                         ),
                                         height=420,
                                         margin=dict(l=10, r=10, t=45, b=40),
-                                        xaxis=dict(title="<b>Step</b>", showgrid=True),
+                                        xaxis=dict(
+                                            title="<b>Step</b>", showgrid=True,
+                                            range=[0.5, _steps + 0.5],
+                                        ),
                                         yaxis=dict(title="<b>Gap (%)</b>", showgrid=True),
                                         legend=dict(
                                             orientation="v",
