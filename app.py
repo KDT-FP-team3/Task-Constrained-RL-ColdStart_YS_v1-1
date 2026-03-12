@@ -825,43 +825,8 @@ for m_config in sorted_modules:
                     st.session_state[f"eps_{m_name}_{stock_name}"]   = _pend["epsilon"]
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
 
-                # ── Simulation 완료 후 파라미터 저장 확인 다이얼로그 ──
+                # ── Simulation 완료 후 저장 확인 키 (버튼 행에서 처리) ──
                 _sim_confirm_key = f"sim_confirm_{hist_key}"
-                if _sim_confirm_key in st.session_state:
-                    _cf = st.session_state[_sim_confirm_key]
-                    with st.container(border=True):
-                        st.markdown(
-                            f"**💾 Simulation 완료 — 최적 파라미터를 저장하시겠습니까?**  \n"
-                            f"Gap **{_cf['gap']:+.2f}%** &nbsp;|&nbsp; "
-                            f"STATIC **{_cf['s_final']:+.2f}%** &nbsp;·&nbsp; "
-                            f"Vanilla **{_cf['v_final']:+.2f}%**  \n"
-                            f"`LR={_cf['lr']:.4f}` &nbsp; `γ={_cf['gamma']:.4f}` &nbsp; "
-                            f"`ε(S)={_cf['epsilon']:.4f}` &nbsp; `ε(V)={_cf['v_epsilon']:.4f}`"
-                        )
-                        _btn_save, _btn_cancel = st.columns(2)
-                        with _btn_save:
-                            if st.button(
-                                "✅ 저장 및 반영",
-                                key=f"confirm_save_{hist_key}",
-                                type="primary",
-                                use_container_width=True,
-                            ):
-                                # config.py에 영구 저장
-                                _save_sim_params_to_config(m_config, stock_idx, _cf)
-                                # 슬라이더 갱신 예약 + 자동 Run Evaluation
-                                st.session_state[f"sim_pending_{hist_key}"] = _cf
-                                st.session_state.stocks_reverted.add(hist_key)
-                                st.session_state[f"auto_run_{hist_key}"] = True
-                                del st.session_state[_sim_confirm_key]
-                                st.rerun()
-                        with _btn_cancel:
-                            if st.button(
-                                "✖ 반영 취소",
-                                key=f"confirm_cancel_{hist_key}",
-                                use_container_width=True,
-                            ):
-                                del st.session_state[_sim_confirm_key]
-                                st.rerun()
 
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
@@ -953,9 +918,17 @@ for m_config in sorted_modules:
                         )
 
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
-                btn_col, run_prog_col = st.columns([2, 3])
+                _has_confirm = _sim_confirm_key in st.session_state
+                if _has_confirm:
+                    btn_col, run_prog_col = st.columns([3, 2])
+                else:
+                    btn_col, run_prog_col = st.columns([2, 3])
                 with btn_col:
-                    b1, b2, b3 = st.columns([10, 7, 2])
+                    if _has_confirm:
+                        b1, b2, b3, b4, b5 = st.columns([5, 4, 5, 4, 1])
+                    else:
+                        b1, b2, b5 = st.columns([5, 4, 1])
+                        b3, b4 = None, None
                     with b1:
                         run_clicked = st.button(
                             "▶ Run Evaluation",
@@ -971,7 +944,31 @@ for m_config in sorted_modules:
                             type="primary",
                             use_container_width=True,
                         )
-                    with b3:
+                    if _has_confirm and b3 is not None and b4 is not None:
+                        with b3:
+                            _save_clicked = st.button(
+                                "저장 및 반영",
+                                key=f"sim_save_{m_name}_{stock_name}",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                        with b4:
+                            _cancel_clicked = st.button(
+                                "반영 취소",
+                                key=f"sim_cancel_{m_name}_{stock_name}",
+                                use_container_width=True,
+                            )
+                        if _save_clicked:
+                            _best_params = st.session_state.pop(_sim_confirm_key)
+                            _save_sim_params_to_config(m_config, stock_idx, _best_params)
+                            st.session_state[f"sim_pending_{hist_key}"] = _best_params
+                            st.session_state.stocks_reverted.add(hist_key)
+                            st.session_state[f"auto_run_{hist_key}"] = True
+                            st.rerun()
+                        if _cancel_clicked:
+                            st.session_state.pop(_sim_confirm_key, None)
+                            st.rerun()
+                    with b5:
                         st.markdown('<span class="stop-btn-marker"></span>', unsafe_allow_html=True)
                         _stop_clicked = st.button(
                             "■",
