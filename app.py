@@ -1150,15 +1150,15 @@ for m_config in sorted_modules:
                 if hist_key in st.session_state.sim_result:
                     sr = st.session_state.sim_result[hist_key]
                     _gap_val = sr.get("gap", -999.0)
-                    _status = ("🏆 25%+ 달성" if _gap_val >= 25.0
-                               else "✅ 목표 달성(≥1%)" if sr.get("found")
+                    _status = ("🏆 +5%p↑ 달성" if _gap_val >= 5.0
+                               else "✅ 목표 달성(≥1%p)" if sr.get("found")
                                else "⚠️ 최선값")
                     st.caption(
                         f"🔍 최근 Simulation (PG Actor-Critic) — {_status}  |  "
                         f"LR={sr['lr']:.4f}  γ={sr['gamma']:.4f}  "
                         f"ε(S)={sr['epsilon']:.4f}  ε(V)={sr['v_epsilon']:.4f}  |  "
-                        f"STATIC {sr['s_final']:+.2f}%  Vanilla {sr['v_final']:+.2f}%  "
-                        f"Gap {sr['gap']:+.2f}%"
+                        f"STATIC {sr['s_final']:+.2f}%  Market {sr.get('m_final', sr['v_final']):+.2f}%  "
+                        f"Alpha {sr['gap']:+.2f}%p"
                     )
 
                 # ── Simulation 후 자동 Run Evaluation 트리거 ──
@@ -1264,7 +1264,7 @@ for m_config in sorted_modules:
                     best = {
                         "lr": l_lr, "gamma": l_gamma,
                         "epsilon": l_epsilon, "v_epsilon": l_v_epsilon,
-                        "gap": -999.0, "s_final": 0.0, "v_final": 0.0
+                        "gap": -999.0, "s_final": 0.0, "v_final": 0.0, "m_final": 0.0
                     }
                     gap_history      = []          # best gap 추이
                     gap_iter_history = []          # 각 iteration 기대값 (평가 성공 시)
@@ -1302,23 +1302,24 @@ for m_config in sorted_modules:
                         # ─ Actor: 다음 파라미터 후보 제안 (π_θ 샘플링) ─
                         candidate = optimizer.suggest_next()
 
-                        # ─ 복수 시드로 평가 → 평균 gap ─
-                        _gaps, _s_list, _v_list = [], [], []
+                        # ─ 복수 시드로 평가 → 평균 gap (STATIC vs Market) ─
+                        _gaps, _s_list, _v_list, _m_list = [], [], [], []
                         _tmp_v_trace, _tmp_s_trace = None, None
                         for _eseed in _eval_seeds:
                             try:
-                                _, _vt, _s_tr, _, _, _, _ = get_rl_data(
+                                _, _vt, _s_tr, _mkt_tr, _, _, _ = get_rl_data(
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
                                     fee_rate=fee_rate, interval=l_interval
                                 )
                             except Exception:
-                                _vt, _s_tr = None, None
-                            if _vt is not None and _s_tr is not None:
-                                _gaps.append(float(_s_tr[-1]) - float(_vt[-1]))
+                                _vt, _s_tr, _mkt_tr = None, None, None
+                            if _vt is not None and _s_tr is not None and _mkt_tr is not None:
+                                _gaps.append(float(_s_tr[-1]) - float(_mkt_tr[-1]))
                                 _s_list.append(float(_s_tr[-1]))
                                 _v_list.append(float(_vt[-1]))
+                                _m_list.append(float(_mkt_tr[-1]))
                                 if _tmp_v_trace is None:
                                     _tmp_v_trace = _vt
                                     _tmp_s_trace = _s_tr
@@ -1330,6 +1331,7 @@ for m_config in sorted_modules:
                             candidate["gap"]     = _gap
                             candidate["s_final"] = float(np.mean(_s_list))
                             candidate["v_final"] = float(np.mean(_v_list))
+                            candidate["m_final"] = float(np.mean(_m_list))
 
                             # ─ Critic + Actor 업데이트 (Policy Gradient) ─
                             optimizer.update(candidate, _gap)
@@ -1353,8 +1355,8 @@ for m_config in sorted_modules:
                         # ─ 실시간 디스플레이 ─
                         with sim_display.container(border=True):
                             _prog = (_i + 1) / n_iters
-                            if best["gap"] >= 25.0:
-                                _goal_txt = " 🏆 25%+"
+                            if best["gap"] >= 5.0:
+                                _goal_txt = " 🏆 +5%p↑"
                             elif best["gap"] >= 1.0:
                                 _goal_txt = " ✅"
                             else:
@@ -1382,7 +1384,7 @@ for m_config in sorted_modules:
                                     f"<div style='font-size:11px;color:rgba(180,180,180,0.7);"
                                     f"margin:2px 0 6px 0;'>"
                                     f"STATIC {best['s_final']:+.2f}%  &nbsp;·&nbsp;  "
-                                    f"Vanilla {best['v_final']:+.2f}%</div>",
+                                    f"Market {best['m_final']:+.2f}%</div>",
                                     unsafe_allow_html=True
                                 )
                                 _r1c1, _r1c2 = st.columns(2)
@@ -1439,7 +1441,7 @@ for m_config in sorted_modules:
                                         ),
                                         legend=dict(
                                             orientation="v",
-                                            x=0.01, y=0.82,
+                                            x=0.01, y=0.90,
                                             xanchor="left", yanchor="top",
                                             font=dict(size=12, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
@@ -1482,20 +1484,20 @@ for m_config in sorted_modules:
                                     # 목표선
                                     _fig_gap.add_hline(
                                         y=1.0, line_dash="dash", line_color="#50c878",
-                                        annotation_text="Target +1%",
+                                        annotation_text="Target +1%p (vs Market)",
                                         annotation_position="top right",
                                         annotation_font_size=10,
                                     )
                                     _fig_gap.add_hline(
-                                        y=25.0, line_dash="dot", line_color="#ffd700",
-                                        annotation_text="Best +25%",
+                                        y=5.0, line_dash="dot", line_color="#ffd700",
+                                        annotation_text="Best +5%p (vs Market)",
                                         annotation_position="top right",
                                         annotation_font_size=10,
                                     )
 
                                     _fig_gap.update_layout(
                                         title=dict(
-                                            text="<b>Expected Value → Target Convergence</b>",
+                                            text="<b>STATIC Alpha vs Market → Target Convergence</b>",
                                             font=dict(size=12),
                                             x=0.5, xanchor="center",
                                         ),
@@ -1505,10 +1507,10 @@ for m_config in sorted_modules:
                                             title="<b>Step</b>", showgrid=True,
                                             range=[0.5, _steps + 0.5],
                                         ),
-                                        yaxis=dict(title="<b>Gap (%)</b>", showgrid=True),
+                                        yaxis=dict(title="<b>Alpha vs Market (%p)</b>", showgrid=True),
                                         legend=dict(
                                             orientation="v",
-                                            x=0.01, y=0.82,
+                                            x=0.01, y=0.90,
                                             xanchor="left", yanchor="top",
                                             font=dict(size=11, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
