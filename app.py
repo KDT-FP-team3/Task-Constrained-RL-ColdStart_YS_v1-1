@@ -283,8 +283,10 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     key_suffix = "upd" if is_updating else "fin"
 
     with container:
-        if member_traces_snap and len(member_traces_snap) >= 1:
-            # ── Softmax 계산 (Row 1 & Row 2 공통 사용) ──
+        has_traces = bool(member_traces_snap and len(member_traces_snap) >= 1)
+
+        # ── Softmax 계산 (traces 있을 때) ──
+        if has_traces:
             member_names_sorted = sorted(member_traces_snap.keys())
             scores_map = {row['Member']: row['Avg_Return'] / (1.0 + abs(row['Avg_MDD']))
                           for _, row in df_contrib.iterrows()}
@@ -296,18 +298,22 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             aligned    = np.array([t[:min_len] for t in traces_list])
             team_curve = np.dot(weights_arr, aligned)
             tf_final   = float(team_curve[-1]) if len(team_curve) > 0 else 0.0
+            first_mn   = member_names_sorted[0]
+            dates_ref  = list(member_traces_snap[first_mn]['dates'])[:min_len]
 
-            first_mn  = member_names_sorted[0]
-            dates_ref = list(member_traces_snap[first_mn]['dates'])[:min_len]
-
-            # ── Row 1: donut | bar | All Members+Team Fund chart ──
+        # ── Row 1: donut | bar | (All Members 차트 — traces 있을 때) ──
+        if has_traces:
             col1, col2, col3 = st.columns([1, 1.1, 1.6])
-            with col1:
-                st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
-            with col2:
-                st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
+        else:
+            col1, col2 = st.columns([1, 1.1])
+
+        with col1:
+            st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
+        with col2:
+            st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
+
+        if has_traces:
             with col3:
-                # All Members + Team Fund 차트
                 fig_members = go.Figure()
                 for i, mn in enumerate(member_names_sorted):
                     color = distinct_colors[i % len(distinct_colors)]
@@ -324,7 +330,6 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                     line=dict(color='#ffffff', width=3.5, dash='solid')
                 ))
                 fig_members.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
-                # "Team Fund Final Return" 어노테이션 (좌측 상단, 범례와 겹치지 않게)
                 tf_color = "#4a90d9" if tf_final >= 0 else "#ff4b4b"
                 fig_members.add_annotation(
                     x=0.02, y=0.97, xref="paper", yref="paper",
@@ -349,16 +354,17 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                 st.plotly_chart(fig_members, use_container_width=True,
                                 key=f"team_fund_chart_{key_suffix}")
 
-            # ── Row 2: 통합 테이블 (Portfolio Alpha + Softmax 비중) ──
-            st.markdown("---")
-            st.markdown("#### Portfolio Alpha Strategy Report")
+        # ── Row 2: 테이블 (Portfolio Alpha + Softmax 비중 통합 또는 기본) ──
+        st.markdown("---")
+        st.markdown("#### Portfolio Alpha Strategy Report")
+
+        if has_traces:
             merged_rows = []
             for _, row in df_contrib.iterrows():
                 m_name = row['Member']
                 c_ret, v_ret = row['Avg_Return'], row['Vanilla_Return']
                 delta = c_ret - v_ret
                 delta_str = f"+{delta:.1f}%" if delta > 0 else f"{delta:.1f}%"
-                # Softmax 비중
                 idx = member_names_sorted.index(m_name) if m_name in member_names_sorted else -1
                 score_str  = f"{scores_arr[idx]:.3f}" if idx >= 0 else "-"
                 weight_str = f"{weights_arr[idx]*100:.1f}%" if idx >= 0 else "-"
@@ -376,20 +382,10 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                     return 'color: #FF4B4B; font-weight: bold;'
                 return ''
 
-            merged_styled = pd.DataFrame(merged_rows).style.map(color_neg)
-            st.dataframe(merged_styled, use_container_width=True, hide_index=True)
-
+            st.dataframe(pd.DataFrame(merged_rows).style.map(color_neg),
+                         use_container_width=True, hide_index=True)
         else:
-            # 멤버 traces 없을 때: 기존 3컬럼 레이아웃 유지
-            col1, col2, col3 = st.columns([1, 1.2, 1.3])
-            with col1:
-                st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
-            with col2:
-                st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
-            with col3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown("#### Portfolio Alpha Strategy Report")
-                st.dataframe(styled_table, use_container_width=True, hide_index=True)
+            st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
     return current_summary
 
