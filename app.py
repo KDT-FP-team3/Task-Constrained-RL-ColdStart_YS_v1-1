@@ -113,22 +113,27 @@ if 'member_traces' not in st.session_state:
 # 1. 실시간 시스템 상태: 단순 수평 막대
 # ==========================================
 def update_load_bar(episodes_run, placeholder, is_loading=False):
-    """게이지 대신 단순 수평 막대로 Real-time Load 표시."""
+    """컬러 그라디언트 수평 막대로 Real-time Load 표시 (0%=좌, 100%=우, 파랑→주황→빨강)."""
     max_load = 6000
     load_pct = min(episodes_run / max_load, 1.0)
+    pct_val = load_pct * 100
+    bar_width = max(pct_val, 2) if pct_val > 0 else 0  # 0일 때 완전히 비움
+    label = "⏳ Loading..." if is_loading else f"Real-time Load: {pct_val:.1f}%"
     with placeholder:
-        if is_loading:
-            st.progress(load_pct, text="⏳ Loading...")
-        else:
-            pct_val = load_pct * 100
-            color = "#ff4b4b" if pct_val >= 80 else ("#ff9800" if pct_val >= 50 else "#2196f3")
-            st.progress(load_pct, text=f"Real-time Load: **{pct_val:.1f}%**")
-            st.markdown(
-                f"<div style='font-size:11px; color:{color}; margin-top:-8px; margin-bottom:4px;'>"
-                f"{'🔴 High' if pct_val>=80 else ('🟡 Medium' if pct_val>=50 else '🟢 Normal')}"
-                f"  ({episodes_run:,} / {max_load:,} ep)</div>",
-                unsafe_allow_html=True
-            )
+        st.markdown(
+            f"<div style='margin-bottom:6px;font-size:12px;font-weight:600;"
+            f"color:rgba(210,210,210,0.95);'>{label}</div>"
+            f"<div style='background:rgba(50,50,60,0.6);border-radius:5px;height:14px;"
+            f"width:100%;overflow:hidden;border:1px solid rgba(120,120,140,0.3);'>"
+            f"  <div style='height:100%;width:{bar_width:.1f}%;border-radius:5px;"
+            f"background:linear-gradient(90deg,#2196f3 0%,#ff9800 50%,#ff4b4b 100%);"
+            f"transition:width 0.3s ease;'></div>"
+            f"</div>"
+            f"<div style='display:flex;justify-content:space-between;font-size:9px;"
+            f"color:rgba(140,140,150,0.7);margin-top:2px;'>"
+            f"<span>0%</span><span>50%</span><span>100%</span></div>",
+            unsafe_allow_html=True
+        )
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty()
@@ -278,39 +283,30 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     key_suffix = "upd" if is_updating else "fin"
 
     with container:
-        col1, col2, col3 = st.columns([1, 1.2, 1.3])
-        with col1:
-            st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
-        with col2:
-            st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
-        with col3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### Portfolio Alpha Strategy Report")
-            st.dataframe(styled_table, use_container_width=True, hide_index=True)
-
-        # ── 팀 펀드 에쿼티 섹션 (멤버 traces가 있을 때만 렌더) ──
         if member_traces_snap and len(member_traces_snap) >= 1:
-            st.markdown("---")
-            tf_col, sw_col = st.columns([1.7, 1])
+            # ── Softmax 계산 (Row 1 & Row 2 공통 사용) ──
+            member_names_sorted = sorted(member_traces_snap.keys())
+            scores_map = {row['Member']: row['Avg_Return'] / (1.0 + abs(row['Avg_MDD']))
+                          for _, row in df_contrib.iterrows()}
+            scores_arr = np.array([scores_map.get(mn, 0.0) for mn in member_names_sorted], dtype=float)
+            weights_arr = calculate_softmax_weights(scores_arr, temperature=1.0)
 
-            with tf_col:
-                # Softmax 비중 계산
-                member_names_sorted = sorted(member_traces_snap.keys())
-                scores_map = {row['Member']: row['Avg_Return'] / (1.0 + abs(row['Avg_MDD']))
-                              for _, row in df_contrib.iterrows()}
-                scores_arr = np.array([scores_map.get(mn, 0.0) for mn in member_names_sorted], dtype=float)
-                weights_arr = calculate_softmax_weights(scores_arr, temperature=1.0)
+            traces_list = [member_traces_snap[mn]['s_trace'] for mn in member_names_sorted]
+            min_len = min(len(t) for t in traces_list)
+            aligned    = np.array([t[:min_len] for t in traces_list])
+            team_curve = np.dot(weights_arr, aligned)
+            tf_final   = float(team_curve[-1]) if len(team_curve) > 0 else 0.0
 
-                # 공통 날짜 구간 (가장 짧은 trace 기준)
-                traces_list = [member_traces_snap[mn]['s_trace'] for mn in member_names_sorted]
-                min_len = min(len(t) for t in traces_list)
-                aligned  = np.array([t[:min_len] for t in traces_list])   # (n_members, min_len)
-                team_curve = np.dot(weights_arr, aligned)                 # (min_len,)
+            first_mn  = member_names_sorted[0]
+            dates_ref = list(member_traces_snap[first_mn]['dates'])[:min_len]
 
-                # 날짜 인덱스 (첫 번째 멤버 기준)
-                first_mn = member_names_sorted[0]
-                dates_ref = list(member_traces_snap[first_mn]['dates'])[:min_len]
-
+            # ── Row 1: donut | bar | All Members+Team Fund chart ──
+            col1, col2, col3 = st.columns([1, 1.1, 1.6])
+            with col1:
+                st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
+            with col2:
+                st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
+            with col3:
                 # All Members + Team Fund 차트
                 fig_members = go.Figure()
                 for i, mn in enumerate(member_names_sorted):
@@ -318,61 +314,82 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                     t = member_traces_snap[mn]['s_trace'][:min_len]
                     stocks_label = ", ".join(member_traces_snap[mn].get('stocks', []))
                     fig_members.add_trace(go.Scatter(
-                        x=dates_ref, y=t,
-                        mode='lines',
+                        x=dates_ref, y=t, mode='lines',
                         name=f'<b>{mn}</b>' + (f' ({stocks_label})' if stocks_label else ''),
                         line=dict(color=color, width=2)
                     ))
-                # Team Fund curve
                 fig_members.add_trace(go.Scatter(
-                    x=dates_ref, y=team_curve,
-                    mode='lines',
+                    x=dates_ref, y=team_curve, mode='lines',
                     name='<b>Team Fund (Softmax)</b>',
                     line=dict(color='#ffffff', width=3.5, dash='solid')
                 ))
                 fig_members.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
+                # "Team Fund Final Return" 어노테이션 (좌측 상단, 범례와 겹치지 않게)
+                tf_color = "#4a90d9" if tf_final >= 0 else "#ff4b4b"
+                fig_members.add_annotation(
+                    x=0.02, y=0.97, xref="paper", yref="paper",
+                    text=f"<b>Team Fund: {tf_final:+.2f}%</b>",
+                    showarrow=False, font=dict(color=tf_color, size=13),
+                    bgcolor='rgba(20,20,35,0.75)',
+                    bordercolor=tf_color, borderwidth=1, borderpad=5,
+                    align="left", xanchor="left", yanchor="top"
+                )
                 fig_members.update_layout(
                     title=dict(text="<b>All Members: STATIC RL Cumulative Returns + Team Fund</b>",
-                               font=dict(size=16)),
+                               font=dict(size=14)),
                     xaxis=dict(title="<b>Trading Days</b>", showgrid=True),
                     yaxis=dict(title="<b>Cumulative Return (%)</b>", showgrid=True),
-                    legend=dict(font=dict(size=11), x=0.01, y=0.99,
-                                bgcolor='rgba(128,128,128,0.15)',
+                    legend=dict(font=dict(size=10), orientation="h",
+                                yanchor="top", y=-0.18, xanchor="center", x=0.5,
+                                bgcolor='rgba(128,128,128,0.12)',
                                 bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
                     plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-                    height=380, margin=dict(t=50, b=40, l=60, r=20)
+                    height=370, margin=dict(t=45, b=90, l=55, r=15)
                 )
                 st.plotly_chart(fig_members, use_container_width=True,
                                 key=f"team_fund_chart_{key_suffix}")
 
-            with sw_col:
-                # Softmax 비중 테이블
-                st.markdown("#### Team Fund Softmax 비중")
-                sw_rows = []
-                for i, mn in enumerate(member_names_sorted):
-                    stocks_label = ", ".join(member_traces_snap[mn].get('stocks', []))
-                    sw_rows.append({
-                        "Member":    mn,
-                        "Score":     f"{scores_arr[i]:.3f}",
-                        "Weight %":  f"{weights_arr[i]*100:.1f}%",
-                        "Stocks":    stocks_label,
-                    })
-                df_sw = pd.DataFrame(sw_rows)
-                st.dataframe(df_sw, use_container_width=True, hide_index=True, height=200)
+            # ── Row 2: 통합 테이블 (Portfolio Alpha + Softmax 비중) ──
+            st.markdown("---")
+            st.markdown("#### Portfolio Alpha Strategy Report")
+            merged_rows = []
+            for _, row in df_contrib.iterrows():
+                m_name = row['Member']
+                c_ret, v_ret = row['Avg_Return'], row['Vanilla_Return']
+                delta = c_ret - v_ret
+                delta_str = f"+{delta:.1f}%" if delta > 0 else f"{delta:.1f}%"
+                # Softmax 비중
+                idx = member_names_sorted.index(m_name) if m_name in member_names_sorted else -1
+                score_str  = f"{scores_arr[idx]:.3f}" if idx >= 0 else "-"
+                weight_str = f"{weights_arr[idx]*100:.1f}%" if idx >= 0 else "-"
+                stocks_str = ", ".join(member_traces_snap[m_name].get('stocks', [])) if m_name in member_traces_snap else "-"
+                merged_rows.append({
+                    "Member": m_name, "Persona": row['CTPT_Code'],
+                    "Capital ($)": f"{row['Final_Capital']:.2f}$",
+                    "STATIC (%)": f"{c_ret:.2f}", "Vanilla (%)": f"{v_ret:.2f}",
+                    "Alpha (Gap)": delta_str, "MDD": f"{row['Avg_MDD']:.2f}%",
+                    "Score": score_str, "Weight %": weight_str, "Stocks": stocks_str,
+                })
 
-                # 팀 펀드 요약 메트릭
-                tf_final = float(team_curve[-1]) if len(team_curve) > 0 else 0.0
-                avg_static = float(df_contrib['Avg_Return'].mean())
-                st.markdown(
-                    f"<div style='margin-top:12px;'>"
-                    f"<div style='font-size:12px;font-weight:700;color:#4a90d9;'>Team Fund Final Return</div>"
-                    f"<div style='font-size:28px;font-weight:900;color:#4a90d9;line-height:1.2;'>"
-                    f"{tf_final:.2f}%</div>"
-                    f"<div style='font-size:11px;color:rgba(180,180,180,0.7);margin-top:4px;'>"
-                    f"Simple avg STATIC: {avg_static:.2f}%</div>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
+            def color_neg(val):
+                if isinstance(val, str) and val.strip().startswith('-'):
+                    return 'color: #FF4B4B; font-weight: bold;'
+                return ''
+
+            merged_styled = pd.DataFrame(merged_rows).style.map(color_neg)
+            st.dataframe(merged_styled, use_container_width=True, hide_index=True)
+
+        else:
+            # 멤버 traces 없을 때: 기존 3컬럼 레이아웃 유지
+            col1, col2, col3 = st.columns([1, 1.2, 1.3])
+            with col1:
+                st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
+            with col2:
+                st.plotly_chart(fig_profit, use_container_width=True, key=f"top_profit_{key_suffix}")
+            with col3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("#### Portfolio Alpha Strategy Report")
+                st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
     return current_summary
 

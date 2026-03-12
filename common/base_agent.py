@@ -33,21 +33,21 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
         # 이유: 초기값이 작으면 훈련 중 몇 번의 손실로도 Q[state,1]이 음수로 전락하여
         # 평가 시 영구 현금보유(수평 직선)가 됩니다. 높은 초기값은 더 많은 실제 경험
         # 데이터가 쌓인 후에야 매수 선호를 포기하도록 하여 빠른 수렴을 유도합니다.
-        q_table[2, 1] = 0.05   # 하락+EMA위: 매수 가능, 불확실 구간
-        q_table[3, 1] = 0.05   # 상승+EMA위: 핵심 매수 신호, 강한 초기 매수 선호
+        q_table[2, 1] = 0.08   # 하락+EMA위: 매수 가능, 불확실 구간 (상향)
+        q_table[3, 1] = 0.15   # 상승+EMA위: 핵심 매수 신호, 강한 초기 매수 선호 (대폭 상향)
 
-        # [수정] STATIC 추가 학습 반복: max(episodes * 2, 200)
+        # [수정] STATIC 추가 학습 반복: max(episodes * 3, 500)
         # EMA 위 상태(state 2,3) 방문 횟수가 적을 수 있으므로 더 많은 반복으로
         # Q[3,1]이 실제 보상을 충분히 반영하도록 합니다.
-        train_episodes = max(episodes * 2, 200)
+        train_episodes = max(episodes * 3, 500)
     else:
         n_states = 2
         q_table = np.zeros((n_states, 2))
         # [수정] Vanilla 낙관적 초기화: 상승 상태(state=1)에서 매수 Q값을 소폭 높게 설정
         # np.zeros 초기화 시 argmax([0,0])=0 → 항상 현금보유로 수렴하는 편향 제거
         # state=0 (하락추세): 매수 Q값 미설정 (현금보유 선호 유지)
-        # state=1 (상승추세): 매수 Q값 0.01 설정 → 상승장에서 초기 매수 시도 유도
-        q_table[1, 1] = 0.01   # 상승추세: 초기 매수 선호
+        # state=1 (상승추세): 매수 Q값 0.05 설정 → 상승장에서 초기 매수 시도 유도
+        q_table[1, 1] = 0.05   # 상승추세: 초기 매수 선호 (상향)
         train_episodes = episodes
 
     def make_state(ret, price, ema):
@@ -61,7 +61,10 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
     # ==========================================
     # 1. 훈련 (Training) 단계
     # ==========================================
-    for _ in range(train_episodes):
+    # 엡실론 감쇠: 초반 탐험 강화 → 후반 활용 집중
+    eps_start = min(epsilon * 4.0, 0.8) if use_static else min(epsilon * 3.0, 0.6)
+    for ep in range(train_episodes):
+        eps_t = eps_start - (eps_start - epsilon) * ep / max(train_episodes - 1, 1)
         state = make_state(returns[0], prices[0], emas[0])
         prev_action = 0  # 에피소드 시작: 현금 보유 상태
 
@@ -71,7 +74,7 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
             can_buy = (state >= 2) if use_static else True
 
             # Epsilon-Greedy 행동 선택 (탐험 시에도 STATIC 제약 적용)
-            if np.random.rand() < epsilon:
+            if np.random.rand() < eps_t:
                 action = np.random.choice([0, 1]) if can_buy else 0
             else:
                 q_values = q_table[state].copy()
@@ -81,7 +84,8 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100, use_s
 
             # 수수료: CASH→BUY 진입 시 왕복 수수료 1회 부과
             _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
-            reward = (returns[t] if action == 1 else 0.0) - _fee
+            raw_reward = (returns[t] if action == 1 else 0.0) - _fee
+            reward = max(min(raw_reward, 0.03), -0.025)  # 훈련 보상 클리핑 (Q값 발산 방지)
             prev_action = action
 
             next_state = make_state(returns[t], prices[t], emas[t])
@@ -143,13 +147,13 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
     if use_static:
         n_states = 4
         q_table = np.zeros((n_states, 2))
-        q_table[2, 1] = 0.05
-        q_table[3, 1] = 0.05
-        train_episodes = max(episodes * 2, 200)
+        q_table[2, 1] = 0.08
+        q_table[3, 1] = 0.15
+        train_episodes = max(episodes * 3, 500)
     else:
         n_states = 2
         q_table = np.zeros((n_states, 2))
-        q_table[1, 1] = 0.01
+        q_table[1, 1] = 0.05
         train_episodes = episodes
 
     def make_state(ret, price, ema):
@@ -159,12 +163,14 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
             return is_bull + 2 * is_above_ema
         return is_bull
 
-    for _ in range(train_episodes):
+    eps_start = min(epsilon * 4.0, 0.8) if use_static else min(epsilon * 3.0, 0.6)
+    for ep in range(train_episodes):
+        eps_t = eps_start - (eps_start - epsilon) * ep / max(train_episodes - 1, 1)
         state = make_state(returns[0], prices[0], emas[0])
         prev_action = 0
         for t in range(1, n_days):
             can_buy = (state >= 2) if use_static else True
-            if np.random.rand() < epsilon:
+            if np.random.rand() < eps_t:
                 action = np.random.choice([0, 1]) if can_buy else 0
             else:
                 q_values = q_table[state].copy()
@@ -172,7 +178,8 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
                     q_values[1] = -np.inf
                 action = np.argmax(q_values)
             _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
-            reward = (returns[t] if action == 1 else 0.0) - _fee
+            raw_reward = (returns[t] if action == 1 else 0.0) - _fee
+            reward = max(min(raw_reward, 0.03), -0.025)
             prev_action = action
             next_state = make_state(returns[t], prices[t], emas[t])
             next_can_buy = (next_state >= 2) if use_static else True
