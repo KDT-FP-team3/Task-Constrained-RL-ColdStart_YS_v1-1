@@ -21,9 +21,11 @@ PGActorCriticOptimizer 이론
     ∇log π(Δ|μ,σ) = (Δ - μ) / σ²
 
 • Actor-Critic:
-    Actor  : μ += lr_a · A · (Δ - μ) / σ²   [정책 평균 업데이트]
+    A_norm = tanh(A / 10)                     [gap% → [-1,1] 정규화]
+    pg_dir = clip(Δ/σ, L2≤1)                 [방향 벡터, 스텝 크기 상한 보장]
+    Actor  : μ += lr_a · A_norm · pg_dir      [정책 평균 업데이트]
     Critic : V  += lr_c · (gap - V)           [지수이동평균 baseline]
-    σ 자동 스케줄링: A>0 → σ 감소(수렴), A<0 → σ 증가(탐험)
+    σ 자동 스케줄링: A_norm>0 → σ 감소(수렴), A_norm<0 → σ 증가(탐험)
 
 BayesianOptimizer 이론
 ──────────────────────
@@ -239,12 +241,14 @@ class PGActorCriticOptimizer:
        A = gap - V(s)          V: Critic 추정값
 
     3. Actor-Critic 업데이트
-       Actor : μ += lr_actor · A · (Δ-μ)/σ²   [정책 평균 이동]
+       A_norm = tanh(A / 10)                    [gap% → [-1,1] 정규화]
+       pg_dir = clip(Δ/σ, L2≤1)                [방향 벡터, 스텝 크기 상한 보장]
+       Actor : μ += lr_actor · A_norm · pg_dir  [정책 평균 이동]
        Critic: V += value_alpha · (gap - V)     [TD(0) baseline 갱신]
 
     4. σ 자동 스케줄링
-       A > 0 → σ 축소 (좋은 방향으로 수렴)
-       A < 0 → σ 확대 (더 넓게 탐험)
+       A_norm > 0 → σ 축소 (좋은 방향으로 수렴)
+       A_norm < 0 → σ 확대 (더 넓게 탐험)
 
     Parameters
     ----------
@@ -260,7 +264,7 @@ class PGActorCriticOptimizer:
     def __init__(
         self,
         bounds: dict,
-        lr_actor: float = 0.12,
+        lr_actor: float = 0.05,
         sigma_init: float = 0.18,
         sigma_min: float = 0.02,
         sigma_max: float = 0.45,
@@ -329,13 +333,20 @@ class PGActorCriticOptimizer:
         else:
             self.value_estimate += self.value_alpha * (float(score) - self.value_estimate)
 
-        # ── Advantage (REINFORCE baseline) ──
-        advantage = float(score) - self.value_estimate
+        # ── Advantage — tanh 정규화로 [-1, 1] 스케일 통일 ──
+        # gap% 단위의 advantage를 [0,1] 파라미터 공간과 맞추기 위해 정규화
+        # (10% gap ≈ tanh(1)=0.76 포화점 기준)
+        raw_advantage = float(score) - self.value_estimate
+        advantage = float(np.tanh(raw_advantage / 10.0))
 
         # ── Actor 업데이트 (Policy Gradient) ──
         if self._last_delta is not None:
-            pg_grad = self._last_delta / (self.sigma ** 2 + 1e-8)
-            self.mu = np.clip(self.mu + self.lr_actor * advantage * pg_grad, 0.0, 1.0)
+            # Δ/σ² 대신 Δ/σ 사용 → L2 노름을 1로 클립해 스텝 크기 상한 보장
+            pg_dir = self._last_delta / (self.sigma + 1e-8)
+            pg_norm = float(np.linalg.norm(pg_dir))
+            if pg_norm > 1.0:
+                pg_dir = pg_dir / pg_norm
+            self.mu = np.clip(self.mu + self.lr_actor * advantage * pg_dir, 0.0, 1.0)
 
         # ── σ 자동 스케줄링 ──
         if advantage > 0:
