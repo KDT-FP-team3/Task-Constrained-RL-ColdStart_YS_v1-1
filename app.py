@@ -1,5 +1,6 @@
 import streamlit as st
 import importlib
+import inspect
 import os
 import sys
 import numpy as np
@@ -127,6 +128,45 @@ if 'ghost_data' not in st.session_state:
 if 'member_traces' not in st.session_state:
     st.session_state.member_traces = {}
     # key: member_name → {'s_trace': np.array, 'dates': index, 'stocks': list[str]}
+# ══════════════════════════════════════════════════════════════════════
+# 시뮬레이션 파라미터 영구 저장: config.py 재작성
+# ══════════════════════════════════════════════════════════════════════
+def _save_sim_params_to_config(m_config, stock_idx, new_params):
+    """시뮬레이션 최적 파라미터(lr/gamma/epsilon)를 해당 멤버의 config.py에 영구 저장.
+    episodes·seed는 현재 값을 유지하고, lr/gamma/epsilon만 덮어씁니다."""
+    config_path = inspect.getfile(m_config)
+    rl = {k: dict(v) for k, v in m_config.RL_PARAMS.items()}
+
+    # 대상 종목 키 결정 (int 인덱스 또는 "default")
+    target_key = stock_idx if stock_idx in rl else "default"
+    rl[target_key]["lr"]      = round(float(new_params["lr"]),      6)
+    rl[target_key]["gamma"]   = round(float(new_params["gamma"]),   6)
+    rl[target_key]["epsilon"] = round(float(new_params["epsilon"]),  6)
+
+    # 종목명 주석용
+    _tgt_name = STOCK_REGISTRY.get(m_config.TARGET_INDICES[0], {}).get("name", "")
+
+    lines = [
+        f'MEMBER_NAME = "{m_config.MEMBER_NAME}"\n',
+        f'TARGET_INDICES = {m_config.TARGET_INDICES} # {_tgt_name}\n',
+        '\n',
+        '# [파라미터 — Simulation 저장]\n',
+        'RL_PARAMS = {\n',
+    ]
+    for k, v in rl.items():
+        key_str = 'TARGET_INDICES[0]' if k != "default" else '"default"'
+        lines.append(f'    {key_str}: {{\n')
+        lines.append(
+            f'        "lr": {v["lr"]}, "gamma": {v["gamma"]}, "epsilon": {v["epsilon"]},\n'
+        )
+        lines.append(f'        "episodes": {v["episodes"]}, "seed": {v["seed"]}\n')
+        lines.append('    },\n')
+    lines.append('}\n')
+
+    with open(config_path, 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+
+
 if 'run_all_queue' not in st.session_state:
     st.session_state.run_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
 if 'sim_all_queue' not in st.session_state:
@@ -191,7 +231,7 @@ with _sb_r1c2:
     sim_all_btn = st.button(
         _si_label, key="sidebar_sim_all", type="primary",
         use_container_width=True,
-        help="전체 멤버·종목에 Simulation(Bayesian Opt)을 순차 실행합니다"
+        help="전체 멤버·종목에 Simulation(PG Actor-Critic)을 순차 실행합니다"
     )
 with _sb_r1c3:
     st.markdown('<span class="stop-btn-marker"></span>', unsafe_allow_html=True)
@@ -779,6 +819,44 @@ for m_config in sorted_modules:
                     st.session_state[f"eps_{m_name}_{stock_name}"]   = _pend["epsilon"]
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
 
+                # ── Simulation 완료 후 파라미터 저장 확인 다이얼로그 ──
+                _sim_confirm_key = f"sim_confirm_{hist_key}"
+                if _sim_confirm_key in st.session_state:
+                    _cf = st.session_state[_sim_confirm_key]
+                    with st.container(border=True):
+                        st.markdown(
+                            f"**💾 Simulation 완료 — 최적 파라미터를 저장하시겠습니까?**  \n"
+                            f"Gap **{_cf['gap']:+.2f}%** &nbsp;|&nbsp; "
+                            f"STATIC **{_cf['s_final']:+.2f}%** &nbsp;·&nbsp; "
+                            f"Vanilla **{_cf['v_final']:+.2f}%**  \n"
+                            f"`LR={_cf['lr']:.4f}` &nbsp; `γ={_cf['gamma']:.4f}` &nbsp; "
+                            f"`ε(S)={_cf['epsilon']:.4f}` &nbsp; `ε(V)={_cf['v_epsilon']:.4f}`"
+                        )
+                        _btn_save, _btn_cancel = st.columns(2)
+                        with _btn_save:
+                            if st.button(
+                                "✅ 저장 및 반영",
+                                key=f"confirm_save_{hist_key}",
+                                type="primary",
+                                use_container_width=True,
+                            ):
+                                # config.py에 영구 저장
+                                _save_sim_params_to_config(m_config, stock_idx, _cf)
+                                # 슬라이더 갱신 예약 + 자동 Run Evaluation
+                                st.session_state[f"sim_pending_{hist_key}"] = _cf
+                                st.session_state.stocks_reverted.add(hist_key)
+                                st.session_state[f"auto_run_{hist_key}"] = True
+                                del st.session_state[_sim_confirm_key]
+                                st.rerun()
+                        with _btn_cancel:
+                            if st.button(
+                                "✖ 반영 취소",
+                                key=f"confirm_cancel_{hist_key}",
+                                use_container_width=True,
+                            ):
+                                del st.session_state[_sim_confirm_key]
+                                st.rerun()
+
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
                     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
@@ -892,7 +970,7 @@ for m_config in sorted_modules:
                                else "✅ 목표 달성(≥1%)" if sr.get("found")
                                else "⚠️ 최선값")
                     st.caption(
-                        f"🔍 최근 Simulation (Bayesian Opt) — {_status}  |  "
+                        f"🔍 최근 Simulation (PG Actor-Critic) — {_status}  |  "
                         f"LR={sr['lr']:.4f}  γ={sr['gamma']:.4f}  "
                         f"ε(S)={sr['epsilon']:.4f}  ε(V)={sr['v_epsilon']:.4f}  |  "
                         f"STATIC {sr['s_final']:+.2f}%  Vanilla {sr['v_final']:+.2f}%  "
@@ -1244,14 +1322,16 @@ for m_config in sorted_modules:
                             'gap': best['gap'],
                         }
 
-                    st.session_state[f"sim_pending_{hist_key}"] = {
+                    # 저장 여부 확인 대기 → sim_confirm에 보관 후 rerun
+                    st.session_state[f"sim_confirm_{hist_key}"] = {
                         "lr":        best["lr"],
                         "gamma":     best["gamma"],
                         "epsilon":   best["epsilon"],
                         "v_epsilon": best["v_epsilon"],
+                        "gap":       best["gap"],
+                        "s_final":   best.get("s_final", 0.0),
+                        "v_final":   best.get("v_final", 0.0),
                     }
-                    st.session_state.stocks_reverted.add(hist_key)
-                    st.session_state[f"auto_run_{hist_key}"] = True
                     sim_display.empty()
                     st.rerun()
 
