@@ -1278,7 +1278,7 @@ for m_config in sorted_modules:
                                         ),
                                         legend=dict(
                                             orientation="v",
-                                            x=0.01, y=0.99,
+                                            x=0.01, y=0.82,
                                             xanchor="left", yanchor="top",
                                             font=dict(size=12, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
@@ -1347,7 +1347,7 @@ for m_config in sorted_modules:
                                         yaxis=dict(title="<b>Gap (%)</b>", showgrid=True),
                                         legend=dict(
                                             orientation="v",
-                                            x=0.01, y=0.99,
+                                            x=0.01, y=0.82,
                                             xanchor="left", yanchor="top",
                                             font=dict(size=11, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
@@ -1617,7 +1617,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                                             key=f"tribox_{m_name}_{stock_name}")
                         with stat_col:
                             # 스페이서: 통계 요약 섹션을 하단으로 이동
-                            st.markdown("<div style='height:130px;'></div>", unsafe_allow_html=True)
+                            st.markdown("<div style='height:50px;'></div>", unsafe_allow_html=True)
                             st.markdown(f"""
 <div style='background:var(--secondary-background-color);padding:14px 16px;border-radius:10px;
 border:1px solid rgba(128,128,128,0.3);'>
