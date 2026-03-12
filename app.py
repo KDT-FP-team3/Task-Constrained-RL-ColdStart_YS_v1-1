@@ -267,52 +267,115 @@ revert_all_clicked = _sb_r2c2.button(
 )
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
-    st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
+    st.markdown("<small><b>System Parameters &nbsp;—&nbsp; ☑ 체크한 항목만 일괄 적용</b></small>", unsafe_allow_html=True)
     _fb_tf_options = ["15 min.", "1 hour", "1 day", "1 week", "1 month"]
     _fb_tf_map     = {"15 min.": "15m", "1 hour": "1h", "1 day": "1d", "1 week": "1wk", "1 month": "1mo"}
     _fb_lbl_map    = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
     _fb_min_map    = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
     _fb_max_map    = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
     _fb_def_map    = {"15m": 80, "1h": 120, "1d": 80, "1wk": 105, "1mo": 24}
-    fb_tf_sel = st.selectbox(
-        "Timeframe", _fb_tf_options, index=3,
-        key="fb_timeframe",
-        help="데이터 봉 단위 (15분/1시간: 최근 60일/730일 제한)"
-    )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_timeframe", label_visibility="collapsed")
+    with _wg:
+        fb_tf_sel = st.selectbox(
+            "Timeframe", _fb_tf_options, index=3,
+            key="fb_timeframe",
+            help="데이터 봉 단위 (15분/1시간: 최근 60일/730일 제한)"
+        )
     fb_interval = _fb_tf_map[fb_tf_sel]
-    global_episodes = st.slider(
-        _fb_lbl_map[fb_interval],
-        _fb_min_map[fb_interval], _fb_max_map[fb_interval], _fb_def_map[fb_interval],
-        key=f"fb_epi_{fb_interval}"
-    )
-    global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.03,
-                                  step=0.01, format="%.2f",    key="fb_frame")
-    global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
-    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=6,
-                                        step=1,                key="fb_auto")
-    global_active_agents = st.multiselect(
-        "Active Agents",
-        options=["Vanilla RL", "STATIC RL"],
-        default=["Vanilla RL", "STATIC RL"],
-        key="fb_active_agents",
-        help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
-    )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_episodes", label_visibility="collapsed")
+    with _wg:
+        global_episodes = st.slider(
+            _fb_lbl_map[fb_interval],
+            _fb_min_map[fb_interval], _fb_max_map[fb_interval], _fb_def_map[fb_interval],
+            key=f"fb_epi_{fb_interval}"
+        )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_frame", label_visibility="collapsed")
+    with _wg:
+        global_frame = st.slider("Frame Speed (sec)", 0.01, 2.0, 0.03,
+                                 step=0.01, format="%.2f", key="fb_frame")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_seed", label_visibility="collapsed")
+    with _wg:
+        global_seed = st.number_input("Base Seed", value=2026, step=1, key="fb_seed")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_auto", label_visibility="collapsed")
+    with _wg:
+        global_auto_runs = st.number_input("Auto Run Count", min_value=1, value=6,
+                                           step=1, key="fb_auto")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_active", label_visibility="collapsed")
+    with _wg:
+        global_active_agents = st.multiselect(
+            "Active Agents",
+            options=["Vanilla RL", "STATIC RL"],
+            default=["Vanilla RL", "STATIC RL"],
+            key="fb_active_agents",
+            help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
+        )
+
     st.markdown(
         "<small><b>RL Hyperparameters &nbsp;"
         "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
         "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
         unsafe_allow_html=True
     )
-    global_lr         = st.slider("Learning Rate (α)",  0.001, 0.1,  0.01,
-                                  step=0.001, format="%.3f",   key="fb_lr")
-    global_gamma      = st.slider("Discount Factor (γ)",0.1,   0.99, 0.98,       key="fb_gamma")
-    global_epsilon    = st.slider("STATIC ε",           0.01,  0.5,  0.10,       key="fb_eps",
-                                  help="STATIC RL 탐험율")
-    global_v_epsilon  = st.slider("Vanilla ε",          0.01,  0.5,  0.10,       key="fb_v_eps",
-                                  help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_lr", label_visibility="collapsed")
+    with _wg:
+        global_lr = st.slider("Learning Rate (α)", 0.001, 0.1, 0.01,
+                              step=0.001, format="%.3f", key="fb_lr")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_gamma", label_visibility="collapsed")
+    with _wg:
+        global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.98, key="fb_gamma")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_eps", label_visibility="collapsed")
+    with _wg:
+        global_epsilon = st.slider("STATIC ε", 0.01, 0.5, 0.10, key="fb_eps",
+                                   help="STATIC RL 탐험율")
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=True, key="fb_chk_v_eps", label_visibility="collapsed")
+    with _wg:
+        global_v_epsilon = st.slider("Vanilla ε", 0.01, 0.5, 0.10, key="fb_v_eps",
+                                     help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)")
 
 # 버튼 클릭 시 현재 슬라이더 값 스냅샷 저장 (슬라이더가 위에서 이미 렌더됨)
 if apply_all_clicked:
+    _chks = {
+        "timeframe": bool(st.session_state.get("fb_chk_timeframe", True)),
+        "episodes":  bool(st.session_state.get("fb_chk_episodes",  True)),
+        "frame":     bool(st.session_state.get("fb_chk_frame",     True)),
+        "seed":      bool(st.session_state.get("fb_chk_seed",      True)),
+        "auto":      bool(st.session_state.get("fb_chk_auto",      True)),
+        "active":    bool(st.session_state.get("fb_chk_active",    True)),
+        "lr":        bool(st.session_state.get("fb_chk_lr",        True)),
+        "gamma":     bool(st.session_state.get("fb_chk_gamma",     True)),
+        "eps":       bool(st.session_state.get("fb_chk_eps",       True)),
+        "v_eps":     bool(st.session_state.get("fb_chk_v_eps",     True)),
+    }
     st.session_state.fallback_params = {
         "timeframe":     fb_tf_sel,
         "interval":      fb_interval,
@@ -325,6 +388,7 @@ if apply_all_clicked:
         "gamma":         global_gamma,
         "epsilon":       global_epsilon,
         "v_epsilon":     global_v_epsilon,
+        "checked":       _chks,
     }
     st.session_state.stock_use_fallback = "ALL"
     st.session_state.stocks_reverted    = set()
@@ -764,46 +828,64 @@ if sim_all_btn:
 
 # ── All 적용: 모든 멤버·종목 슬라이더 키 일괄 업데이트 ──
 _ALL_INTERVALS = ["15m", "1h", "1d", "1wk", "1mo"]
+_ALL_CHK_KEYS  = ["timeframe","episodes","frame","seed","auto","active","lr","gamma","eps","v_eps"]
 if apply_all_clicked and st.session_state.fallback_params:
-    _fp = st.session_state.fallback_params
+    _fp   = st.session_state.fallback_params
+    _chks = _fp.get("checked", {k: True for k in _ALL_CHK_KEYS})
     _new_tf = _fp.get("timeframe", "1 week")
     _new_iv = _fp.get("interval", "1wk")
-    # 이전 상태 스냅샷 저장
+    # 이전 상태 스냅샷 저장 (체크된 파라미터만)
     _prev = {}
     for _mc in sorted_modules:
         _mn = getattr(_mc, 'MEMBER_NAME', _mc.__name__)
         _def_stks = [all_stock_names[i] for i in getattr(_mc, 'TARGET_INDICES', []) if i in all_stock_names]
         _sel_stks = st.session_state.get(f"ms_{_mn}", _def_stks)
         for _sn in _sel_stks:
-            for _k in [
-                f"tf_{_mn}_{_sn}", f"fspd_{_mn}_{_sn}", f"seed_{_mn}_{_sn}",
-                f"autoruns_{_mn}_{_sn}", f"active_{_mn}_{_sn}",
-                f"lr_{_mn}_{_sn}", f"gamma_{_mn}_{_sn}",
-                f"eps_{_mn}_{_sn}", f"v_eps_{_mn}_{_sn}",
-            ]:
+            _snap = []
+            if _chks.get("timeframe"): _snap.append(f"tf_{_mn}_{_sn}")
+            if _chks.get("frame"):     _snap.append(f"fspd_{_mn}_{_sn}")
+            if _chks.get("seed"):      _snap.append(f"seed_{_mn}_{_sn}")
+            if _chks.get("auto"):      _snap.append(f"autoruns_{_mn}_{_sn}")
+            if _chks.get("active"):    _snap.append(f"active_{_mn}_{_sn}")
+            if _chks.get("lr"):        _snap.append(f"lr_{_mn}_{_sn}")
+            if _chks.get("gamma"):     _snap.append(f"gamma_{_mn}_{_sn}")
+            if _chks.get("eps"):       _snap.append(f"eps_{_mn}_{_sn}")
+            if _chks.get("v_eps"):     _snap.append(f"v_eps_{_mn}_{_sn}")
+            for _k in _snap:
                 if _k in st.session_state:
                     _prev[_k] = st.session_state[_k]
-            for _iv in _ALL_INTERVALS:
-                _ek = f"epi_{_mn}_{_sn}_{_iv}"
-                if _ek in st.session_state:
-                    _prev[_ek] = st.session_state[_ek]
+            if _chks.get("episodes"):
+                for _iv in _ALL_INTERVALS:
+                    _ek = f"epi_{_mn}_{_sn}_{_iv}"
+                    if _ek in st.session_state:
+                        _prev[_ek] = st.session_state[_ek]
     st.session_state.fallback_prev_state = _prev
-    # 새 값 일괄 적용
+    # 새 값 일괄 적용 (체크된 파라미터만)
     for _mc in sorted_modules:
         _mn = getattr(_mc, 'MEMBER_NAME', _mc.__name__)
         _def_stks = [all_stock_names[i] for i in getattr(_mc, 'TARGET_INDICES', []) if i in all_stock_names]
         _sel_stks = st.session_state.get(f"ms_{_mn}", _def_stks)
         for _sn in _sel_stks:
-            st.session_state[f"tf_{_mn}_{_sn}"]             = _new_tf
-            st.session_state[f"epi_{_mn}_{_sn}_{_new_iv}"]  = _fp["episodes"]
-            st.session_state[f"fspd_{_mn}_{_sn}"]           = _fp["frame_speed"]
-            st.session_state[f"seed_{_mn}_{_sn}"]           = _fp["seed"]
-            st.session_state[f"autoruns_{_mn}_{_sn}"]       = _fp["auto_runs"]
-            st.session_state[f"active_{_mn}_{_sn}"]         = _fp.get("active_agents", ["Vanilla RL", "STATIC RL"])
-            st.session_state[f"lr_{_mn}_{_sn}"]             = _fp["lr"]
-            st.session_state[f"gamma_{_mn}_{_sn}"]          = _fp["gamma"]
-            st.session_state[f"eps_{_mn}_{_sn}"]            = _fp["epsilon"]
-            st.session_state[f"v_eps_{_mn}_{_sn}"]          = _fp["v_epsilon"]
+            if _chks.get("timeframe"):
+                st.session_state[f"tf_{_mn}_{_sn}"]            = _new_tf
+            if _chks.get("episodes"):
+                st.session_state[f"epi_{_mn}_{_sn}_{_new_iv}"] = _fp["episodes"]
+            if _chks.get("frame"):
+                st.session_state[f"fspd_{_mn}_{_sn}"]          = _fp["frame_speed"]
+            if _chks.get("seed"):
+                st.session_state[f"seed_{_mn}_{_sn}"]          = _fp["seed"]
+            if _chks.get("auto"):
+                st.session_state[f"autoruns_{_mn}_{_sn}"]      = _fp["auto_runs"]
+            if _chks.get("active"):
+                st.session_state[f"active_{_mn}_{_sn}"]        = _fp.get("active_agents", ["Vanilla RL", "STATIC RL"])
+            if _chks.get("lr"):
+                st.session_state[f"lr_{_mn}_{_sn}"]            = _fp["lr"]
+            if _chks.get("gamma"):
+                st.session_state[f"gamma_{_mn}_{_sn}"]         = _fp["gamma"]
+            if _chks.get("eps"):
+                st.session_state[f"eps_{_mn}_{_sn}"]           = _fp["epsilon"]
+            if _chks.get("v_eps"):
+                st.session_state[f"v_eps_{_mn}_{_sn}"]         = _fp["v_epsilon"]
     st.rerun()
 
 # ── 되돌리기: 이전 상태 복원 ──
@@ -1487,16 +1569,25 @@ for m_config in sorted_modules:
                     and hist_key not in st.session_state.stocks_reverted
                 )
                 if _use_fb:
-                    fp = st.session_state.fallback_params
-                    eff_lr, eff_gamma, eff_eps = fp["lr"],   fp["gamma"],   fp["epsilon"]
-                    eff_epi, eff_seed          = fp["episodes"], fp["seed"]
-                    eff_v_eps          = fp.get("v_epsilon", fp["epsilon"])
-                    eff_active_agents  = fp.get("active_agents", ["Vanilla RL", "STATIC RL"])
+                    fp    = st.session_state.fallback_params
+                    _fchk = fp.get("checked", {k: True for k in _ALL_CHK_KEYS})
+                    eff_lr      = fp["lr"]                                      if _fchk.get("lr")       else l_lr
+                    eff_gamma   = fp["gamma"]                                   if _fchk.get("gamma")    else l_gamma
+                    eff_eps     = fp["epsilon"]                                 if _fchk.get("eps")      else l_epsilon
+                    eff_epi     = fp["episodes"]                                if _fchk.get("episodes") else l_epi
+                    eff_seed    = fp["seed"]                                    if _fchk.get("seed")     else l_seed
+                    eff_v_eps   = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")    else l_v_epsilon
+                    eff_active_agents = fp.get("active_agents", ["Vanilla RL", "STATIC RL"]) if _fchk.get("active") else l_active_agents
+                    _fb_parts = []
+                    if _fchk.get("lr"):       _fb_parts.append(f"LR={eff_lr:.3f}")
+                    if _fchk.get("gamma"):    _fb_parts.append(f"γ={eff_gamma:.2f}")
+                    if _fchk.get("eps"):      _fb_parts.append(f"ε(S)={eff_eps:.2f}")
+                    if _fchk.get("v_eps"):    _fb_parts.append(f"ε(V)={eff_v_eps:.2f}")
+                    if _fchk.get("episodes"): _fb_parts.append(f"Days={eff_epi}")
+                    if _fchk.get("seed"):     _fb_parts.append(f"Seed={eff_seed}")
+                    if _fchk.get("active"):   _fb_parts.append(f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'}")
                     st.info(
-                        f"Fallback 파라미터 적용 중 "
-                        f"(LR={eff_lr:.3f} γ={eff_gamma:.2f} ε(S)={eff_eps:.2f} ε(V)={eff_v_eps:.2f} "
-                        f"Days={eff_epi} Seed={eff_seed} "
-                        f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'})",
+                        "Fallback 파라미터 적용 중 (" + "  ".join(_fb_parts) + ")",
                         icon="ℹ️"
                     )
                 else:
@@ -1753,7 +1844,7 @@ border:1px solid rgba(128,128,128,0.3);'>
                                     "selector": "th",
                                     "props": [("text-align", "center")]
                                 }]),
-                                height=240, use_container_width=True
+                                height=300, use_container_width=True
                             )
 
                 total_episodes_run += l_epi
