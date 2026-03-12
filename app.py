@@ -399,25 +399,27 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                 ))
                 fig_members.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
                 tf_color = "#4a90d9" if tf_final >= 0 else "#ff4b4b"
+                # Team Fund 라벨: 제목과 그래프 최상단 사이 우측
                 fig_members.add_annotation(
-                    x=0.02, y=0.97, xref="paper", yref="paper",
+                    x=0.98, y=1.0, xref="paper", yref="paper",
                     text=f"<b>Team Fund: {tf_final:+.2f}%</b>",
                     showarrow=False, font=dict(color=tf_color, size=13),
                     bgcolor='rgba(20,20,35,0.75)',
                     bordercolor=tf_color, borderwidth=1, borderpad=5,
-                    align="left", xanchor="left", yanchor="top"
+                    align="right", xanchor="right", yanchor="bottom"
                 )
                 fig_members.update_layout(
                     title=dict(text="<b>All Members: STATIC RL Cumulative Returns + Team Fund</b>",
                                font=dict(size=14)),
                     xaxis=dict(title="<b>Trading Days</b>", showgrid=True),
                     yaxis=dict(title="<b>Cumulative Return (%)</b>", showgrid=True),
-                    legend=dict(font=dict(size=10), orientation="h",
-                                yanchor="top", y=-0.18, xanchor="center", x=0.5,
-                                bgcolor='rgba(128,128,128,0.12)',
+                    # 범례: 그래프 내부 좌측 상단
+                    legend=dict(font=dict(size=10), orientation="v",
+                                yanchor="top", y=0.99, xanchor="left", x=0.01,
+                                bgcolor='rgba(20,20,35,0.75)',
                                 bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
                     plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-                    height=370, margin=dict(t=45, b=90, l=55, r=15)
+                    height=370, margin=dict(t=45, b=15, l=55, r=15)
                 )
                 st.plotly_chart(fig_members, use_container_width=True,
                                 key=f"team_fund_chart_{key_suffix}")
@@ -599,17 +601,25 @@ def _make_trial_box_fig(df_h):
         showarrow=False, yshift=18, xanchor='center', align='center',
         font=dict(color="green", size=13, family="Arial Black"), bgcolor="rgba(0,0,0,0)")
 
+    _box_vals = (list(df_h['Vanilla Final (%)']) + list(df_h['STATIC Final (%)'])
+                 + [avg_market, v_mean, s_mean, med_v, med_s])
+    _by_max = max(_box_vals)
+    _by_min = min(_box_vals)
+    _by_pad = (_by_max - _by_min) * 0.35   # 제목과 최고점 사이 여백 확보
     fig.update_layout(
         title=dict(text="<b>Return Distribution across Trials</b>",
                    font=dict(size=22, family="Arial Black")),
-        yaxis=dict(title=dict(text="<b>Final Return (%)</b>", font=dict(size=18, family="Arial Black"))),
+        yaxis=dict(
+            title=dict(text="<b>Final Return (%)</b>", font=dict(size=18, family="Arial Black")),
+            range=[_by_min - _by_pad, _by_max + _by_pad],
+        ),
         xaxis=dict(
             title=dict(text="<b>Performance Metrics</b>", font=dict(size=18, family="Arial Black")),
             tickmode='array', tickvals=[1.0, 2.25],
             ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'], range=[0.3, 2.9]
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=510, margin=dict(t=55, b=50, l=50, r=50)
+        height=510, margin=dict(t=75, b=50, l=50, r=50)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
     return fig
