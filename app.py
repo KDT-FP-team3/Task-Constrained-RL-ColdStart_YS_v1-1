@@ -108,16 +108,27 @@ if 'ghost_data' not in st.session_state:
 if 'member_traces' not in st.session_state:
     st.session_state.member_traces = {}
     # key: member_name → {'s_trace': np.array, 'dates': index, 'stocks': list[str]}
+if 'run_all_queue' not in st.session_state:
+    st.session_state.run_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
+if 'sim_all_queue' not in st.session_state:
+    st.session_state.sim_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
 
 # ==========================================
 # 1. 실시간 시스템 상태: 단순 수평 막대
 # ==========================================
 def update_load_bar(episodes_run, placeholder, is_loading=False):
-    """컬러 그라디언트 수평 막대로 Real-time Load 표시 (0%=좌, 100%=우, 파랑→주황→빨강)."""
+    """컬러 그라디언트 수평 막대로 Real-time Load 표시.
+    50% 시 파랑→주황, 100% 시 파랑→주황→빨강 (background-size 트릭으로 비율 반영)."""
     max_load = 6000
     load_pct = min(episodes_run / max_load, 1.0)
     pct_val = load_pct * 100
-    bar_width = max(pct_val, 2) if pct_val > 0 else 0  # 0일 때 완전히 비움
+    bar_width = max(pct_val, 1.5) if pct_val > 0 else 0
+    # background-size를 (100/load_pct)%로 설정 → 채워진 div 내에서 그라디언트의 앞부분만 보임
+    # 예: 50% 채움 → background-size=200% → 그라디언트 0~50% 구간(파랑→주황)만 표시
+    if load_pct > 0.005:
+        bg_size = f"{100 / load_pct:.1f}% 100%"
+    else:
+        bg_size = "100% 100%"
     label = "⏳ Loading..." if is_loading else f"Real-time Load: {pct_val:.1f}%"
     with placeholder:
         st.markdown(
@@ -127,6 +138,7 @@ def update_load_bar(episodes_run, placeholder, is_loading=False):
             f"width:100%;overflow:hidden;border:1px solid rgba(120,120,140,0.3);'>"
             f"  <div style='height:100%;width:{bar_width:.1f}%;border-radius:5px;"
             f"background:linear-gradient(90deg,#2196f3 0%,#ff9800 50%,#ff4b4b 100%);"
+            f"background-size:{bg_size};background-position:left center;"
             f"transition:width 0.3s ease;'></div>"
             f"</div>"
             f"<div style='display:flex;justify-content:space-between;font-size:9px;"
@@ -142,14 +154,32 @@ update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
 
-# ── All 적용 버튼 (파라미터 창 위에 배치) ──
+# ── All 버튼 행: [All 적용] [Run Eval. All] [Simul. All] ──
 _fb_active = st.session_state.stock_use_fallback == "ALL"
-_fb_label  = "✅ Fallback 적용 중" if _fb_active else "🔁 All 적용"
-apply_all_clicked = st.sidebar.button(
-    _fb_label, key="sidebar_apply_all", type="primary",
-    help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다\n"
-         "(각 종목 Parameters 위젯 값은 변경되지 않습니다)"
-)
+_fb_label  = "✅ FB 적용중" if _fb_active else "🔁 All 적용"
+_sb_c1, _sb_c2, _sb_c3 = st.sidebar.columns(3)
+with _sb_c1:
+    apply_all_clicked = st.button(
+        _fb_label, key="sidebar_apply_all", type="primary",
+        use_container_width=True,
+        help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다"
+    )
+with _sb_c2:
+    _rq_cnt = len(st.session_state.run_all_queue)
+    _re_label = f"▶ 실행중({_rq_cnt})" if _rq_cnt > 0 else "▶ Eval. All"
+    run_eval_all_btn = st.button(
+        _re_label, key="sidebar_run_eval_all", type="primary",
+        use_container_width=True,
+        help="전체 멤버·종목에 Run Evaluation을 순차 실행합니다"
+    )
+with _sb_c3:
+    _sq_cnt = len(st.session_state.sim_all_queue)
+    _si_label = f"⚙ 실행중({_sq_cnt})" if _sq_cnt > 0 else "⚙ Simul. All"
+    sim_all_btn = st.button(
+        _si_label, key="sidebar_sim_all", type="primary",
+        use_container_width=True,
+        help="전체 멤버·종목에 Simulation(Bayesian Opt)을 순차 실행합니다"
+    )
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
@@ -301,11 +331,8 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             first_mn   = member_names_sorted[0]
             dates_ref  = list(member_traces_snap[first_mn]['dates'])[:min_len]
 
-        # ── Row 1: donut | bar | (All Members 차트 — traces 있을 때) ──
-        if has_traces:
-            col1, col2, col3 = st.columns([1, 1.1, 1.6])
-        else:
-            col1, col2 = st.columns([1, 1.1])
+        # ── Row 1: donut | bar | All Members 차트 (항상 3열) ──
+        col1, col2, col3 = st.columns([1, 1.1, 1.6])
 
         with col1:
             st.plotly_chart(fig_donut, use_container_width=True, key=f"top_donut_{key_suffix}")
@@ -385,6 +412,15 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             st.dataframe(pd.DataFrame(merged_rows).style.map(color_neg),
                          use_container_width=True, hide_index=True)
         else:
+            # traces 없을 때 col3에 안내 메시지
+            with col3:
+                st.markdown(
+                    "<div style='height:340px;display:flex;align-items:center;justify-content:center;"
+                    "border:1px dashed rgba(120,120,140,0.3);border-radius:8px;"
+                    "color:rgba(160,160,180,0.6);font-size:13px;text-align:center;'>"
+                    "▶ Run Evaluation 또는<br>Eval. All 실행 후<br>All Members 차트가 표시됩니다</div>",
+                    unsafe_allow_html=True
+                )
             st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
     return current_summary
@@ -574,6 +610,23 @@ for item in sorted(os.listdir(members_dir)):
 sorted_modules = sorted(team_modules, key=lambda m: getattr(m, "MEMBER_NAME", m.__name__))
 all_stock_names = {idx: info["name"] for idx, info in STOCK_REGISTRY.items()}
 name_to_index = {info["name"]: idx for idx, info in STOCK_REGISTRY.items()}
+
+# ── Run Eval. All / Simul. All 버튼 클릭 시 큐 채우기 ──
+def _build_all_queue():
+    """현재 선택된 전체 멤버·종목 목록으로 큐 생성"""
+    _q = []
+    for _mc in sorted_modules:
+        _mn = getattr(_mc, 'MEMBER_NAME', _mc.__name__)
+        _default = [all_stock_names[i] for i in getattr(_mc, 'TARGET_INDICES', []) if i in all_stock_names]
+        _sel = st.session_state.get(f"ms_{_mn}", _default)
+        for _sn in _sel:
+            _q.append((_mn, _sn))
+    return _q
+
+if run_eval_all_btn:
+    st.session_state.run_all_queue = _build_all_queue()
+if sim_all_btn:
+    st.session_state.sim_all_queue = _build_all_queue()
 
 total_charts = sum(
     len(st.session_state.get(
@@ -777,6 +830,15 @@ for m_config in sorted_modules:
                     st.session_state[_auto_run_key] = False
                     run_clicked = True
 
+                # ── Run Eval. All / Simul. All 큐 처리 ──
+                _rq = st.session_state.run_all_queue
+                if _rq and _rq[0] == (m_name, stock_name):
+                    run_clicked = True
+                _sq = st.session_state.sim_all_queue
+                if _sq and _sq[0] == (m_name, stock_name):
+                    sim_clicked = True
+                    st.session_state.sim_all_queue = _sq[1:]  # 즉시 팝 (sim은 rerun 전 팝)
+
                 # ══════════════════════════════════════════
                 # Run Evaluation
                 # ══════════════════════════════════════════
@@ -807,6 +869,10 @@ for m_config in sorted_modules:
                                 "Market Final (%)":  float(mkt.iloc[-1]),
                             })
                     run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
+                    # Run Eval. All 큐 팝 (rerun 전에 처리 완료 항목 제거)
+                    _rq = st.session_state.run_all_queue
+                    if _rq and _rq[0] == (m_name, stock_name):
+                        st.session_state.run_all_queue = _rq[1:]
                     st.rerun()
 
                 # ══════════════════════════════════════════
