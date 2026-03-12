@@ -886,57 +886,78 @@ for m_config in sorted_modules:
                         for _k in param_bounds:
                             param_hist[_k].append(candidate.get(_k, best.get(_k, 0.0)))
 
-                        # ─ 실시간 디스플레이 ─
+                        # ─ 실시간 디스플레이: 좌(진행상황+파라미터) / 우(Gap 수렴 차트) ─
                         with sim_display.container(border=True):
                             _prog     = (_i + 1) / n_iters
                             _goal_txt = " ✅" if best["gap"] >= 5.0 else ""
-                            st.progress(_prog,
-                                text=f"{phase_name}  {_i+1}/{n_iters}  |  "
-                                     f"STATIC {best['s_final']:+.2f}%  "
-                                     f"Vanilla {best['v_final']:+.2f}%  "
-                                     f"Gap {best['gap']:+.1f}%{_goal_txt}")
-                            _pc1, _pc2, _pc3, _pc4 = st.columns(4)
+
                             _prev_lr = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate.get("lr", best["lr"])
                             _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate.get("gamma", best["gamma"])
                             _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate.get("epsilon", best["epsilon"])
                             _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate.get("v_epsilon", best["v_epsilon"])
-                            _pc1.metric("Learning Rate (α)", f'{candidate.get("lr", best["lr"]):.4f}',
-                                        f'{candidate.get("lr", best["lr"]) - _prev_lr:+.4f}')
-                            _pc2.metric("Discount Factor (γ)", f'{candidate.get("gamma", best["gamma"]):.4f}',
-                                        f'{candidate.get("gamma", best["gamma"]) - _prev_g:+.4f}')
-                            _pc3.metric("STATIC ε",  f'{candidate.get("epsilon", best["epsilon"]):.4f}',
-                                        f'{candidate.get("epsilon", best["epsilon"]) - _prev_e:+.4f}')
-                            _pc4.metric("Vanilla ε", f'{candidate.get("v_epsilon", best["v_epsilon"]):.4f}',
-                                        f'{candidate.get("v_epsilon", best["v_epsilon"]) - _prev_ve:+.4f}')
 
-                            if len(gap_history) > 1:
-                                _fig_sim = go.Figure()
-                                _fig_sim.add_trace(go.Scatter(
-                                    x=list(range(1, len(gap_history) + 1)),
-                                    y=gap_history,
-                                    mode="lines",
-                                    line=dict(color="#4a90d9", width=2),
-                                ))
-                                _fig_sim.add_hline(y=5.0, line_dash="dash",
-                                                   line_color="#50c878",
-                                                   annotation_text="목표 +5%")
-                                # GP 전환점 수직선
-                                if _i >= n_random:
-                                    _fig_sim.add_vline(
-                                        x=n_random,
-                                        line_dash="dot", line_color="#ff9800",
-                                        annotation_text="GP Start",
-                                        annotation_position="top right"
-                                    )
-                                _fig_sim.update_layout(
-                                    height=150, margin=dict(l=0, r=0, t=10, b=0),
-                                    xaxis_title="Iteration", yaxis_title="Gap (%)",
-                                    showlegend=False,
-                                    paper_bgcolor="rgba(0,0,0,0)",
-                                    plot_bgcolor="rgba(0,0,0,0)"
+                            _disp_lr  = candidate.get("lr",        best["lr"])
+                            _disp_g   = candidate.get("gamma",     best["gamma"])
+                            _disp_e   = candidate.get("epsilon",   best["epsilon"])
+                            _disp_ve  = candidate.get("v_epsilon", best["v_epsilon"])
+
+                            # ── 2컬럼: 좌(진행+파라미터 카드) | 우(Gap 차트) ──
+                            _left_col, _right_col = st.columns([1, 2])
+
+                            with _left_col:
+                                st.progress(_prog,
+                                    text=f"{phase_name}  {_i+1}/{n_iters}  |  "
+                                         f"Gap {best['gap']:+.1f}%{_goal_txt}")
+                                st.markdown(
+                                    f"<div style='font-size:11px;color:rgba(180,180,180,0.7);"
+                                    f"margin:2px 0 6px 0;'>"
+                                    f"STATIC {best['s_final']:+.2f}%  &nbsp;·&nbsp;  "
+                                    f"Vanilla {best['v_final']:+.2f}%</div>",
+                                    unsafe_allow_html=True
                                 )
-                                st.plotly_chart(_fig_sim, use_container_width=True,
-                                                key=f"sim_chart_{m_name}_{stock_name}_{_i}")
+                                # 파라미터 카드 2×2 배치
+                                _r1c1, _r1c2 = st.columns(2)
+                                _r2c1, _r2c2 = st.columns(2)
+                                _r1c1.metric("Learning Rate (α)", f"{_disp_lr:.4f}",  f"{_disp_lr  - _prev_lr:+.4f}")
+                                _r1c2.metric("Discount Factor (γ)", f"{_disp_g:.4f}", f"{_disp_g   - _prev_g:+.4f}")
+                                _r2c1.metric("STATIC ε",  f"{_disp_e:.4f}",  f"{_disp_e  - _prev_e:+.4f}")
+                                _r2c2.metric("Vanilla ε", f"{_disp_ve:.4f}", f"{_disp_ve - _prev_ve:+.4f}")
+
+                            with _right_col:
+                                if len(gap_history) > 1:
+                                    _fig_sim = go.Figure()
+                                    _fig_sim.add_trace(go.Scatter(
+                                        x=list(range(1, len(gap_history) + 1)),
+                                        y=gap_history,
+                                        mode="lines+markers",
+                                        line=dict(color="#4a90d9", width=2),
+                                        marker=dict(size=4, color="#4a90d9"),
+                                    ))
+                                    _fig_sim.add_hline(y=5.0, line_dash="dash",
+                                                       line_color="#50c878",
+                                                       annotation_text="목표 +5%",
+                                                       annotation_position="top right")
+                                    # GP 전환점 수직선
+                                    if _i >= n_random:
+                                        _fig_sim.add_vline(
+                                            x=n_random,
+                                            line_dash="dot", line_color="#ff9800",
+                                            annotation_text="GP Start",
+                                            annotation_position="top left"
+                                        )
+                                    _fig_sim.update_layout(
+                                        title=dict(text="<b>Gap Convergence (STATIC − Vanilla)</b>",
+                                                   font=dict(size=13)),
+                                        height=280,
+                                        margin=dict(l=10, r=20, t=36, b=36),
+                                        xaxis=dict(title="Iteration", showgrid=True),
+                                        yaxis=dict(title="Gap (%)", showgrid=True),
+                                        showlegend=False,
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)"
+                                    )
+                                    st.plotly_chart(_fig_sim, use_container_width=True,
+                                                    key=f"sim_chart_{m_name}_{stock_name}_{_i}")
 
                     # ─ 완료: Ghost 데이터 저장 ─
                     best["found"] = best["gap"] >= 5.0
