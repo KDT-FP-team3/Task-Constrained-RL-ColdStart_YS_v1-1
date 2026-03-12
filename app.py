@@ -264,8 +264,10 @@ with st.container():
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
     st.markdown('<h2 class="sticky-sub-title">Master Fund Portfolio Report</h2>', unsafe_allow_html=True)
     master_progress_placeholder = st.empty()
-    summary_placeholder = st.empty()
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
+
+# 차트+테이블 영역은 sticky 컨테이너 밖에 위치 (차트 표시 보장)
+summary_placeholder = st.empty()
 
 # ==========================================
 # 2. 통합 대시보드 (Alpha 비교 + 팀 펀드 에쿼티)
@@ -1081,7 +1083,7 @@ for m_config in sorted_modules:
                             _prev_ve  = mu_hist_norm["v_epsilon"][_prev_idx] * (param_bounds["v_epsilon"][1] - param_bounds["v_epsilon"][0]) + param_bounds["v_epsilon"][0]
 
                             # ── 2컬럼: 좌(진행+파라미터 카드) | 우(파라미터 수렴 차트) ──
-                            _left_col, _right_col = st.columns([1, 2])
+                            _left_col, _right_col = st.columns([1, 1.5])
 
                             with _left_col:
                                 st.progress(_prog,
@@ -1159,27 +1161,41 @@ for m_config in sorted_modules:
                                     _fig_sim.update_layout(
                                         title=dict(
                                             text="<b>파라미터 수렴(정책 μ) — x:Step, y:정규화값 [0-1]</b>",
-                                            font=dict(size=12)
+                                            font=dict(size=13),
+                                            x=0.5, xanchor="center",
                                         ),
-                                        height=295,
-                                        margin=dict(l=10, r=55, t=36, b=36),
-                                        xaxis=dict(title="Step", showgrid=True),
+                                        height=420,
+                                        margin=dict(l=10, r=65, t=48, b=40),
+                                        # 플롯 영역을 오른쪽으로 밀어 왼쪽에 범례 공간 확보
+                                        xaxis=dict(
+                                            domain=[0.30, 1.0],
+                                            title="<b>Step</b>",
+                                            showgrid=True,
+                                        ),
                                         yaxis=dict(
-                                            title="정규화 파라미터 [0-1]",
+                                            title="<b>정규화 파라미터 [0-1]</b>",
                                             showgrid=True,
                                             range=[-0.05, 1.05],
                                         ),
                                         yaxis2=dict(
-                                            title="Gap (%)",
+                                            title="<b>Gap (%)</b>",
                                             overlaying="y",
                                             side="right",
                                             showgrid=False,
                                         ),
+                                        # 범례: 왼쪽 30% 여유 공간에 세로 배치
                                         legend=dict(
-                                            font=dict(size=9),
-                                            orientation="h",
-                                            yanchor="bottom", y=1.02,
-                                            xanchor="left", x=0,
+                                            orientation="v",
+                                            x=0.0,
+                                            y=0.97,
+                                            xanchor="left",
+                                            yanchor="top",
+                                            font=dict(size=14, color="white"),
+                                            bgcolor="rgba(15,15,28,0.82)",
+                                            bordercolor="rgba(160,160,170,0.35)",
+                                            borderwidth=1,
+                                            tracegroupgap=10,
+                                            itemwidth=40,
                                         ),
                                         paper_bgcolor="rgba(0,0,0,0)",
                                         plot_bgcolor="rgba(0,0,0,0)",
