@@ -50,8 +50,8 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
     theta = np.zeros((n_states, n_actions))
     theta[0, 1] = -1.5   # 하락+EMA아래: 매수 강하게 비선호 (학습으로 조정 가능)
     theta[1, 1] = -0.8   # 상승+EMA아래: 매수 비선호
-    theta[2, 1] =  0.5   # 하락+EMA위: 매수 가능
-    theta[3, 1] =  1.2   # 상승+EMA위: 핵심 매수 신호
+    theta[2, 1] =  0.3   # 하락+EMA위: 약한 매수 선호 (강세장 buy-and-hold 고착 방지)
+    theta[3, 1] =  0.7   # 상승+EMA위: 매수 선호 (과도한 편향 완화: 1.2 → 0.7)
 
     # Critic 가치함수
     V = np.zeros(n_states)
@@ -125,7 +125,8 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
-    q_table[1, 1] = 0.05   # 상승 상태 초기 매수 선호
+    q_table[0, 1] = 0.02   # 하락 상태: 약한 매수 선호 (seed 의존 CASH 고착 방지)
+    q_table[1, 1] = 0.05   # 상승 상태: 매수 선호
 
     eps_start = min(epsilon * 3.0, 0.6)
 
