@@ -82,6 +82,25 @@ st.markdown("""
     background-color: #6322A3 !important;
     border-color: #6322A3 !important;
 }
+/* ── stop-btn-marker: 인터럽트 ■ 버튼 (작은 흰색 정사각형) ── */
+.element-container:has(.stop-btn-marker) {
+    display: none !important; height: 0 !important;
+    margin: 0 !important; padding: 0 !important;
+}
+[data-testid="column"]:not(:has([data-testid="column"])):has(.stop-btn-marker) button {
+    background-color: #f0f0f0 !important;
+    color: #1a1a2e !important;
+    border: 1.5px solid rgba(200,200,200,0.7) !important;
+    min-width: 2.4rem !important; max-width: 2.4rem !important;
+    width: 2.4rem !important; height: 2.4rem !important;
+    padding: 0 !important; font-size: 1.0rem !important;
+    border-radius: 4px !important;
+}
+[data-testid="column"]:not(:has([data-testid="column"])):has(.stop-btn-marker) button:hover {
+    background-color: #ffcccc !important;
+    border-color: #ff4b4b !important;
+    color: #cc0000 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -112,6 +131,8 @@ if 'run_all_queue' not in st.session_state:
     st.session_state.run_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
 if 'sim_all_queue' not in st.session_state:
     st.session_state.sim_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
+if 'interrupt_requested' not in st.session_state:
+    st.session_state.interrupt_requested = False
 
 # ==========================================
 # 1. 실시간 시스템 상태: 단순 수평 막대
@@ -180,6 +201,30 @@ with _sb_c3:
         use_container_width=True,
         help="전체 멤버·종목에 Simulation(Bayesian Opt)을 순차 실행합니다"
     )
+
+# ── 인터럽트 버튼 (All 큐 실행 중일 때 표시, 항상 렌더) ──
+_any_queue = len(st.session_state.run_all_queue) + len(st.session_state.sim_all_queue) > 0
+_intr_col1, _intr_col2 = st.sidebar.columns([1, 3])
+with _intr_col1:
+    _sb_stop = st.button("■", key="sidebar_interrupt",
+                         help="실행 중인 Eval. All / Simul. All 큐를 즉시 중단합니다",
+                         use_container_width=True)
+with _intr_col2:
+    if _any_queue:
+        st.markdown(
+            "<div style='font-size:11px;color:rgba(255,100,100,0.85);padding-top:6px;'>"
+            f"큐 실행 중 (Eval:{len(st.session_state.run_all_queue)} "
+            f"/ Sim:{len(st.session_state.sim_all_queue)})</div>",
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<div style='font-size:11px;color:rgba(160,160,170,0.6);padding-top:6px;'>"
+            "■ : 실행 중단</div>", unsafe_allow_html=True)
+
+if _sb_stop:
+    st.session_state.run_all_queue = []
+    st.session_state.sim_all_queue = []
+    st.session_state.interrupt_requested = True
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
@@ -794,7 +839,7 @@ for m_config in sorted_modules:
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
                 btn_col, run_prog_col = st.columns([2, 3])
                 with btn_col:
-                    b1, b2 = st.columns([3, 2])   # 텍스트 길이 비율: "▶ Run Evaluation":Simulation ≈ 3:2
+                    b1, b2, b3 = st.columns([10, 7, 2])
                     with b1:
                         run_clicked = st.button(
                             "▶ Run Evaluation",
@@ -810,6 +855,18 @@ for m_config in sorted_modules:
                             type="primary",
                             use_container_width=True,
                         )
+                    with b3:
+                        st.markdown('<span class="stop-btn-marker"></span>', unsafe_allow_html=True)
+                        _stop_clicked = st.button(
+                            "■",
+                            key=f"stop_btn_{m_name}_{stock_name}",
+                            use_container_width=True,
+                            help="진행 중인 Eval. All / Simul. All 큐를 중단합니다",
+                        )
+                    if _stop_clicked:
+                        st.session_state.run_all_queue = []
+                        st.session_state.sim_all_queue = []
+                        st.session_state.interrupt_requested = True
                 run_prog_slot = run_prog_col.empty()
 
                 # ── 이전 Simulation 결과 배너 ──
@@ -842,7 +899,7 @@ for m_config in sorted_modules:
                 # ══════════════════════════════════════════
                 # Run Evaluation
                 # ══════════════════════════════════════════
-                if run_clicked:
+                if run_clicked and not st.session_state.get('interrupt_requested', False):
                     if not _gauge_loading_set:
                         update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
@@ -850,7 +907,13 @@ for m_config in sorted_modules:
                     st.session_state.stocks_reverted.add(hist_key)
                     trials = st.session_state.stock_trial_history.setdefault(hist_key, [])
                     n_runs = int(l_auto_runs)
+                    _interrupted = False
                     for run_i in range(n_runs):
+                        if st.session_state.get('interrupt_requested', False):
+                            st.session_state.interrupt_requested = False
+                            run_prog_slot.warning(f"⛔ 중단됨 ({run_i}/{n_runs} 완료)")
+                            _interrupted = True
+                            break
                         trial_seed = int(l_seed) + len(trials) + run_i
                         run_prog_slot.progress(
                             run_i / n_runs,
@@ -868,7 +931,8 @@ for m_config in sorted_modules:
                                 "STATIC Final (%)":  float(st_t[-1]),
                                 "Market Final (%)":  float(mkt.iloc[-1]),
                             })
-                    run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
+                    if not _interrupted:
+                        run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
                     # Run Eval. All 큐 팝 (rerun 전에 처리 완료 항목 제거)
                     _rq = st.session_state.run_all_queue
                     if _rq and _rq[0] == (m_name, stock_name):
@@ -917,6 +981,12 @@ for m_config in sorted_modules:
                     _best_s_trace = None
 
                     for _i in range(n_iters):
+                        # ─ 인터럽트 체크 ─
+                        if st.session_state.get('interrupt_requested', False):
+                            st.session_state.interrupt_requested = False
+                            sim_display.empty()
+                            st.warning(f"⛔ Simulation 중단됨 ({_i}/{n_iters} 반복 완료)")
+                            break
                         # ─ 페이즈 레이블 ─
                         if _i < n_random:
                             phase_name = "🔴 Exploring (Random)"
