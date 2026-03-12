@@ -171,6 +171,8 @@ if 'run_all_queue' not in st.session_state:
     st.session_state.run_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
 if 'sim_all_queue' not in st.session_state:
     st.session_state.sim_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
+if 'sim_auto_save' not in st.session_state:
+    st.session_state.sim_auto_save = False  # Simul. All 시 자동 저장 플래그
 if 'interrupt_requested' not in st.session_state:
     st.session_state.interrupt_requested = False
 
@@ -242,6 +244,7 @@ with _sb_r1c3:
 if _sb_stop:
     st.session_state.run_all_queue = []
     st.session_state.sim_all_queue = []
+    st.session_state.sim_auto_save = False
     st.session_state.interrupt_requested = True
 
 # ── 2행: [🔁 All 적용] ──
@@ -729,6 +732,7 @@ if run_eval_all_btn:
     st.session_state.run_all_queue = _build_all_queue()
 if sim_all_btn:
     st.session_state.sim_all_queue = _build_all_queue()
+    st.session_state.sim_auto_save = True   # 자동 저장 모드 활성화
 
 total_charts = sum(
     len(st.session_state.get(
@@ -1101,7 +1105,8 @@ for m_config in sorted_modules:
                         "epsilon": l_epsilon, "v_epsilon": l_v_epsilon,
                         "gap": -999.0, "s_final": 0.0, "v_final": 0.0
                     }
-                    gap_history = []          # best gap 추이
+                    gap_history      = []          # best gap 추이
+                    gap_iter_history = []          # 각 iteration 기대값 (평가 성공 시)
                     mu_hist_norm = {k: [] for k in param_bounds}  # 정책 μ 정규화 값 추이
                     sim_display  = st.empty()
 
@@ -1157,8 +1162,10 @@ for m_config in sorted_modules:
                                     _tmp_v_trace = _vt
                                     _tmp_s_trace = _s_tr
 
+                        _iter_gap_val = None
                         if _gaps:
                             _gap = float(np.mean(_gaps))
+                            _iter_gap_val = _gap
                             candidate["gap"]     = _gap
                             candidate["s_final"] = float(np.mean(_s_list))
                             candidate["v_final"] = float(np.mean(_v_list))
@@ -1172,6 +1179,7 @@ for m_config in sorted_modules:
                                 _best_s_trace = _tmp_s_trace
 
                         gap_history.append(best["gap"])
+                        gap_iter_history.append(_iter_gap_val)
 
                         # μ 정규화 추이 기록 (원본 값 → [0,1] 정규화)
                         for _k, (_lo, _hi) in param_bounds.items():
@@ -1202,8 +1210,8 @@ for m_config in sorted_modules:
                             _prev_e   = mu_hist_norm["epsilon"][_prev_idx]   * (param_bounds["epsilon"][1]   - param_bounds["epsilon"][0])   + param_bounds["epsilon"][0]
                             _prev_ve  = mu_hist_norm["v_epsilon"][_prev_idx] * (param_bounds["v_epsilon"][1] - param_bounds["v_epsilon"][0]) + param_bounds["v_epsilon"][0]
 
-                            # ── 2컬럼: 좌(진행+파라미터 카드) | 우(파라미터 수렴 차트) ──
-                            _left_col, _right_col = st.columns([1, 1.5])
+                            # ── 3컬럼: 좌(진행+파라미터 카드) | 중(파라미터 수렴) | 우(기대값 수렴) ──
+                            _left_col, _mid_col, _right_col = st.columns([1, 1.3, 0.9])
 
                             with _left_col:
                                 st.progress(_prog,
@@ -1227,7 +1235,7 @@ for m_config in sorted_modules:
                                 _r2c2.metric("Vanilla ε", f"{_disp_ve:.4f}",
                                              f"{_disp_ve - _prev_ve:+.4f}")
 
-                            with _right_col:
+                            with _mid_col:
                                 if _steps > 1:
                                     _steps_x = list(range(1, _steps + 1))
                                     _param_colors = {
@@ -1243,8 +1251,6 @@ for m_config in sorted_modules:
                                         "v_epsilon": "ε Vanilla",
                                     }
                                     _fig_sim = go.Figure()
-
-                                    # ── 파라미터 수렴 라인 (정규화, 주축) ──
                                     for _pk, _pc in _param_colors.items():
                                         _fig_sim.add_trace(go.Scatter(
                                             x=_steps_x,
@@ -1252,76 +1258,101 @@ for m_config in sorted_modules:
                                             mode="lines",
                                             name=f"<b>{_param_labels[_pk]}</b>",
                                             line=dict(color=_pc, width=2),
-                                            yaxis="y1",
                                         ))
-
-                                    # ── Best Gap 라인 (보조축) ──
-                                    _gap_steps = list(range(1, len(gap_history) + 1))
-                                    _fig_sim.add_trace(go.Scatter(
-                                        x=_gap_steps,
-                                        y=gap_history,
-                                        mode="lines",
-                                        name="<b>Best Gap (%)</b>",
-                                        line=dict(color="#ffffff", width=2.5, dash="dot"),
-                                        yaxis="y2",
-                                    ))
-
-                                    # 목표선 (보조축 기준)
-                                    _fig_sim.add_hline(
-                                        y=1.0, line_dash="dash", line_color="#50c878",
-                                        annotation_text="목표 +1%",
-                                        annotation_position="top right"
-                                    )
-                                    _fig_sim.add_hline(
-                                        y=25.0, line_dash="dot", line_color="#ffd700",
-                                        annotation_text="최고 +25%",
-                                        annotation_position="top right"
-                                    )
-
                                     _fig_sim.update_layout(
                                         title=dict(
-                                            text="<b>파라미터 수렴(정책 μ) — x:Step, y:정규화값 [0-1]</b>",
-                                            font=dict(size=13),
+                                            text="<b>파라미터 수렴 (정책 μ, 정규화 [0-1])</b>",
+                                            font=dict(size=12),
                                             x=0.5, xanchor="center",
                                         ),
                                         height=420,
-                                        margin=dict(l=10, r=65, t=48, b=40),
-                                        # 플롯 영역을 오른쪽으로 밀어 왼쪽에 범례 공간 확보
-                                        xaxis=dict(
-                                            domain=[0.30, 1.0],
-                                            title="<b>Step</b>",
-                                            showgrid=True,
-                                        ),
+                                        margin=dict(l=10, r=15, t=45, b=40),
+                                        xaxis=dict(title="<b>Step</b>", showgrid=True),
                                         yaxis=dict(
-                                            title="<b>정규화 파라미터 [0-1]</b>",
+                                            title="<b>정규화값 [0-1]</b>",
                                             showgrid=True,
                                             range=[-0.05, 1.05],
                                         ),
-                                        yaxis2=dict(
-                                            title="<b>Gap (%)</b>",
-                                            overlaying="y",
-                                            side="right",
-                                            showgrid=False,
-                                        ),
-                                        # 범례: 왼쪽 30% 여유 공간에 세로 배치
                                         legend=dict(
                                             orientation="v",
-                                            x=0.0,
-                                            y=0.97,
-                                            xanchor="left",
-                                            yanchor="top",
-                                            font=dict(size=14, color="white"),
-                                            bgcolor="rgba(15,15,28,0.82)",
+                                            x=0.01, y=0.99,
+                                            xanchor="left", yanchor="top",
+                                            font=dict(size=12, color="white"),
+                                            bgcolor="rgba(15,15,28,0.80)",
                                             bordercolor="rgba(160,160,170,0.35)",
                                             borderwidth=1,
-                                            tracegroupgap=10,
-                                            itemwidth=40,
                                         ),
                                         paper_bgcolor="rgba(0,0,0,0)",
                                         plot_bgcolor="rgba(0,0,0,0)",
                                     )
                                     st.plotly_chart(_fig_sim, use_container_width=True,
                                                     key=f"sim_chart_{m_name}_{stock_name}_{_i}")
+
+                            # ── 우: 기대값 → 목표 수렴 차트 ──
+                            with _right_col:
+                                if _steps > 1:
+                                    _gap_steps = list(range(1, len(gap_history) + 1))
+                                    _fig_gap = go.Figure()
+
+                                    # 현재 iteration 기대값 (산점)
+                                    _vx = [i+1 for i, g in enumerate(gap_iter_history) if g is not None]
+                                    _vy = [g   for g in gap_iter_history if g is not None]
+                                    if _vx:
+                                        _fig_gap.add_trace(go.Scatter(
+                                            x=_vx, y=_vy,
+                                            mode="lines",
+                                            name="<b>현재 기대값</b>",
+                                            line=dict(color="rgba(150,200,255,0.6)", width=1.2),
+                                        ))
+
+                                    # 누적 최적 gap 라인
+                                    _fig_gap.add_trace(go.Scatter(
+                                        x=_gap_steps, y=gap_history,
+                                        mode="lines",
+                                        name="<b>최적 기대값</b>",
+                                        line=dict(color="#ffffff", width=2.2),
+                                        fill="tozeroy",
+                                        fillcolor="rgba(80,200,120,0.07)",
+                                    ))
+
+                                    # 목표선
+                                    _fig_gap.add_hline(
+                                        y=1.0, line_dash="dash", line_color="#50c878",
+                                        annotation_text="목표 +1%",
+                                        annotation_position="top left",
+                                        annotation_font_size=10,
+                                    )
+                                    _fig_gap.add_hline(
+                                        y=25.0, line_dash="dot", line_color="#ffd700",
+                                        annotation_text="최고 +25%",
+                                        annotation_position="top left",
+                                        annotation_font_size=10,
+                                    )
+
+                                    _fig_gap.update_layout(
+                                        title=dict(
+                                            text="<b>기대값 → 목표 수렴</b>",
+                                            font=dict(size=12),
+                                            x=0.5, xanchor="center",
+                                        ),
+                                        height=420,
+                                        margin=dict(l=10, r=10, t=45, b=40),
+                                        xaxis=dict(title="<b>Step</b>", showgrid=True),
+                                        yaxis=dict(title="<b>Gap (%)</b>", showgrid=True),
+                                        legend=dict(
+                                            orientation="v",
+                                            x=0.01, y=0.99,
+                                            xanchor="left", yanchor="top",
+                                            font=dict(size=11, color="white"),
+                                            bgcolor="rgba(15,15,28,0.80)",
+                                            bordercolor="rgba(160,160,170,0.35)",
+                                            borderwidth=1,
+                                        ),
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                    )
+                                    st.plotly_chart(_fig_gap, use_container_width=True,
+                                                    key=f"gap_chart_{m_name}_{stock_name}_{_i}")
 
                     # ─ 완료: Ghost 데이터 저장 ─
                     best["found"] = best["gap"] >= 1.0
@@ -1341,8 +1372,7 @@ for m_config in sorted_modules:
                             'gap': best['gap'],
                         }
 
-                    # 저장 여부 확인 대기 → sim_confirm에 보관 후 rerun
-                    st.session_state[f"sim_confirm_{hist_key}"] = {
+                    _best_params = {
                         "lr":        best["lr"],
                         "gamma":     best["gamma"],
                         "epsilon":   best["epsilon"],
@@ -1351,6 +1381,18 @@ for m_config in sorted_modules:
                         "s_final":   best.get("s_final", 0.0),
                         "v_final":   best.get("v_final", 0.0),
                     }
+                    if st.session_state.get('sim_auto_save', False):
+                        # Simul. All 모드: 대화상자 없이 자동 저장 및 Run Eval 트리거
+                        _save_sim_params_to_config(m_config, stock_idx, _best_params)
+                        st.session_state[f"sim_pending_{hist_key}"] = _best_params
+                        st.session_state.stocks_reverted.add(hist_key)
+                        st.session_state[f"auto_run_{hist_key}"] = True
+                        # 큐가 비었으면 자동 저장 모드 해제
+                        if not st.session_state.sim_all_queue:
+                            st.session_state.sim_auto_save = False
+                    else:
+                        # 개별 시뮬레이션: 저장 여부 확인 대화상자 표시
+                        st.session_state[f"sim_confirm_{hist_key}"] = _best_params
                     sim_display.empty()
                     st.rerun()
 
@@ -1539,8 +1581,8 @@ for m_config in sorted_modules:
                         st.markdown("""
 <div style='background:var(--secondary-background-color);padding:40px;border-radius:10px;
 border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
-<h4 style='color:rgba(128,128,128,0.6);margin-bottom:8px;'>Trial History 없음</h4>
-<p style='color:rgba(128,128,128,0.4);font-size:14px;'>상단 <b>▶ Run Evaluation</b>을 클릭하여<br>Trial History를 누적하세요</p>
+<h4 style='color:rgba(128,128,128,0.6);margin-bottom:8px;'>No Trial History</h4>
+<p style='color:rgba(128,128,128,0.4);font-size:14px;'>Click <b>▶ Run Evaluation</b> above<br>to accumulate trial history</p>
 </div>""", unsafe_allow_html=True)
                     else:
                         df_h = pd.DataFrame(trials)
@@ -1554,7 +1596,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 
                         # Alpha 배너
                         st.success(
-                            f"시장 평균 대비 **Alpha 기대치(Expected Value)**: "
+                            f"**Expected Alpha vs. Market Avg.**: "
                             f"STATIC **{s_mean - avg_mkt:.2f}%p** | Vanilla **{v_mean - avg_mkt:.2f}%p**"
                         )
 
@@ -1568,21 +1610,23 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                             st.plotly_chart(_make_trial_box_fig(df_h), use_container_width=True,
                                             key=f"tribox_{m_name}_{stock_name}")
                         with stat_col:
+                            # 스페이서: 통계 요약 섹션을 하단으로 이동
+                            st.markdown("<div style='height:130px;'></div>", unsafe_allow_html=True)
                             st.markdown(f"""
-<div style='background:var(--secondary-background-color);padding:12px 14px;border-radius:10px;
+<div style='background:var(--secondary-background-color);padding:14px 16px;border-radius:10px;
 border:1px solid rgba(128,128,128,0.3);'>
-<h4 style='margin-top:0;margin-bottom:8px;font-weight:900;font-size:14px;'>통계 요약 (Expected &amp; Risk)</h4>
+<h4 style='margin-top:0;margin-bottom:10px;font-weight:900;font-size:16px;'>Statistics Summary (Expected &amp; Risk)</h4>
 <div style='display:flex;gap:12px;'>
   <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:10px;'>
-    <ul style='font-size:12px;margin:0;padding-left:12px;line-height:1.9;list-style:none;'>
-    <li><b style='color:#e05050;'>Vanilla 평균:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
-    <li><b style='color:#e05050;'>Vanilla 범위:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
+    <ul style='font-size:14px;margin:0;padding-left:12px;line-height:2.1;list-style:none;'>
+    <li><b style='color:#e05050;'>Vanilla Mean:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
+    <li><b style='color:#e05050;'>Vanilla Range:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
     </ul>
   </div>
   <div style='flex:1;padding-left:2px;'>
-    <ul style='font-size:12px;margin:0;padding-left:12px;line-height:1.9;list-style:none;'>
-    <li><b style='color:#4a90d9;'>STATIC 평균:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
-    <li><b style='color:#4a90d9;'>STATIC 범위:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
+    <ul style='font-size:14px;margin:0;padding-left:12px;line-height:2.1;list-style:none;'>
+    <li><b style='color:#4a90d9;'>STATIC Mean:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
+    <li><b style='color:#4a90d9;'>STATIC Range:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
     </ul>
   </div>
 </div></div>""", unsafe_allow_html=True)
