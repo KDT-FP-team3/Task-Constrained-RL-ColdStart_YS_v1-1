@@ -277,7 +277,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_timeframe", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_timeframe", label_visibility="collapsed")
     with _wg:
         fb_tf_sel = st.selectbox(
             "Timeframe", _fb_tf_options, index=3,
@@ -288,7 +288,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_episodes", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_episodes", label_visibility="collapsed")
     with _wg:
         global_episodes = st.slider(
             _fb_lbl_map[fb_interval],
@@ -298,27 +298,27 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_frame", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_frame", label_visibility="collapsed")
     with _wg:
         global_frame = st.slider("Frame Speed (sec)", 0.01, 2.0, 0.03,
                                  step=0.01, format="%.2f", key="fb_frame")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_seed", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_seed", label_visibility="collapsed")
     with _wg:
         global_seed = st.number_input("Base Seed", value=2026, step=1, key="fb_seed")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_auto", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_auto", label_visibility="collapsed")
     with _wg:
         global_auto_runs = st.number_input("Auto Run Count", min_value=1, value=6,
                                            step=1, key="fb_auto")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_active", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_active", label_visibility="collapsed")
     with _wg:
         global_active_agents = st.multiselect(
             "Active Agents",
