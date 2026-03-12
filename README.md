@@ -458,6 +458,347 @@ streamlit run app.py
 
 ---
 
+## 12. Simulation 단계별 상세 연산 흐름
+
+**파일:** `app.py` (sim_clicked 블록) + `common/heuristic.py` (PGActorCriticOptimizer)
+
+Simulation 버튼을 누르면 PG Actor-Critic Optimizer가 하이퍼파라미터 공간을 자동 탐색하여 Alpha Gap(STATIC RL − Vanilla RL 수익률 차이)을 극대화하는 최적 조합을 찾습니다. 전체 흐름은 아래 12단계로 구성됩니다.
+
+---
+
+### STEP 1 — 탐색 공간 정의 및 반복 횟수 결정
+
+```python
+n_iters = max(20, Auto_Run_Count × 8)   # 예: 6 × 8 = 48 iterations
+
+param_bounds = {
+    "lr":        (0.001, 0.1),   # Actor / Q-Table 학습률
+    "gamma":     (0.5,   0.99),  # 미래 보상 할인율
+    "epsilon":   (0.01,  0.5),   # STATIC RL ε-greedy 탐험율
+    "v_epsilon": (0.01,  0.5),   # Vanilla RL 전용 탐험율
+}
+```
+
+4개 파라미터가 탐색 대상이며, 모두 연속 실수 범위입니다.
+반복 횟수(`n_iters`)는 Auto Run Count 슬라이더 값에 비례하여 결정됩니다.
+
+---
+
+### STEP 2 — PGActorCriticOptimizer 초기화
+
+```python
+optimizer = PGActorCriticOptimizer(
+    bounds     = param_bounds,
+    lr_actor   = 0.12,    # Actor μ 업데이트 속도
+    sigma_init = 0.18,    # 초기 탐험 폭 σ (정규화 공간 [0,1] 기준)
+    sigma_min  = 0.02,    # σ 최소값 (수렴 하한)
+    sigma_max  = 0.45,    # σ 최대값 (탐험 상한)
+    value_alpha= 0.25,    # Critic EMA 업데이트 속도
+    seed       = l_seed,  # 멤버별 재현성 시드
+)
+```
+
+내부 상태 초기화:
+
+| 변수 | 초기값 | 의미 |
+|------|--------|------|
+| `μ` | `[0.5, 0.5, 0.5, 0.5]` | 정규화 공간에서 정책 평균 (탐색 중심점) |
+| `σ` | `[0.18, 0.18, 0.18, 0.18]` | 각 파라미터 차원별 탐험 폭 |
+| `V` | `0.0` | Critic 기준값 (baseline, 첫 평가 후 초기화) |
+| `best_score` | `-∞` | 현재까지 최고 Gap |
+
+---
+
+### STEP 3 — 복수 평가 시드 준비
+
+```python
+_n_eval     = min(3, max(2, Auto_Run_Count // 3))   # 예: 6 // 3 = 2 seeds
+_eval_seeds = [base_seed + j for j in range(_n_eval)]
+# 예 (SPY, seed=42): [42, 43]
+```
+
+동일 파라미터를 **여러 시드로 평가**하여 특정 시드 우연에 의존하지 않는
+일반화된 기대값(expected gap)을 산출합니다.
+
+---
+
+### STEP 4 — 탐색 페이즈 판정 (매 반복마다)
+
+```
+_explore_end = max(6, n_iters // 4)   # 예: 48 // 4 = 12
+
+iteration < _explore_end  →  🔴 PG Exploring   (초기 광역 탐험)
+σ_mean > 0.12            →  🟡 PG Actor-Critic  (정책 업데이트 중)
+σ_mean ≤ 0.12            →  🟢 PG Converging    (수렴 단계)
+```
+
+페이즈는 수렴 차트의 색상과 진행률 바 레이블로 실시간 표시됩니다.
+
+---
+
+### STEP 5 — Actor: 파라미터 후보 샘플링 (`suggest_next`)
+
+```python
+# Gaussian 정책에서 변화량 Δ 샘플링
+Δ = rng.normal(0, σ)                      # Δ ∈ R^4 (4개 파라미터)
+
+# 정규화 공간 [0,1]에서 후보 계산
+x_new = clip(μ + Δ, 0, 1)
+
+# 원본 파라미터 공간으로 역정규화
+candidate["lr"]        = 0.001 + x_new[0] × (0.1   − 0.001)
+candidate["gamma"]     = 0.5   + x_new[1] × (0.99  − 0.5)
+candidate["epsilon"]   = 0.01  + x_new[2] × (0.5   − 0.01)
+candidate["v_epsilon"] = 0.01  + x_new[3] × (0.5   − 0.01)
+```
+
+정책 평균 `μ`를 중심으로 `σ` 폭의 정규분포에서 후보를 제안합니다.
+`σ`가 클수록 넓게 탐험, 작을수록 `μ` 주변을 집중 탐색합니다.
+
+---
+
+### STEP 6 — 복수 시드로 RL 에이전트 평가
+
+각 평가 시드에 대해 독립적으로 RL 훈련 및 평가를 실행합니다.
+
+```python
+for seed_i in _eval_seeds:
+    vanilla_trace, static_trace = get_rl_data(
+        ticker   = ticker,
+        lr       = candidate["lr"],
+        gamma    = candidate["gamma"],
+        epsilon  = candidate["epsilon"],     # STATIC RL 탐험율
+        episodes = l_epi,
+        seed     = seed_i,
+        v_epsilon= candidate["v_epsilon"],   # Vanilla RL 탐험율 (독립)
+        fee_rate = fee_rate,
+        interval = l_interval,               # 봉 단위 (15m / 1h / 1d / 1wk / 1mo)
+    )
+    gap_i = static_trace[-1] − vanilla_trace[-1]   # 해당 시드의 Alpha Gap
+    gaps.append(gap_i)
+```
+
+`get_rl_data` 내부 동작:
+
+```
+① 주가 데이터 로드 (data_loader.fetch_stock_data, 캐시 TTL=1h)
+② STATIC RL 훈련: Actor-Critic, max(episodes×3, 500) 에피소드
+   - lr_actor = lr × 1.0
+   - lr_critic = lr × 1.5
+   - ε_start = min(ε × 2.5, 0.60) → 선형 감소 → 최종 ε
+   - 4-상태 공간 (EMA 위/아래 × 상승/하락)
+③ Vanilla RL 훈련: Q-Learning, episodes 에피소드
+   - 동일 lr, gamma 적용
+   - v_epsilon으로 독립 탐험
+   - 2-상태 공간 (상승/하락)
+④ STATIC / Vanilla 평가 (최근 episodes 봉 데이터로)
+   - 각 봉에서 정책 π(a|s) 실행
+   - 거래 수수료 적용 (신규 매수 진입 시 1회)
+   - 누적 수익률 배열 반환
+```
+
+---
+
+### STEP 7 — Alpha Gap 기대값 계산
+
+```python
+expected_gap = mean(gaps)                    # 복수 시드 평균 → 일반화 기대값
+candidate["s_final"] = mean(static_finals)   # STATIC 평균 최종 수익률
+candidate["v_final"] = mean(vanilla_finals)  # Vanilla 평균 최종 수익률
+```
+
+단일 시드 결과가 아닌 **복수 시드 평균**을 사용함으로써,
+특정 시드의 운에 의한 과적합을 방지합니다.
+
+---
+
+### STEP 8 — Critic 업데이트 (baseline 갱신)
+
+```python
+# 첫 번째 관측: V = gap (직접 초기화)
+# 이후: 지수이동평균(EMA)으로 점진적 갱신
+V += value_alpha × (expected_gap − V)
+# value_alpha = 0.25 → 현재 관측 25%, 이전 추정 75% 가중
+```
+
+`V`는 지금까지의 평균 기대값 수준을 추적하는 **기준선(baseline)** 역할을 합니다.
+이를 통해 현재 파라미터가 평균 대비 얼마나 좋은지를 측정할 수 있습니다.
+
+---
+
+### STEP 9 — Advantage 계산 (REINFORCE with baseline)
+
+```python
+A = expected_gap − V
+# A > 0: 현재 파라미터가 평균보다 좋음 → μ를 이 방향으로 이동
+# A < 0: 현재 파라미터가 평균보다 나쁨 → μ를 이 방향에서 멀어지게 이동
+```
+
+기준선 차감(`baseline subtraction`)은 **분산을 줄여 학습 안정성**을 높입니다.
+Gap 절대값이 아닌 "평균 대비 상대적 우위"로 업데이트하므로,
+초반의 낮은 Gap에서도 의미 있는 방향 학습이 가능합니다.
+
+---
+
+### STEP 10 — Actor 업데이트 (Policy Gradient)
+
+```python
+# Score function (Gaussian 정책의 log 기울기)
+∇log π(Δ|μ,σ) = Δ / σ²
+
+# Actor μ 업데이트 (Policy Gradient Theorem 적용)
+μ += lr_actor × A × (Δ / σ²)
+μ = clip(μ, 0, 1)   # 정규화 공간 경계 유지
+
+# 직관:
+# A > 0이고 Δ > 0이면 → μ가 양의 방향으로 이동 (이 방향이 좋았으니 더 가자)
+# A > 0이고 Δ < 0이면 → μ가 음의 방향으로 이동
+# A < 0 이면 반대 방향으로 이동
+```
+
+정책 평균 `μ`가 좋은 파라미터 방향으로 점진적으로 이동합니다.
+`lr_actor = 0.12`는 이 이동의 보폭을 결정합니다.
+
+---
+
+### STEP 11 — σ 자동 스케줄링 (탐험-수렴 균형)
+
+```python
+if A > 0:
+    σ = max(σ × 0.96, σ_min)   # 좋은 방향 발견 → σ 축소 (수렴)
+else:
+    σ = min(σ × 1.04, σ_max)   # 나쁜 방향 → σ 확대 (재탐험)
+```
+
+| 상황 | σ 변화 | 효과 |
+|------|--------|------|
+| 연속으로 A > 0 | 단조 감소 → σ_min(0.02) | μ 주변 정밀 탐색 |
+| 연속으로 A < 0 | 단조 증가 → σ_max(0.45) | 전역 재탐험 |
+| A 부호 교번 | σ 진동 유지 | 탐험-수렴 균형 |
+
+---
+
+### STEP 12 — Best 갱신 및 수렴 차트 업데이트
+
+```python
+if expected_gap > best["gap"]:
+    best = candidate.copy()              # 최고 파라미터 기록 갱신
+    _best_s_trace = static_trace         # Ghost Line용 최고 수익 곡선 저장
+
+gap_history.append(best["gap"])          # Best Gap 누적 추이 (우측 차트)
+gap_iter_history.append(expected_gap)    # 각 iteration 기대값 (수렴 패턴)
+
+# μ 정규화 추이 기록 (중간 차트)
+for k in param_bounds:
+    mu_hist_norm[k].append( (μ[k] − lo_k) / (hi_k − lo_k) )
+```
+
+수렴 차트는 **실시간** 갱신됩니다:
+
+- **중간 차트 (Parameter Convergence):** 4개 파라미터의 정책 평균 `μ`가 [0-1]로 정규화된 값의 추이. 직선으로 수렴할수록 최적값이 안정적으로 결정된 것
+- **우측 차트 (Expected Value → Target Convergence):** 매 iteration의 기대 Gap(회색)과 누적 Best Gap(파랑) 추이. 1% 점선(목표), 25% 점선(최고) 기준선 포함
+
+---
+
+### 전체 흐름 요약 다이어그램
+
+```
+[Simulation 클릭]
+      │
+      ▼
+STEP 1: n_iters, param_bounds 결정
+      │
+      ▼
+STEP 2: PGActorCriticOptimizer 초기화
+        (μ=[0.5,…], σ=[0.18,…], V=0)
+      │
+      ▼
+STEP 3: 복수 평가 시드 생성
+        (_eval_seeds = [seed, seed+1, …])
+      │
+      ▼
+      ┌─────────────────────────────────────┐
+      │  for i in range(n_iters):           │
+      │                                     │
+      │  STEP 4: 페이즈 판정                │
+      │    (Exploring / Actor-Critic /      │
+      │     Converging)                     │
+      │          │                          │
+      │          ▼                          │
+      │  STEP 5: suggest_next()             │
+      │    Δ ~ N(0, σ)                      │
+      │    candidate = denorm(clip(μ+Δ,0,1))│
+      │          │                          │
+      │          ▼                          │
+      │  STEP 6: RL 평가 (복수 시드)        │
+      │    STATIC AC훈련 → 평가             │
+      │    Vanilla QL훈련 → 평가            │
+      │    gap_i = S_final - V_final         │
+      │          │                          │
+      │          ▼                          │
+      │  STEP 7: expected_gap = mean(gaps)  │
+      │          │                          │
+      │          ▼                          │
+      │  STEP 8: V += α·(gap − V)  [Critic]│
+      │          │                          │
+      │          ▼                          │
+      │  STEP 9: A = gap − V  [Advantage]  │
+      │          │                          │
+      │          ▼                          │
+      │  STEP 10: μ += lr·A·(Δ/σ²) [Actor] │
+      │          │                          │
+      │  STEP 11: σ 스케줄링               │
+      │    A>0 → σ×0.96 (수렴)             │
+      │    A<0 → σ×1.04 (탐험)             │
+      │          │                          │
+      │  STEP 12: best 갱신, 차트 업데이트 │
+      └─────────────────────────────────────┘
+      │
+      ▼
+[n_iters 완료]
+      │
+      ▼
+Simul. All 모드  →  best 파라미터 자동 저장 → config.py 갱신 → Run Evaluation 자동 실행
+수동 모드        →  [저장 및 반영] / [반영 취소] 버튼 표시
+```
+
+---
+
+### 파라미터 수렴 수식 전체 정리
+
+```
+────────────────────────────────────────────────────────
+[표기]
+  μ  : 정책 평균 (정규화 공간 [0,1]^4)
+  σ  : 탐험 폭 (파라미터별 독립)
+  Δ  : 이번 iteration의 μ 대비 편차 = x_new − μ (정규화 전)
+  V  : Critic baseline (EMA 방식 평균 gap 추정)
+  A  : Advantage = gap − V
+  α_c: value_alpha = 0.25  (Critic 학습률)
+  α_a: lr_actor   = 0.12   (Actor 학습률)
+────────────────────────────────────────────────────────
+
+[1] 샘플링
+  Δ      ~ N(0, σ)
+  x_new  = clip(μ + Δ, 0, 1)
+
+[2] Critic (TD(0) style EMA)
+  V ← V + α_c · (gap − V)
+
+[3] Advantage
+  A = gap − V
+
+[4] Actor (Policy Gradient)
+  μ ← clip(μ + α_a · A · Δ/σ², 0, 1)
+
+[5] σ 스케줄
+  σ ← max(σ · 0.96, σ_min)   if A > 0
+  σ ← min(σ · 1.04, σ_max)   if A ≤ 0
+────────────────────────────────────────────────────────
+```
+
+---
+
 ## 알고리즘 비교 요약
 
 | 항목 | STATIC RL (Ours) | Vanilla RL (Baseline) |

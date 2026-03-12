@@ -116,6 +116,8 @@ if 'stock_trial_history' not in st.session_state:
     st.session_state.stock_trial_history = {}  # key: f"{m_name}_{stock_name}" → list of trial dicts
 if 'fallback_params' not in st.session_state:
     st.session_state.fallback_params = {}       # 마지막 "All 적용" 시 스냅샷
+if 'fallback_prev_state' not in st.session_state:
+    st.session_state.fallback_prev_state = {}   # 되돌리기용 이전 슬라이더 상태 스냅샷
 if 'stock_use_fallback' not in st.session_state:
     st.session_state.stock_use_fallback = None  # "ALL" 이면 전체 fallback 활성
 if 'stocks_reverted' not in st.session_state:
@@ -247,19 +249,43 @@ if _sb_stop:
     st.session_state.sim_auto_save = False
     st.session_state.interrupt_requested = True
 
-# ── 2행: [🔁 All 적용] ──
+# ── 2행: [🔁 All 적용] [↩ 되돌리기] ──
 _fb_active = st.session_state.stock_use_fallback == "ALL"
 _fb_label  = "✅ Fallback 적용 중" if _fb_active else "🔁 All 적용"
-apply_all_clicked = st.sidebar.button(
+_has_prev  = bool(st.session_state.fallback_prev_state)
+_sb_r2c1, _sb_r2c2 = st.sidebar.columns([3, 2])
+apply_all_clicked = _sb_r2c1.button(
     _fb_label, key="sidebar_apply_all", type="primary",
     use_container_width=True,
-    help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다"
+    help="아래 설정값을 모든 멤버·종목 파라미터에 일괄 적용합니다"
+)
+revert_all_clicked = _sb_r2c2.button(
+    "↩ 되돌리기", key="sidebar_revert_all",
+    use_container_width=True,
+    disabled=not _has_prev,
+    help="All 적용 이전 상태로 모든 파라미터를 복원합니다"
 )
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
-    global_episodes   = st.slider("Trading Days",       10,    500,  100,        key="fb_epi")
-    global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.05,
+    _fb_tf_options = ["15 min.", "1 hour", "1 day", "1 week", "1 month"]
+    _fb_tf_map     = {"15 min.": "15m", "1 hour": "1h", "1 day": "1d", "1 week": "1wk", "1 month": "1mo"}
+    _fb_lbl_map    = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
+    _fb_min_map    = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
+    _fb_max_map    = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
+    _fb_def_map    = {"15m": 80, "1h": 120, "1d": 80, "1wk": 105, "1mo": 24}
+    fb_tf_sel = st.selectbox(
+        "Timeframe", _fb_tf_options, index=3,
+        key="fb_timeframe",
+        help="데이터 봉 단위 (15분/1시간: 최근 60일/730일 제한)"
+    )
+    fb_interval = _fb_tf_map[fb_tf_sel]
+    global_episodes = st.slider(
+        _fb_lbl_map[fb_interval],
+        _fb_min_map[fb_interval], _fb_max_map[fb_interval], _fb_def_map[fb_interval],
+        key=f"fb_epi_{fb_interval}"
+    )
+    global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.03,
                                   step=0.01, format="%.2f",    key="fb_frame")
     global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
     global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=6,
@@ -288,6 +314,8 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 # 버튼 클릭 시 현재 슬라이더 값 스냅샷 저장 (슬라이더가 위에서 이미 렌더됨)
 if apply_all_clicked:
     st.session_state.fallback_params = {
+        "timeframe":     fb_tf_sel,
+        "interval":      fb_interval,
         "episodes":      global_episodes,
         "frame_speed":   global_frame,
         "seed":          int(global_seed),
@@ -733,6 +761,60 @@ if run_eval_all_btn:
 if sim_all_btn:
     st.session_state.sim_all_queue = _build_all_queue()
     st.session_state.sim_auto_save = True   # 자동 저장 모드 활성화
+
+# ── All 적용: 모든 멤버·종목 슬라이더 키 일괄 업데이트 ──
+_ALL_INTERVALS = ["15m", "1h", "1d", "1wk", "1mo"]
+if apply_all_clicked and st.session_state.fallback_params:
+    _fp = st.session_state.fallback_params
+    _new_tf = _fp.get("timeframe", "1 week")
+    _new_iv = _fp.get("interval", "1wk")
+    # 이전 상태 스냅샷 저장
+    _prev = {}
+    for _mc in sorted_modules:
+        _mn = getattr(_mc, 'MEMBER_NAME', _mc.__name__)
+        _def_stks = [all_stock_names[i] for i in getattr(_mc, 'TARGET_INDICES', []) if i in all_stock_names]
+        _sel_stks = st.session_state.get(f"ms_{_mn}", _def_stks)
+        for _sn in _sel_stks:
+            for _k in [
+                f"tf_{_mn}_{_sn}", f"fspd_{_mn}_{_sn}", f"seed_{_mn}_{_sn}",
+                f"autoruns_{_mn}_{_sn}", f"active_{_mn}_{_sn}",
+                f"lr_{_mn}_{_sn}", f"gamma_{_mn}_{_sn}",
+                f"eps_{_mn}_{_sn}", f"v_eps_{_mn}_{_sn}",
+            ]:
+                if _k in st.session_state:
+                    _prev[_k] = st.session_state[_k]
+            for _iv in _ALL_INTERVALS:
+                _ek = f"epi_{_mn}_{_sn}_{_iv}"
+                if _ek in st.session_state:
+                    _prev[_ek] = st.session_state[_ek]
+    st.session_state.fallback_prev_state = _prev
+    # 새 값 일괄 적용
+    for _mc in sorted_modules:
+        _mn = getattr(_mc, 'MEMBER_NAME', _mc.__name__)
+        _def_stks = [all_stock_names[i] for i in getattr(_mc, 'TARGET_INDICES', []) if i in all_stock_names]
+        _sel_stks = st.session_state.get(f"ms_{_mn}", _def_stks)
+        for _sn in _sel_stks:
+            st.session_state[f"tf_{_mn}_{_sn}"]             = _new_tf
+            st.session_state[f"epi_{_mn}_{_sn}_{_new_iv}"]  = _fp["episodes"]
+            st.session_state[f"fspd_{_mn}_{_sn}"]           = _fp["frame_speed"]
+            st.session_state[f"seed_{_mn}_{_sn}"]           = _fp["seed"]
+            st.session_state[f"autoruns_{_mn}_{_sn}"]       = _fp["auto_runs"]
+            st.session_state[f"active_{_mn}_{_sn}"]         = _fp.get("active_agents", ["Vanilla RL", "STATIC RL"])
+            st.session_state[f"lr_{_mn}_{_sn}"]             = _fp["lr"]
+            st.session_state[f"gamma_{_mn}_{_sn}"]          = _fp["gamma"]
+            st.session_state[f"eps_{_mn}_{_sn}"]            = _fp["epsilon"]
+            st.session_state[f"v_eps_{_mn}_{_sn}"]          = _fp["v_epsilon"]
+    st.rerun()
+
+# ── 되돌리기: 이전 상태 복원 ──
+if revert_all_clicked:
+    _prev = st.session_state.get('fallback_prev_state', {})
+    for _k, _v in _prev.items():
+        st.session_state[_k] = _v
+    st.session_state.fallback_prev_state = {}
+    st.session_state.stock_use_fallback  = None
+    st.session_state.stocks_reverted     = set()
+    st.rerun()
 
 total_charts = sum(
     len(st.session_state.get(
@@ -1526,26 +1608,6 @@ for m_config in sorted_modules:
                         df_s = pd.DataFrame(s_log).rename(columns={"Action": "STATIC Action",  "Daily_Return(%)": "STATIC Return(%)"})
                         df_log = df_v.merge(df_s, on="Day").set_index("Day")
 
-                        def _style_log(val):
-                            if isinstance(val, (int, float)):
-                                return 'color: #e05050; font-weight: bold;' if val < 0 else 'font-weight: bold;'
-                            if val == "BUY":
-                                return 'color: #4a90d9; font-weight: bold;'
-                            if val == "CASH":
-                                return 'color: #e05050; font-weight: bold;'
-                            return 'font-weight: bold;'
-
-                        styled_log = (
-                            df_log.style
-                            .map(_style_log)
-                            .format({"Vanilla Return(%)": "{:.2f}", "STATIC Return(%)": "{:.2f}"})
-                            .set_properties(**{"text-align": "center"})
-                            .set_table_styles([{
-                                "selector": "th",
-                                "props": [("text-align", "center")]
-                            }])
-                        )
-
                         bar_col, tbl_col = st.columns([1, 1.4])
                         with bar_col:
                             action_counts = df_log["STATIC Action"].value_counts().reset_index()
@@ -1578,7 +1640,42 @@ for m_config in sorted_modules:
                             st.plotly_chart(fig_bar, use_container_width=True,
                                             key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
-                            st.dataframe(styled_log, height=250, use_container_width=True)
+                            _td = "padding:3px 8px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);"
+                            _th = "padding:5px 8px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;background:var(--secondary-background-color);"
+                            _rows = ""
+                            for _day, _r in df_log.iterrows():
+                                _va = _r["Vanilla Action"]
+                                _vr = float(_r["Vanilla Return(%)"])
+                                _sa = _r["STATIC Action"]
+                                _sr = float(_r["STATIC Return(%)"])
+                                _vc = "#4a90d9" if _va == "BUY" else "#e05050"
+                                _sc = "#4a90d9" if _sa == "BUY" else "#e05050"
+                                _vrc = "color:#e05050;" if _vr < 0 else ""
+                                _src = "color:#e05050;" if _sr < 0 else ""
+                                _rows += (
+                                    f"<tr>"
+                                    f"<td style='{_td}'>{_day}</td>"
+                                    f"<td style='{_td}color:{_vc};'>{_va}</td>"
+                                    f"<td style='{_td}{_vrc}'>{_vr:.2f}</td>"
+                                    f"<td style='{_td}color:{_sc};'>{_sa}</td>"
+                                    f"<td style='{_td}{_src}'>{_sr:.2f}</td>"
+                                    f"</tr>"
+                                )
+                            st.markdown(
+                                f"<div style='max-height:253px;overflow-y:auto;"
+                                f"border:1px solid rgba(128,128,128,0.3);border-radius:4px;'>"
+                                f"<table style='width:100%;border-collapse:collapse;'>"
+                                f"<thead><tr>"
+                                f"<th style='{_th}'>Day</th>"
+                                f"<th style='{_th}'>Vanilla<br>Action</th>"
+                                f"<th style='{_th}'>Vanilla<br>Return(%)</th>"
+                                f"<th style='{_th}'>STATIC<br>Action</th>"
+                                f"<th style='{_th}'>STATIC<br>Return(%)</th>"
+                                f"</tr></thead>"
+                                f"<tbody>{_rows}</tbody>"
+                                f"</table></div>",
+                                unsafe_allow_html=True
+                            )
 
                 # ══════════════════════════════════════════
                 # 오른쪽: Trial History Statistical Analysis
@@ -1615,28 +1712,28 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                                         key=f"trend_{m_name}_{stock_name}")
 
                         # 박스 플롯 + 통계 카드 2열
-                        box_col, stat_col = st.columns([1.1, 1])
+                        box_col, stat_col = st.columns([1.6, 1])
                         with box_col:
                             st.plotly_chart(_make_trial_box_fig(df_h), use_container_width=True,
                                             key=f"tribox_{m_name}_{stock_name}")
                         with stat_col:
                             # 스페이서: 통계 요약 섹션을 하단으로 이동
-                            st.markdown("<div style='height:50px;'></div>", unsafe_allow_html=True)
+                            st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
                             st.markdown(f"""
 <div style='background:var(--secondary-background-color);padding:14px 16px;border-radius:10px;
 border:1px solid rgba(128,128,128,0.3);'>
 <h4 style='margin-top:0;margin-bottom:10px;font-weight:900;font-size:16px;'>Statistics Summary (Expected &amp; Risk)</h4>
 <div style='display:flex;gap:12px;'>
   <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:10px;'>
-    <ul style='font-size:14px;margin:0;padding-left:0;line-height:2.1;list-style:none;text-align:left;'>
-    <li><b style='color:#e05050;'>Vanilla Mean:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
-    <li><b style='color:#e05050;'>Vanilla Range:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
+    <ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'>
+    <li style='margin-bottom:8px;'><b style='color:#e05050;'>Vanilla Mean</b><br>{v_mean:.2f}% (σ={v_std:.2f}%)</li>
+    <li style='margin-bottom:4px;'><b style='color:#e05050;'>Vanilla Range</b><br>{v_min:.2f}% ~ {v_max:.2f}%</li>
     </ul>
   </div>
   <div style='flex:1;padding-left:2px;'>
-    <ul style='font-size:14px;margin:0;padding-left:0;line-height:2.1;list-style:none;text-align:left;'>
-    <li><b style='color:#4a90d9;'>STATIC Mean:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
-    <li><b style='color:#4a90d9;'>STATIC Range:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
+    <ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'>
+    <li style='margin-bottom:8px;'><b style='color:#4a90d9;'>STATIC Mean</b><br>{s_mean:.2f}% (σ={s_std:.2f}%)</li>
+    <li style='margin-bottom:4px;'><b style='color:#4a90d9;'>STATIC Range</b><br>{s_min:.2f}% ~ {s_max:.2f}%</li>
     </ul>
   </div>
 </div></div>""", unsafe_allow_html=True)
@@ -1656,7 +1753,7 @@ border:1px solid rgba(128,128,128,0.3);'>
                                     "selector": "th",
                                     "props": [("text-align", "center")]
                                 }]),
-                                height=320, use_container_width=True
+                                height=240, use_container_width=True
                             )
 
                 total_episodes_run += l_epi
