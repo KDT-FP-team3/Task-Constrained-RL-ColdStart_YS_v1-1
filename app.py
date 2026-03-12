@@ -2,7 +2,6 @@ import streamlit as st
 import importlib
 import os
 import sys
-import random
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -11,7 +10,8 @@ import plotly.express as px
 from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name, get_fee_info
 from common.data_loader import fetch_stock_data
 from common.base_agent import run_rl_simulation_with_log
-from common.evaluator import calculate_ctpt_and_color, calculate_mdd
+from common.evaluator import calculate_ctpt_and_color, calculate_mdd, calculate_softmax_weights
+from common.heuristic import BayesianOptimizer
 
 # 루트 경로 설정
 root_path = os.path.dirname(os.path.abspath(__file__))
@@ -102,46 +102,38 @@ if 'stocks_reverted' not in st.session_state:
     st.session_state.stocks_reverted = set()    # Run Evaluation 클릭으로 되돌아온 종목
 if 'sim_result' not in st.session_state:
     st.session_state.sim_result = {}            # key: hist_key → best params dict
+if 'ghost_data' not in st.session_state:
+    st.session_state.ghost_data = {}
+    # key: hist_key → {'v_trace': np.array, 's_trace': np.array, 'params': dict, 'gap': float}
+if 'member_traces' not in st.session_state:
+    st.session_state.member_traces = {}
+    # key: member_name → {'s_trace': np.array, 'dates': index, 'stocks': list[str]}
 
 # ==========================================
-# 1. 실시간 시스템 상태 계기판
+# 1. 실시간 시스템 상태: 단순 수평 막대
 # ==========================================
-def update_gauge(episodes_run, placeholder, is_loading=False):
+def update_load_bar(episodes_run, placeholder, is_loading=False):
+    """게이지 대신 단순 수평 막대로 Real-time Load 표시."""
     max_load = 6000
-    load_pct = min((episodes_run / max_load) * 100, 100)
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=load_pct,
-        number={'suffix': "%", 'valueformat': ".1f", 'font': {'weight': 'bold', 'size': 40}},
-        title={'text': "Real-time Load", 'font': {'weight': 'bold', 'size': 20}},
-        gauge={
-            'axis': {'range': [None, 100]},
-            'bar': {'color': "#2196f3"},
-            'steps': [
-                {'range': [0, 50], 'color': "#333"},
-                {'range': [50, 80], 'color': "#ff9800"},
-                {'range': [80, 100], 'color': "#ff4b4b"}
-            ]
-        }
-    ))
-    b_margin = 30 if is_loading else 10
-    fig_gauge.update_layout(height=250, margin=dict(l=10, r=10, t=40, b=b_margin))
-    if is_loading:
-        fig_gauge.add_annotation(
-            text="⏳  Loading...",
-            x=0.5, y=0.45,
-            xref="paper", yref="paper",
-            showarrow=False,
-            font=dict(size=12, color="#ff9800"),
-            align="center",
-        )
+    load_pct = min(episodes_run / max_load, 1.0)
     with placeholder:
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        if is_loading:
+            st.progress(load_pct, text="⏳ Loading...")
+        else:
+            pct_val = load_pct * 100
+            color = "#ff4b4b" if pct_val >= 80 else ("#ff9800" if pct_val >= 50 else "#2196f3")
+            st.progress(load_pct, text=f"Real-time Load: **{pct_val:.1f}%**")
+            st.markdown(
+                f"<div style='font-size:11px; color:{color}; margin-top:-8px; margin-bottom:4px;'>"
+                f"{'🔴 High' if pct_val>=80 else ('🟡 Medium' if pct_val>=50 else '🟢 Normal')}"
+                f"  ({episodes_run:,} / {max_load:,} ep)</div>",
+                unsafe_allow_html=True
+            )
 
 st.sidebar.markdown("### System Status")
 gauge_placeholder = st.sidebar.empty()
-# 스크립트 재실행 시 즉시 이전 값으로 렌더링 → gauge 공백(사라짐) 방지
-update_gauge(st.session_state.prev_episodes_run, gauge_placeholder)
+# 스크립트 재실행 시 즉시 이전 값으로 렌더링 → 공백(사라짐) 방지
+update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
 
@@ -209,9 +201,9 @@ with st.container():
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
 
 # ==========================================
-# 2. 통합 대시보드 (Bold & Red Font & Alpha 비교)
+# 2. 통합 대시보드 (Alpha 비교 + 팀 펀드 에쿼티)
 # ==========================================
-def draw_top_dashboard(final_contribs, container, is_updating=False):
+def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_updating=False):
     df_contrib = pd.DataFrame(final_contribs)
     if df_contrib.empty:
         return {}
@@ -296,16 +288,104 @@ def draw_top_dashboard(final_contribs, container, is_updating=False):
             st.markdown("#### Portfolio Alpha Strategy Report")
             st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
+        # ── 팀 펀드 에쿼티 섹션 (멤버 traces가 있을 때만 렌더) ──
+        if member_traces_snap and len(member_traces_snap) >= 1:
+            st.markdown("---")
+            tf_col, sw_col = st.columns([1.7, 1])
+
+            with tf_col:
+                # Softmax 비중 계산
+                member_names_sorted = sorted(member_traces_snap.keys())
+                scores_map = {row['Member']: row['Avg_Return'] / (1.0 + abs(row['Avg_MDD']))
+                              for _, row in df_contrib.iterrows()}
+                scores_arr = np.array([scores_map.get(mn, 0.0) for mn in member_names_sorted], dtype=float)
+                weights_arr = calculate_softmax_weights(scores_arr, temperature=1.0)
+
+                # 공통 날짜 구간 (가장 짧은 trace 기준)
+                traces_list = [member_traces_snap[mn]['s_trace'] for mn in member_names_sorted]
+                min_len = min(len(t) for t in traces_list)
+                aligned  = np.array([t[:min_len] for t in traces_list])   # (n_members, min_len)
+                team_curve = np.dot(weights_arr, aligned)                 # (min_len,)
+
+                # 날짜 인덱스 (첫 번째 멤버 기준)
+                first_mn = member_names_sorted[0]
+                dates_ref = list(member_traces_snap[first_mn]['dates'])[:min_len]
+
+                # All Members + Team Fund 차트
+                fig_members = go.Figure()
+                for i, mn in enumerate(member_names_sorted):
+                    color = distinct_colors[i % len(distinct_colors)]
+                    t = member_traces_snap[mn]['s_trace'][:min_len]
+                    stocks_label = ", ".join(member_traces_snap[mn].get('stocks', []))
+                    fig_members.add_trace(go.Scatter(
+                        x=dates_ref, y=t,
+                        mode='lines',
+                        name=f'<b>{mn}</b>' + (f' ({stocks_label})' if stocks_label else ''),
+                        line=dict(color=color, width=2)
+                    ))
+                # Team Fund curve
+                fig_members.add_trace(go.Scatter(
+                    x=dates_ref, y=team_curve,
+                    mode='lines',
+                    name='<b>Team Fund (Softmax)</b>',
+                    line=dict(color='#ffffff', width=3.5, dash='solid')
+                ))
+                fig_members.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
+                fig_members.update_layout(
+                    title=dict(text="<b>All Members: STATIC RL Cumulative Returns + Team Fund</b>",
+                               font=dict(size=16)),
+                    xaxis=dict(title="<b>Trading Days</b>", showgrid=True),
+                    yaxis=dict(title="<b>Cumulative Return (%)</b>", showgrid=True),
+                    legend=dict(font=dict(size=11), x=0.01, y=0.99,
+                                bgcolor='rgba(128,128,128,0.15)',
+                                bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                    height=380, margin=dict(t=50, b=40, l=60, r=20)
+                )
+                st.plotly_chart(fig_members, use_container_width=True,
+                                key=f"team_fund_chart_{key_suffix}")
+
+            with sw_col:
+                # Softmax 비중 테이블
+                st.markdown("#### Team Fund Softmax 비중")
+                sw_rows = []
+                for i, mn in enumerate(member_names_sorted):
+                    stocks_label = ", ".join(member_traces_snap[mn].get('stocks', []))
+                    sw_rows.append({
+                        "Member":    mn,
+                        "Score":     f"{scores_arr[i]:.3f}",
+                        "Weight %":  f"{weights_arr[i]*100:.1f}%",
+                        "Stocks":    stocks_label,
+                    })
+                df_sw = pd.DataFrame(sw_rows)
+                st.dataframe(df_sw, use_container_width=True, hide_index=True, height=200)
+
+                # 팀 펀드 요약 메트릭
+                tf_final = float(team_curve[-1]) if len(team_curve) > 0 else 0.0
+                avg_static = float(df_contrib['Avg_Return'].mean())
+                st.markdown(
+                    f"<div style='margin-top:12px;'>"
+                    f"<div style='font-size:12px;font-weight:700;color:#4a90d9;'>Team Fund Final Return</div>"
+                    f"<div style='font-size:28px;font-weight:900;color:#4a90d9;line-height:1.2;'>"
+                    f"{tf_final:.2f}%</div>"
+                    f"<div style='font-size:11px;color:rgba(180,180,180,0.7);margin-top:4px;'>"
+                    f"Simple avg STATIC: {avg_static:.2f}%</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
     return current_summary
+
 
 # ==========================================
 # 3. 시뮬레이션 및 차트 생성
 # ==========================================
-def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
-    """구버전 'S&P 500 Performance' fig_main 스타일: Cumulative Return Comparison"""
-    height = 400
+def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
+                          opt_v_trace=None, opt_s_trace=None):
+    """누적 수익률 비교 차트. Ghost Line (Optimal) 파라미터 선택적 표시."""
+    height     = 400
     title_size = 18
-    axis_size = 14
+    axis_size  = 14
     legend_size = 12
 
     fig = go.Figure()
@@ -321,6 +401,23 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
         x=df.index, y=real_ret_trace, mode='lines', name='<b>Market</b>',
         line=dict(color='#2ecc71', width=1.8, dash='dot')
     ))
+
+    # ── Ghost Lines (Optimal ✦) — 점선으로 최적해 투영 ──
+    if opt_v_trace is not None and len(opt_v_trace) > 0:
+        fig.add_trace(go.Scatter(
+            x=df.index[:len(opt_v_trace)], y=opt_v_trace,
+            mode='lines', name='<b>Vanilla RL (Optimal ✦)</b>',
+            line=dict(color='#e05050', width=1.5, dash='dash'),
+            opacity=0.55
+        ))
+    if opt_s_trace is not None and len(opt_s_trace) > 0:
+        fig.add_trace(go.Scatter(
+            x=df.index[:len(opt_s_trace)], y=opt_s_trace,
+            mode='lines', name='<b>STATIC RL (Optimal ✦)</b>',
+            line=dict(color='#4a90d9', width=1.5, dash='dash'),
+            opacity=0.55
+        ))
+
     fig.update_layout(
         title=dict(text=f"<b>Cumulative Return Comparison ({stock_name})</b>", font=dict(size=title_size)),
         xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=axis_size)), showgrid=True),
@@ -334,9 +431,8 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace):
     return fig
 
 
-
 def _make_trend_fig(df_h):
-    """구버전 fig_trend: Trial-by-Trial Return Progression & Stability"""
+    """Trial-by-Trial Return Progression & Stability"""
     v_mean = df_h['Vanilla Final (%)'].mean()
     v_max  = df_h['Vanilla Final (%)'].max()
     v_min  = df_h['Vanilla Final (%)'].min()
@@ -378,7 +474,7 @@ def _make_trend_fig(df_h):
 
 
 def _make_trial_box_fig(df_h):
-    """구버전 fig_box: Return Distribution across Trials"""
+    """Return Distribution across Trials"""
     v_mean     = df_h['Vanilla Final (%)'].mean()
     s_mean     = df_h['STATIC Final (%)'].mean()
     med_v      = df_h['Vanilla Final (%)'].median()
@@ -445,7 +541,12 @@ def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_
 
 # --- 이전 결과 표시 (로딩 중 사라짐 방지) ---
 if st.session_state.prev_final_contributions:
-    draw_top_dashboard(st.session_state.prev_final_contributions, summary_placeholder, is_updating=True)
+    draw_top_dashboard(
+        st.session_state.prev_final_contributions,
+        summary_placeholder,
+        member_traces_snap=st.session_state.member_traces if st.session_state.member_traces else None,
+        is_updating=True
+    )
 
 # --- 모듈 로드 ---
 members_dir = os.path.join(root_path, "members")
@@ -472,9 +573,11 @@ total_charts = sum(
 final_contributions = []
 total_episodes_run = 0
 rendered_count = 0
-_gauge_loading_set = False  # gauge Loading 표시 중복 방지 플래그
+_gauge_loading_set = False  # 로딩 표시 중복 방지 플래그
 
-# [수정] master_pbar를 None으로 초기화해 루프 내 undefined 변수 오류 방지
+# 멤버별 에쿼티 곡선 누적 버퍼 (팀 펀드 합성용)
+_member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock_names': []}
+
 master_pbar = None
 if total_charts > 0:
     master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
@@ -648,7 +751,7 @@ for m_config in sorted_modules:
                     sr = st.session_state.sim_result[hist_key]
                     _status = "✅ 목표 달성" if sr.get("found") else "⚠️ 최선값"
                     st.caption(
-                        f"🔍 최근 Simulation — {_status}  |  "
+                        f"🔍 최근 Simulation (Bayesian Opt) — {_status}  |  "
                         f"LR={sr['lr']:.4f}  γ={sr['gamma']:.4f}  "
                         f"ε(S)={sr['epsilon']:.4f}  ε(V)={sr['v_epsilon']:.4f}  |  "
                         f"STATIC {sr['s_final']:+.2f}%  Vanilla {sr['v_final']:+.2f}%  "
@@ -661,9 +764,12 @@ for m_config in sorted_modules:
                     st.session_state[_auto_run_key] = False
                     run_clicked = True
 
+                # ══════════════════════════════════════════
+                # Run Evaluation
+                # ══════════════════════════════════════════
                 if run_clicked:
                     if not _gauge_loading_set:
-                        update_gauge(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
+                        update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
                     # 종목별 파라미터를 다시 적용: fallback 목록에서 이 종목 제거
                     st.session_state.stocks_reverted.add(hist_key)
@@ -690,50 +796,62 @@ for m_config in sorted_modules:
                     run_prog_slot.success(f"완료: {n_runs}회 Trial 누적")
                     st.rerun()
 
-                # ── Simulation: STATIC > Vanilla 조건 파라미터 탐색 ──
+                # ══════════════════════════════════════════
+                # Simulation: Bayesian Optimization 기반 파라미터 탐색
+                # ══════════════════════════════════════════
                 if sim_clicked:
                     if not _gauge_loading_set:
-                        update_gauge(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
+                        update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
+
                     n_iters = max(20, int(l_auto_runs) * 8)
-                    phase1  = int(n_iters * 0.4)
-                    phase2  = int(n_iters * 0.8)
                     param_bounds = {
                         "lr":        (0.001, 0.1),
                         "gamma":     (0.5,   0.99),
                         "epsilon":   (0.01,  0.5),
                         "v_epsilon": (0.01,  0.5),
                     }
+
+                    # ── Bayesian Optimizer 초기화 ──
+                    n_random = max(8, n_iters // 5)   # 초기 랜덤 탐색 횟수
+                    optimizer = BayesianOptimizer(
+                        bounds=param_bounds,
+                        n_random_start=n_random,
+                        kappa=2.0
+                    )
+
                     best = {
                         "lr": l_lr, "gamma": l_gamma,
                         "epsilon": l_epsilon, "v_epsilon": l_v_epsilon,
                         "gap": -999.0, "s_final": 0.0, "v_final": 0.0
                     }
-                    gap_history = []
-                    param_hist  = {k: [] for k in param_bounds}
-                    sim_display = st.empty()
-                    # 단일 시드 과적합 방지: 후보마다 복수 시드 평균 gap으로 평가
-                    _n_eval = min(3, max(2, int(l_auto_runs) // 3))
+                    gap_history    = []
+                    param_hist     = {k: [] for k in param_bounds}
+                    sim_display    = st.empty()
+
+                    # 복수 시드 평균으로 일반화 성능 측정
+                    _n_eval    = min(3, max(2, int(l_auto_runs) // 3))
                     _eval_seeds = [int(l_seed) + _j for _j in range(_n_eval)]
 
+                    # Ghost 미리보기용 best traces 저장
+                    _best_v_trace = None
+                    _best_s_trace = None
+
                     for _i in range(n_iters):
-                        if _i < phase1:
-                            phase_name, step = "🔴 Exploring", 1.0
-                        elif _i < phase2:
-                            phase_name, step = "🟡 Narrowing", 0.25
+                        # ─ 페이즈 레이블 ─
+                        if _i < n_random:
+                            phase_name = "🔴 Exploring (Random)"
+                        elif _i < n_random + (n_iters - n_random) // 2:
+                            phase_name = "🟡 Bayesian UCB"
                         else:
-                            phase_name, step = "🟢 Converging", 0.05
+                            phase_name = "🟢 Converging (UCB)"
 
-                        candidate = {}
-                        for _k, (_lo, _hi) in param_bounds.items():
-                            _rng  = (_hi - _lo) * step
-                            _base = best[_k] if _i > 0 else _lo + (_hi - _lo) * random.random()
-                            candidate[_k] = float(np.clip(
-                                _base + random.uniform(-_rng / 2, _rng / 2), _lo, _hi
-                            ))
+                        # ─ Bayesian Optimizer가 다음 후보 제안 ─
+                        candidate = optimizer.suggest_next()
 
-                        # 복수 시드로 평가 → 평균 gap (일반화 성능 측정)
+                        # ─ 복수 시드로 평가 → 평균 gap ─
                         _gaps, _s_list, _v_list = [], [], []
+                        _tmp_v_trace, _tmp_s_trace = None, None
                         for _eseed in _eval_seeds:
                             _, _vt, _st_t, _, _, _, _ = get_rl_data(
                                 ticker,
@@ -745,18 +863,30 @@ for m_config in sorted_modules:
                                 _gaps.append(float(_st_t[-1]) - float(_vt[-1]))
                                 _s_list.append(float(_st_t[-1]))
                                 _v_list.append(float(_vt[-1]))
+                                # 첫 번째 시드 trace를 대표 trace로 저장
+                                if _tmp_v_trace is None:
+                                    _tmp_v_trace = _vt
+                                    _tmp_s_trace = _st_t
+
                         if _gaps:
                             _gap = float(np.mean(_gaps))
                             candidate["gap"]     = _gap
                             candidate["s_final"] = float(np.mean(_s_list))
                             candidate["v_final"] = float(np.mean(_v_list))
+
+                            # Bayesian Optimizer 업데이트
+                            optimizer.update(candidate, _gap)
+
                             if _gap > best["gap"]:
                                 best = candidate.copy()
+                                _best_v_trace = _tmp_v_trace
+                                _best_s_trace = _tmp_s_trace
+
                         gap_history.append(best["gap"])
                         for _k in param_bounds:
-                            param_hist[_k].append(candidate[_k])
+                            param_hist[_k].append(candidate.get(_k, best.get(_k, 0.0)))
 
-                        # 실시간 디스플레이
+                        # ─ 실시간 디스플레이 ─
                         with sim_display.container(border=True):
                             _prog     = (_i + 1) / n_iters
                             _goal_txt = " ✅" if best["gap"] >= 5.0 else ""
@@ -766,14 +896,19 @@ for m_config in sorted_modules:
                                      f"Vanilla {best['v_final']:+.2f}%  "
                                      f"Gap {best['gap']:+.1f}%{_goal_txt}")
                             _pc1, _pc2, _pc3, _pc4 = st.columns(4)
-                            _prev_lr = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate["lr"]
-                            _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate["gamma"]
-                            _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate["epsilon"]
-                            _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate["v_epsilon"]
-                            _pc1.metric("Learning Rate (α)", f'{candidate["lr"]:.4f}',        f'{candidate["lr"]        - _prev_lr:+.4f}')
-                            _pc2.metric("Discount Factor (γ)", f'{candidate["gamma"]:.4f}',  f'{candidate["gamma"]     - _prev_g:+.4f}')
-                            _pc3.metric("STATIC ε",          f'{candidate["epsilon"]:.4f}',  f'{candidate["epsilon"]   - _prev_e:+.4f}')
-                            _pc4.metric("Vanilla ε",         f'{candidate["v_epsilon"]:.4f}',f'{candidate["v_epsilon"] - _prev_ve:+.4f}')
+                            _prev_lr = param_hist["lr"][-2]        if len(param_hist["lr"]) > 1        else candidate.get("lr", best["lr"])
+                            _prev_g  = param_hist["gamma"][-2]     if len(param_hist["gamma"]) > 1     else candidate.get("gamma", best["gamma"])
+                            _prev_e  = param_hist["epsilon"][-2]   if len(param_hist["epsilon"]) > 1   else candidate.get("epsilon", best["epsilon"])
+                            _prev_ve = param_hist["v_epsilon"][-2] if len(param_hist["v_epsilon"]) > 1 else candidate.get("v_epsilon", best["v_epsilon"])
+                            _pc1.metric("Learning Rate (α)", f'{candidate.get("lr", best["lr"]):.4f}',
+                                        f'{candidate.get("lr", best["lr"]) - _prev_lr:+.4f}')
+                            _pc2.metric("Discount Factor (γ)", f'{candidate.get("gamma", best["gamma"]):.4f}',
+                                        f'{candidate.get("gamma", best["gamma"]) - _prev_g:+.4f}')
+                            _pc3.metric("STATIC ε",  f'{candidate.get("epsilon", best["epsilon"]):.4f}',
+                                        f'{candidate.get("epsilon", best["epsilon"]) - _prev_e:+.4f}')
+                            _pc4.metric("Vanilla ε", f'{candidate.get("v_epsilon", best["v_epsilon"]):.4f}',
+                                        f'{candidate.get("v_epsilon", best["v_epsilon"]) - _prev_ve:+.4f}')
+
                             if len(gap_history) > 1:
                                 _fig_sim = go.Figure()
                                 _fig_sim.add_trace(go.Scatter(
@@ -785,6 +920,14 @@ for m_config in sorted_modules:
                                 _fig_sim.add_hline(y=5.0, line_dash="dash",
                                                    line_color="#50c878",
                                                    annotation_text="목표 +5%")
+                                # GP 전환점 수직선
+                                if _i >= n_random:
+                                    _fig_sim.add_vline(
+                                        x=n_random,
+                                        line_dash="dot", line_color="#ff9800",
+                                        annotation_text="GP Start",
+                                        annotation_position="top right"
+                                    )
                                 _fig_sim.update_layout(
                                     height=150, margin=dict(l=0, r=0, t=10, b=0),
                                     xaxis_title="Iteration", yaxis_title="Gap (%)",
@@ -795,9 +938,24 @@ for m_config in sorted_modules:
                                 st.plotly_chart(_fig_sim, use_container_width=True,
                                                 key=f"sim_chart_{m_name}_{stock_name}_{_i}")
 
-                    # 완료: sim_pending으로 저장 후 rerun (슬라이더 렌더링 전 적용됨)
+                    # ─ 완료: Ghost 데이터 저장 ─
                     best["found"] = best["gap"] >= 5.0
                     st.session_state.sim_result[hist_key] = best
+
+                    # Ghost Line 저장 (재실행 후에도 차트에 점선으로 표시됨)
+                    if _best_v_trace is not None and _best_s_trace is not None:
+                        st.session_state.ghost_data[hist_key] = {
+                            'v_trace': _best_v_trace,
+                            's_trace': _best_s_trace,
+                            'params': {
+                                'lr':        best['lr'],
+                                'gamma':     best['gamma'],
+                                'epsilon':   best['epsilon'],
+                                'v_epsilon': best['v_epsilon'],
+                            },
+                            'gap': best['gap'],
+                        }
+
                     st.session_state[f"sim_pending_{hist_key}"] = {
                         "lr":        best["lr"],
                         "gamma":     best["gamma"],
@@ -862,18 +1020,44 @@ for m_config in sorted_modules:
                 s_last_day = float(s_trace[-1] - s_trace[-2]) if len(s_trace) > 1 else 0.0
                 m_last_day = float(real_ret_trace.iloc[-1] - real_ret_trace.iloc[-2]) if len(real_ret_trace) > 1 else 0.0
 
+                # ── Ghost Line 로드 (이전 Simulation 결과) ──
+                ghost = st.session_state.ghost_data.get(hist_key)
+                opt_v = ghost['v_trace'] if ghost else None
+                opt_s = ghost['s_trace'] if ghost else None
+
+                # ── 멤버별 에쿼티 곡선 버퍼에 추가 (팀 펀드용) ──
+                if m_name not in _member_trace_buf:
+                    _member_trace_buf[m_name] = {
+                        'traces': [], 'dates': df_stock.index, 'stock_names': []
+                    }
+                _member_trace_buf[m_name]['traces'].append(s_trace)
+                _member_trace_buf[m_name]['stock_names'].append(stock_name)
+
                 # ── 메인 2컬럼 레이아웃 ──
                 col_left, col_right = st.columns([1, 1])
 
                 # ══════════════════════════════════════════
-                # 왼쪽: S&P 500 Performance 스타일
+                # 왼쪽: 누적 수익 차트 + 지표 카드 + 의사결정 분석
                 # ══════════════════════════════════════════
                 with col_left:
                     st.markdown(f"#### {stock_name} Performance")
 
-                    # 누적 수익 차트 (구버전 fig_main 스타일)
-                    fig_cum = _make_cumulative_fig(stock_name, df_stock, v_trace, s_trace, real_ret_trace)
-                    st.plotly_chart(fig_cum, use_container_width=True, key=f"chart_cum_{m_name}_{stock_name}")
+                    # 누적 수익 차트 (Ghost Line 포함)
+                    fig_cum = _make_cumulative_fig(
+                        stock_name, df_stock, v_trace, s_trace, real_ret_trace,
+                        opt_v_trace=opt_v, opt_s_trace=opt_s
+                    )
+                    st.plotly_chart(fig_cum, use_container_width=True,
+                                    key=f"chart_cum_{m_name}_{stock_name}")
+
+                    # Ghost 존재 시 최적 파라미터 캡션 표시
+                    if ghost:
+                        g = ghost['params']
+                        st.caption(
+                            f"✦ Optimal Ghost: LR={g['lr']:.4f}  γ={g['gamma']:.4f}  "
+                            f"ε(S)={g['epsilon']:.4f}  ε(V)={g['v_epsilon']:.4f}  "
+                            f"Gap={ghost['gap']:+.2f}%"
+                        )
 
                     # 3 지표 카드 – 색상 커스터마이징 (HTML)
                     st.markdown(
@@ -952,12 +1136,13 @@ for m_config in sorted_modules:
                                 xaxis=dict(showgrid=False),
                                 yaxis=dict(showgrid=True, range=[0, action_counts["Count"].max() * 1.2])
                             )
-                            st.plotly_chart(fig_bar, use_container_width=True, key=f"bar_{m_name}_{stock_name}")
+                            st.plotly_chart(fig_bar, use_container_width=True,
+                                            key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
                             st.dataframe(styled_log, height=250, use_container_width=True)
 
                 # ══════════════════════════════════════════
-                # 오른쪽: Trial History Statistical Analysis 스타일
+                # 오른쪽: Trial History Statistical Analysis
                 # ══════════════════════════════════════════
                 with col_right:
                     st.markdown("### Trial History: Statistical Analysis (Alpha Performance)")
@@ -1037,6 +1222,18 @@ border:1px solid rgba(128,128,128,0.3);'>
                 mem_v_rets.append(v_final)
                 mem_mdds.append(s_mdd)
 
+        # ── 멤버 평균 에쿼티 곡선 계산 및 session_state 저장 ──
+        if _member_trace_buf.get(m_name, {}).get('traces'):
+            _buf = _member_trace_buf[m_name]
+            _traces = _buf['traces']
+            _min_len = min(len(t) for t in _traces)
+            _avg_trace = np.mean([t[:_min_len] for t in _traces], axis=0)
+            st.session_state.member_traces[m_name] = {
+                's_trace':    _avg_trace,
+                'dates':      _buf['dates'][:_min_len],
+                'stocks':     _buf['stock_names'],
+            }
+
         if mem_s_rets:
             avg_s, avg_v = np.mean(mem_s_rets), np.mean(mem_v_rets)
             final_contributions.append({
@@ -1053,16 +1250,19 @@ border:1px solid rgba(128,128,128,0.3);'>
 
 if final_contributions:
     master_progress_placeholder.empty()
-    # summary_placeholder.empty() 제거 — draw_top_dashboard 내부 with container:가 원자적으로 교체함
-    current_summary = draw_top_dashboard(final_contributions, summary_placeholder)
+    current_summary = draw_top_dashboard(
+        final_contributions,
+        summary_placeholder,
+        member_traces_snap=st.session_state.member_traces if st.session_state.member_traces else None,
+    )
 
     # 게이지를 최종 값으로 한 번만 업데이트 (루프 안에서는 호출하지 않음)
     st.session_state.prev_final_contributions = final_contributions
     st.session_state.prev_summary = current_summary
     st.session_state.prev_episodes_run = total_episodes_run
 
-# Render gauge exactly once per script run
-update_gauge(
+# 스크립트 실행 완료 후 load bar 최종 렌더
+update_load_bar(
     total_episodes_run if final_contributions else st.session_state.prev_episodes_run,
     gauge_placeholder
 )

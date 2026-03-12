@@ -1,5 +1,31 @@
 import numpy as np
 
+
+def calculate_softmax_weights(scores, temperature=1.0):
+    """
+    Softmax 기반 동적 포트폴리오 비중.
+    높은 점수를 받은 멤버에게 더 많은 자본 비중을 배분합니다.
+
+    Parameters
+    ----------
+    scores : array-like
+        각 멤버의 성과 점수 (예: avg_return / (1 + abs(avg_mdd))).
+    temperature : float
+        낮을수록 최고 점수 집중, 높을수록 균등 배분 (기본 1.0).
+
+    Returns
+    -------
+    np.ndarray — 합계가 1인 비중 배열
+    """
+    scores = np.array(scores, dtype=float)
+    if len(scores) == 0:
+        return np.array([])
+    z = scores / max(temperature, 1e-9)
+    z -= z.max()          # 수치 안정성: overflow 방지
+    exp_z = np.exp(z)
+    return exp_z / exp_z.sum()
+
+
 def calculate_metrics(returns_percent_array):
     if len(returns_percent_array) == 0: return 0.0, 0.0
     total_return = returns_percent_array[-1]
