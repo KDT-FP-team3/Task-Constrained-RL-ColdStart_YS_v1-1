@@ -361,9 +361,9 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     _ypad = (_ymax - _ymin) * 0.28  # 라벨과 제목 사이 여백 확보
     fig_profit.update_layout(
         title="<b>Profit Comparison ($): Vanilla vs STATIC</b>", barmode='group',
-        height=350, margin=dict(l=0, r=0, t=50, b=0),
+        height=350, margin=dict(l=0, r=0, t=75, b=0),
         yaxis=dict(range=[_ymin - _ypad, _ymax + _ypad]),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="center", x=0.5)
     )
 
     # (3) 성과 테이블
@@ -659,7 +659,8 @@ def _make_trial_box_fig(df_h):
             ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'], range=[0.3, 2.9]
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=510, margin=dict(t=75, b=50, l=50, r=50)
+        height=510, margin=dict(t=100, b=50, l=50, r=50),
+        legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="center", x=0.5)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
     return fig
