@@ -665,11 +665,12 @@ def _make_trial_box_fig(df_h):
     return fig
 
 
-def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_rate=0.0):
+def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d"):
     """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환.
     v_epsilon: Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용.
-    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과)."""
-    df_full = fetch_stock_data(ticker, period="2y")
+    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
+    interval: yfinance interval ('15m'|'1h'|'1d'|'1wk'|'1mo')"""
+    df_full = fetch_stock_data(ticker, interval=interval)
     if df_full.empty or len(df_full) < 10:
         return None, None, None, None, 0.0, [], []
     df = df_full.tail(episodes).copy()
@@ -860,12 +861,29 @@ for m_config in sorted_modules:
                 # ── 파라미터: 접힌 expander – 2행 구조 ──
                 with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
                     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
-                    sc1, sc2, sc3, sc4, sc5 = st.columns(5)
+                    # ── Timeframe 설정 ──
+                    _tf_options  = ["15분봉", "1시간봉", "일봉", "주봉", "월봉"]
+                    _tf_map      = {"15분봉": "15m", "1시간봉": "1h", "일봉": "1d", "주봉": "1wk", "월봉": "1mo"}
+                    _tf_lbl_map  = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
+                    _tf_min_map  = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
+                    _tf_max_map  = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
+                    _tf_def_map  = {"15m": 80, "1h": 120, "1d": 80, "1wk": 52, "1mo": 24}
+                    sc0, sc1, sc2, sc3, sc4, sc5 = st.columns(6)
+                    with sc0:
+                        _tf_sel = st.selectbox(
+                            "Timeframe", _tf_options, index=2,
+                            key=f"tf_{m_name}_{stock_name}",
+                            help="데이터 봉 단위 선택 (15분/1시간: 최근 60일/730일 제한)"
+                        )
+                    l_interval = _tf_map[_tf_sel]
                     with sc1:
+                        _tf_min = _tf_min_map[l_interval]
+                        _tf_max = _tf_max_map[l_interval]
+                        _tf_def = _tf_def_map[l_interval]
+                        _epi_val = min(max(int(p_settings.get("episodes", _tf_def)), _tf_min), _tf_max)
                         l_epi = st.slider(
-                            "Trading Days", 10, 500,
-                            int(p_settings.get("episodes", global_episodes)),
-                            key=f"epi_{m_name}_{stock_name}"
+                            _tf_lbl_map[l_interval], _tf_min, _tf_max, _epi_val,
+                            key=f"epi_{m_name}_{stock_name}_{l_interval}"
                         )
                     with sc2:
                         l_frame_speed = st.slider(
@@ -1020,7 +1038,7 @@ for m_config in sorted_modules:
                             try:
                                 _, vt, s_tr, mkt, _, _, _ = get_rl_data(
                                     ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
-                                    v_epsilon=l_v_epsilon, fee_rate=fee_rate
+                                    v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval
                                 )
                             except Exception as _e:
                                 vt, s_tr, mkt = None, None, None
@@ -1126,7 +1144,7 @@ for m_config in sorted_modules:
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
-                                    fee_rate=fee_rate
+                                    fee_rate=fee_rate, interval=l_interval
                                 )
                             except Exception:
                                 _vt, _s_tr = None, None
@@ -1364,7 +1382,7 @@ for m_config in sorted_modules:
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
                         ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed,
-                        v_epsilon=eff_v_eps, fee_rate=fee_rate
+                        v_epsilon=eff_v_eps, fee_rate=fee_rate, interval=l_interval
                     )
 
                 if df_stock is None:
