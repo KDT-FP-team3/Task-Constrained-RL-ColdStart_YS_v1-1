@@ -337,27 +337,27 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_lr", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_lr", label_visibility="collapsed")
     with _wg:
         global_lr = st.slider("Learning Rate (α)", 0.001, 0.1, 0.01,
                               step=0.001, format="%.3f", key="fb_lr")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_gamma", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_gamma", label_visibility="collapsed")
     with _wg:
         global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.98, key="fb_gamma")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_eps", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_eps", label_visibility="collapsed")
     with _wg:
         global_epsilon = st.slider("STATIC ε", 0.01, 0.5, 0.10, key="fb_eps",
                                    help="STATIC RL 탐험율")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
-        st.checkbox("", value=True, key="fb_chk_v_eps", label_visibility="collapsed")
+        st.checkbox("", value=False, key="fb_chk_v_eps", label_visibility="collapsed")
     with _wg:
         global_v_epsilon = st.slider("Vanilla ε", 0.01, 0.5, 0.10, key="fb_v_eps",
                                      help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)")
@@ -371,10 +371,10 @@ if apply_all_clicked:
         "seed":      bool(st.session_state.get("fb_chk_seed",      False)),
         "auto":      bool(st.session_state.get("fb_chk_auto",      False)),
         "active":    bool(st.session_state.get("fb_chk_active",    False)),
-        "lr":        bool(st.session_state.get("fb_chk_lr",        True)),
-        "gamma":     bool(st.session_state.get("fb_chk_gamma",     True)),
-        "eps":       bool(st.session_state.get("fb_chk_eps",       True)),
-        "v_eps":     bool(st.session_state.get("fb_chk_v_eps",     True)),
+        "lr":        bool(st.session_state.get("fb_chk_lr",        False)),
+        "gamma":     bool(st.session_state.get("fb_chk_gamma",     False)),
+        "eps":       bool(st.session_state.get("fb_chk_eps",       False)),
+        "v_eps":     bool(st.session_state.get("fb_chk_v_eps",     False)),
     }
     st.session_state.fallback_params = {
         "timeframe":     fb_tf_sel,
