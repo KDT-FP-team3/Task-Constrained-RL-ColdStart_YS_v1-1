@@ -266,8 +266,8 @@ with st.container():
     master_progress_placeholder = st.empty()
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
 
-# 차트+테이블 영역은 sticky 컨테이너 밖에 위치 (차트 표시 보장)
-summary_placeholder = st.empty()
+# 차트+테이블 영역: sticky 컨테이너 밖, st.container()로 항상 안정 렌더
+summary_placeholder = st.container()
 
 # ==========================================
 # 2. 통합 대시보드 (Alpha 비교 + 팀 펀드 에쿼티)
@@ -625,14 +625,22 @@ def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
 
-# --- 이전 결과 표시 (로딩 중 사라짐 방지) ---
-if st.session_state.prev_final_contributions:
+# --- 포트폴리오 리포트: 항상 렌더 (st.container() 기반) ---
+# st.container()는 st.empty()와 달리 복잡한 레이아웃(columns 등)을 안정적으로 표시
+_prev_contribs = st.session_state.prev_final_contributions
+_prev_traces   = st.session_state.member_traces
+_is_updating   = bool(st.session_state.run_all_queue or st.session_state.sim_all_queue)
+
+if _prev_contribs:
     draw_top_dashboard(
-        st.session_state.prev_final_contributions,
+        _prev_contribs,
         summary_placeholder,
-        member_traces_snap=st.session_state.member_traces if st.session_state.member_traces else None,
-        is_updating=True
+        member_traces_snap=_prev_traces if _prev_traces else None,
+        is_updating=_is_updating,
     )
+else:
+    with summary_placeholder:
+        st.info("ℹ️ Run Evaluation을 실행하면 포트폴리오 차트와 테이블이 여기에 표시됩니다.")
 
 # --- 모듈 로드 ---
 members_dir = os.path.join(root_path, "members")
@@ -1521,16 +1529,16 @@ border:1px solid rgba(128,128,128,0.3);'>
 
 if final_contributions:
     master_progress_placeholder.empty()
-    current_summary = draw_top_dashboard(
-        final_contributions,
-        summary_placeholder,
-        member_traces_snap=st.session_state.member_traces if st.session_state.member_traces else None,
-    )
 
-    # 게이지를 최종 값으로 한 번만 업데이트 (루프 안에서는 호출하지 않음)
+    # 첫 번째 데이터 도착 시 st.rerun() → 상단 container에 즉시 차트 표시
+    _first_data = not bool(st.session_state.prev_final_contributions)
+
+    # 세션 상태 업데이트 (다음 rerun에서 상단 컨테이너가 최신 데이터로 렌더)
     st.session_state.prev_final_contributions = final_contributions
-    st.session_state.prev_summary = current_summary
     st.session_state.prev_episodes_run = total_episodes_run
+
+    if _first_data:
+        st.rerun()  # 차트가 아직 없을 때 한 번만 강제 갱신
 
 # 스크립트 실행 완료 후 load bar 최종 렌더
 update_load_bar(
