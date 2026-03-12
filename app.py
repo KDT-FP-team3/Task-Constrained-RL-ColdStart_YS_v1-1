@@ -832,8 +832,8 @@ for m_config in sorted_modules:
                 with st.expander(f"⚙️ {stock_name} Parameters  |  💸 거래 수수료 — {fee_info['label']}", expanded=False):
                     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
                     # ── Timeframe 설정 ──
-                    _tf_options  = ["15분봉", "1시간봉", "일봉", "주봉", "월봉"]
-                    _tf_map      = {"15분봉": "15m", "1시간봉": "1h", "일봉": "1d", "주봉": "1wk", "월봉": "1mo"}
+                    _tf_options  = ["15 min.", "1 hour", "1 day", "1 week", "1 month"]
+                    _tf_map      = {"15 min.": "15m", "1 hour": "1h", "1 day": "1d", "1 week": "1wk", "1 month": "1mo"}
                     _tf_lbl_map  = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
                     _tf_min_map  = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
                     _tf_max_map  = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
@@ -1535,8 +1535,15 @@ for m_config in sorted_modules:
                                 return 'color: #e05050; font-weight: bold;'
                             return 'font-weight: bold;'
 
-                        styled_log = df_log.style.map(_style_log).format(
-                            {"Vanilla Return(%)": "{:.2f}", "STATIC Return(%)": "{:.2f}"}
+                        styled_log = (
+                            df_log.style
+                            .map(_style_log)
+                            .format({"Vanilla Return(%)": "{:.2f}", "STATIC Return(%)": "{:.2f}"})
+                            .set_properties(**{"text-align": "center"})
+                            .set_table_styles([{
+                                "selector": "th",
+                                "props": [("text-align", "center")]
+                            }])
                         )
 
                         bar_col, tbl_col = st.columns([1, 1.4])
@@ -1621,13 +1628,13 @@ border:1px solid rgba(128,128,128,0.3);'>
 <h4 style='margin-top:0;margin-bottom:10px;font-weight:900;font-size:16px;'>Statistics Summary (Expected &amp; Risk)</h4>
 <div style='display:flex;gap:12px;'>
   <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:10px;'>
-    <ul style='font-size:14px;margin:0;padding-left:12px;line-height:2.1;list-style:none;'>
+    <ul style='font-size:14px;margin:0;padding-left:0;line-height:2.1;list-style:none;text-align:left;'>
     <li><b style='color:#e05050;'>Vanilla Mean:</b> {v_mean:.2f}% (σ={v_std:.2f}%)</li>
     <li><b style='color:#e05050;'>Vanilla Range:</b> {v_min:.2f}% ~ {v_max:.2f}%</li>
     </ul>
   </div>
   <div style='flex:1;padding-left:2px;'>
-    <ul style='font-size:14px;margin:0;padding-left:12px;line-height:2.1;list-style:none;'>
+    <ul style='font-size:14px;margin:0;padding-left:0;line-height:2.1;list-style:none;text-align:left;'>
     <li><b style='color:#4a90d9;'>STATIC Mean:</b> {s_mean:.2f}% (σ={s_std:.2f}%)</li>
     <li><b style='color:#4a90d9;'>STATIC Range:</b> {s_min:.2f}% ~ {s_max:.2f}%</li>
     </ul>
@@ -1643,7 +1650,13 @@ border:1px solid rgba(128,128,128,0.3);'>
                                 df_h.set_index("Trial").style.map(_color_neg).format(
                                     {"Vanilla Final (%)": "{:.2f}", "STATIC Final (%)": "{:.2f}",
                                      "Market Final (%)": "{:.2f}", "Seed": "{:.0f}"}
-                                ), height=320, use_container_width=True
+                                )
+                                .set_properties(**{"text-align": "center"})
+                                .set_table_styles([{
+                                    "selector": "th",
+                                    "props": [("text-align", "center")]
+                                }]),
+                                height=320, use_container_width=True
                             )
 
                 total_episodes_run += l_epi
