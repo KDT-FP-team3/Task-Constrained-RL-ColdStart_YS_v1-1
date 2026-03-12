@@ -365,12 +365,12 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 # 버튼 클릭 시 현재 슬라이더 값 스냅샷 저장 (슬라이더가 위에서 이미 렌더됨)
 if apply_all_clicked:
     _chks = {
-        "timeframe": bool(st.session_state.get("fb_chk_timeframe", True)),
-        "episodes":  bool(st.session_state.get("fb_chk_episodes",  True)),
-        "frame":     bool(st.session_state.get("fb_chk_frame",     True)),
-        "seed":      bool(st.session_state.get("fb_chk_seed",      True)),
-        "auto":      bool(st.session_state.get("fb_chk_auto",      True)),
-        "active":    bool(st.session_state.get("fb_chk_active",    True)),
+        "timeframe": bool(st.session_state.get("fb_chk_timeframe", False)),
+        "episodes":  bool(st.session_state.get("fb_chk_episodes",  False)),
+        "frame":     bool(st.session_state.get("fb_chk_frame",     False)),
+        "seed":      bool(st.session_state.get("fb_chk_seed",      False)),
+        "auto":      bool(st.session_state.get("fb_chk_auto",      False)),
+        "active":    bool(st.session_state.get("fb_chk_active",    False)),
         "lr":        bool(st.session_state.get("fb_chk_lr",        True)),
         "gamma":     bool(st.session_state.get("fb_chk_gamma",     True)),
         "eps":       bool(st.session_state.get("fb_chk_eps",       True)),
