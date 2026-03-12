@@ -219,7 +219,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     global_frame      = st.slider("Frame Speed (sec)",  0.01,  2.0,  0.05,
                                   step=0.01, format="%.2f",    key="fb_frame")
     global_seed       = st.number_input("Base Seed",    value=2026,  step=1,     key="fb_seed")
-    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=10,
+    global_auto_runs  = st.number_input("Auto Run Count", min_value=1, value=6,
                                         step=1,                key="fb_auto")
     global_active_agents = st.multiselect(
         "Active Agents",
@@ -315,9 +315,14 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
         name="STATIC RL", marker_color="#2196f3",
         text=df_contrib['Profit_Dollar'].apply(lambda x: f"<b>{x:.2f}$</b>"), textposition='outside'
     ))
+    _profit_vals = list(df_contrib['Vanilla_Profit']) + list(df_contrib['Profit_Dollar'])
+    _ymax = max(_profit_vals)
+    _ymin = min(_profit_vals)
+    _ypad = (_ymax - _ymin) * 0.28  # 라벨과 제목 사이 여백 확보
     fig_profit.update_layout(
         title="<b>Profit Comparison ($): Vanilla vs STATIC</b>", barmode='group',
-        height=350, margin=dict(l=0, r=0, t=40, b=0),
+        height=350, margin=dict(l=0, r=0, t=50, b=0),
+        yaxis=dict(range=[_ymin - _ypad, _ymax + _ypad]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
@@ -789,7 +794,7 @@ for m_config in sorted_modules:
                         )
                     with sc4:
                         l_auto_runs = st.number_input(
-                            "Auto Run Count", min_value=1, value=10, step=1,
+                            "Auto Run Count", min_value=1, value=6, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             help="Run Evaluation 클릭 시 자동 반복 횟수"
                         )
