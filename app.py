@@ -175,56 +175,43 @@ update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
 
-# ── All 버튼 행: [All 적용] [Run Eval. All] [Simul. All] ──
-_fb_active = st.session_state.stock_use_fallback == "ALL"
-_fb_label  = "✅ FB 적용중" if _fb_active else "🔁 All 적용"
-_sb_c1, _sb_c2, _sb_c3 = st.sidebar.columns(3)
-with _sb_c1:
-    apply_all_clicked = st.button(
-        _fb_label, key="sidebar_apply_all", type="primary",
-        use_container_width=True,
-        help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다"
-    )
-with _sb_c2:
-    _rq_cnt = len(st.session_state.run_all_queue)
+# ── 1행: [▶ Eval. All] [⚙ Simul. All] [■ 중단] ──
+_rq_cnt = len(st.session_state.run_all_queue)
+_sq_cnt = len(st.session_state.sim_all_queue)
+_sb_r1c1, _sb_r1c2, _sb_r1c3 = st.sidebar.columns([5, 5, 2])
+with _sb_r1c1:
     _re_label = f"▶ 실행중({_rq_cnt})" if _rq_cnt > 0 else "▶ Eval. All"
     run_eval_all_btn = st.button(
         _re_label, key="sidebar_run_eval_all", type="primary",
         use_container_width=True,
         help="전체 멤버·종목에 Run Evaluation을 순차 실행합니다"
     )
-with _sb_c3:
-    _sq_cnt = len(st.session_state.sim_all_queue)
+with _sb_r1c2:
     _si_label = f"⚙ 실행중({_sq_cnt})" if _sq_cnt > 0 else "⚙ Simul. All"
     sim_all_btn = st.button(
         _si_label, key="sidebar_sim_all", type="primary",
         use_container_width=True,
         help="전체 멤버·종목에 Simulation(Bayesian Opt)을 순차 실행합니다"
     )
-
-# ── 인터럽트 버튼 (All 큐 실행 중일 때 표시, 항상 렌더) ──
-_any_queue = len(st.session_state.run_all_queue) + len(st.session_state.sim_all_queue) > 0
-_intr_col1, _intr_col2 = st.sidebar.columns([1, 3])
-with _intr_col1:
+with _sb_r1c3:
+    st.markdown('<span class="stop-btn-marker"></span>', unsafe_allow_html=True)
     _sb_stop = st.button("■", key="sidebar_interrupt",
                          help="실행 중인 Eval. All / Simul. All 큐를 즉시 중단합니다",
                          use_container_width=True)
-with _intr_col2:
-    if _any_queue:
-        st.markdown(
-            "<div style='font-size:11px;color:rgba(255,100,100,0.85);padding-top:6px;'>"
-            f"큐 실행 중 (Eval:{len(st.session_state.run_all_queue)} "
-            f"/ Sim:{len(st.session_state.sim_all_queue)})</div>",
-            unsafe_allow_html=True)
-    else:
-        st.markdown(
-            "<div style='font-size:11px;color:rgba(160,160,170,0.6);padding-top:6px;'>"
-            "■ : 실행 중단</div>", unsafe_allow_html=True)
 
 if _sb_stop:
     st.session_state.run_all_queue = []
     st.session_state.sim_all_queue = []
     st.session_state.interrupt_requested = True
+
+# ── 2행: [🔁 All 적용] ──
+_fb_active = st.session_state.stock_use_fallback == "ALL"
+_fb_label  = "✅ Fallback 적용 중" if _fb_active else "🔁 All 적용"
+apply_all_clicked = st.sidebar.button(
+    _fb_label, key="sidebar_apply_all", type="primary",
+    use_container_width=True,
+    help="아래 설정값을 모든 멤버·종목의 시뮬레이션에 일괄 적용합니다"
+)
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
     st.markdown("<small><b>System Parameters</b></small>", unsafe_allow_html=True)
