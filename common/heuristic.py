@@ -2,6 +2,7 @@
 Bayesian Optimization Engine — numpy 전용 GP + UCB Acquisition
 ================================================================
 의존성: numpy 만 사용 (scipy 불필요)
+Python 3.9+ 호환: from __future__ import annotations 로 타입 힌트 지연 평가
 
 알고리즘 개요
 -----------
@@ -17,6 +18,8 @@ Bayesian Optimization Engine — numpy 전용 GP + UCB Acquisition
                 σ*² = k** - k*ᵀ(K+σₙ²I)⁻¹k*
   UCB: α(x) = μ(x) + κ·σ(x)               [κ = 2.0]
 """
+
+from __future__ import annotations  # Python 3.9 호환: dict|None 등 타입 힌트 지연 평가
 
 import numpy as np
 
