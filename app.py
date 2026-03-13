@@ -213,6 +213,7 @@ def update_load_bar(episodes_run, placeholder, is_loading=False):
         )
 
 st.sidebar.markdown("### System Status")
+master_progress_placeholder = st.sidebar.empty()
 gauge_placeholder = st.sidebar.empty()
 # 스크립트 재실행 시 즉시 이전 값으로 렌더링 → 공백(사라짐) 방지
 update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
@@ -398,7 +399,6 @@ with st.container():
     st.markdown('<h1 class="sticky-main-title">Chainers Master Fund: Performance Monitoring Dashboard</h1>', unsafe_allow_html=True)
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
     st.markdown('<h2 class="sticky-sub-title">Master Fund Portfolio Report</h2>', unsafe_allow_html=True)
-    master_progress_placeholder = st.empty()
     st.markdown('<hr class="sticky-divider">', unsafe_allow_html=True)
 
 # 차트+테이블 영역: sticky 컨테이너 밖, st.container()로 항상 안정 렌더
