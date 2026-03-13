@@ -1001,11 +1001,11 @@ for m_config in sorted_modules:
                     _tf_lbl_map  = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
                     _tf_min_map  = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
                     _tf_max_map  = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
-                    _tf_def_map  = {"15m": 80, "1h": 120, "1d": 80, "1wk": 52, "1mo": 24}
+                    _tf_def_map  = {"15m": 80, "1h": 120, "1d": 80, "1wk": 105, "1mo": 24}
                     sc0, sc1, sc2, sc3, sc4, sc5 = st.columns(6)
                     with sc0:
                         _tf_sel = st.selectbox(
-                            "Timeframe", _tf_options, index=2,
+                            "Timeframe", _tf_options, index=3,
                             key=f"tf_{m_name}_{stock_name}",
                             help="데이터 봉 단위 선택 (15분/1시간: 최근 60일/730일 제한)"
                         )
