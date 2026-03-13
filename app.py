@@ -252,7 +252,7 @@ if _sb_stop:
 
 # ── 2행: [🔁 All 적용] [↩ 되돌리기] ──
 _fb_active = st.session_state.stock_use_fallback == "ALL"
-_fb_label  = "✅ Fallback 적용 중" if _fb_active else "🔁 All 적용"
+_fb_label  = "✅ Fallback 적용 중" if _fb_active else "적용"
 _has_prev  = bool(st.session_state.fallback_prev_state)
 _sb_r2c1, _sb_r2c2 = st.sidebar.columns([3, 2])
 apply_all_clicked = _sb_r2c1.button(
@@ -281,7 +281,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_timeframe", label_visibility="collapsed")
     with _wg:
         fb_tf_sel = st.selectbox(
-            "Timeframe", _fb_tf_options, index=3,
+            "Timeframe", _fb_tf_options, index=2,
             key="fb_timeframe",
             help="데이터 봉 단위 (15분/1시간: 최근 60일/730일 제한)"
         )
@@ -1005,7 +1005,7 @@ for m_config in sorted_modules:
                     sc0, sc1, sc2, sc3, sc4, sc5 = st.columns(6)
                     with sc0:
                         _tf_sel = st.selectbox(
-                            "Timeframe", _tf_options, index=3,
+                            "Timeframe", _tf_options, index=2,
                             key=f"tf_{m_name}_{stock_name}",
                             help="데이터 봉 단위 선택 (15분/1시간: 최근 60일/730일 제한)"
                         )
