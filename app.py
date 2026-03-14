@@ -1196,7 +1196,7 @@ for m_config in sorted_modules:
                                 run_prog_slot.warning(f"⛔ 중단됨 ({run_i}/{n_runs} 완료)")
                                 _interrupted = True
                                 break
-                            trial_seed = int(l_seed) + len(trials) + run_i
+                            trial_seed = int(l_seed) + (len(trials) + run_i) * 13  # improve 3-2-6: 소수 간격으로 분산 확보
                             run_prog_slot.progress(
                                 run_i / n_runs,
                                 text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
@@ -1316,7 +1316,11 @@ for m_config in sorted_modules:
                             except Exception:
                                 _vt, _s_tr, _mkt_tr = None, None, None
                             if _vt is not None and _s_tr is not None and _mkt_tr is not None:
-                                _gaps.append(float(_s_tr[-1]) - float(_mkt_tr[-1]))
+                                # improve 3-2-6: 복합 Gap — 시장 대비(60%) + Vanilla 대비(40%)
+                                # Portfolio Alpha(STATIC-Vanilla)와 방향 정렬
+                                _gap_vs_market  = float(_s_tr[-1]) - float(_mkt_tr[-1])
+                                _gap_vs_vanilla = float(_s_tr[-1]) - float(_vt[-1])
+                                _gaps.append(0.6 * _gap_vs_market + 0.4 * _gap_vs_vanilla)
                                 _s_list.append(float(_s_tr[-1]))
                                 _v_list.append(float(_vt[-1]))
                                 _m_list.append(float(_mkt_tr[-1]))
