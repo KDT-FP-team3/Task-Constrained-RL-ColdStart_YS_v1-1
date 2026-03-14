@@ -106,7 +106,7 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 상태: 2개 (0: 하락, 1: 상승)
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: 상수 epsilon-greedy
-    • 초기화: Q = 0  (편향 없음)
+    • 초기화: Q[:,1] = 0.01  (BUY 미세 선호, CASH 편향 해소)
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))

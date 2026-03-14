@@ -1273,7 +1273,7 @@ for m_config in sorted_modules:
 
                     n_iters = max(20, int(l_auto_runs) * 8)
                     param_bounds = {
-                        "lr":        (0.001, 0.1),
+                        "lr":        (0.005, 0.1),
                         "gamma":     (0.85,  0.99),
                         "epsilon":   (0.01,  0.5),
                         "v_epsilon": (0.01,  0.5),
@@ -1285,7 +1285,7 @@ for m_config in sorted_modules:
                         lr_actor=0.12,
                         sigma_init=0.18,
                         sigma_min=0.02,
-                        sigma_max=0.45,
+                        sigma_max=0.30,
                         value_alpha=0.25,
                         seed=int(l_seed),
                     )
@@ -1301,7 +1301,7 @@ for m_config in sorted_modules:
                     sim_display  = st.empty()
 
                     # 복수 시드 평균으로 일반화 성능 측정
-                    _n_eval     = min(3, max(2, int(l_auto_runs) // 3))
+                    _n_eval     = min(4, max(3, int(l_auto_runs) // 2))  # 최소 3 보장
                     _eval_seeds = [int(l_seed) + _j for _j in range(_n_eval)]
 
                     # Ghost 미리보기용 best traces 저장
@@ -1345,10 +1345,12 @@ for m_config in sorted_modules:
                             except Exception:
                                 _vt, _s_tr, _mkt_tr = None, None, None
                             if _vt is not None and _s_tr is not None and _mkt_tr is not None:
-                                # improve 3-2-6: 복합 Gap — 시장 대비(60%) + Vanilla 대비(40%)
-                                # Portfolio Alpha(STATIC-Vanilla)와 방향 정렬
+                                # improve 4-2: 복합 Gap — 시장 대비(60%) + Vanilla 대비(40%)
+                                # V_floor = Market×0.3 → 역유인 제거 (Vanilla=0% 최대화 방지)
                                 _gap_vs_market  = float(_s_tr[-1]) - float(_mkt_tr[-1])
-                                _gap_vs_vanilla = float(_s_tr[-1]) - float(_vt[-1])
+                                _v_floor        = float(_mkt_tr[-1]) * 0.3
+                                _v_adj          = max(float(_vt[-1]), _v_floor)
+                                _gap_vs_vanilla = float(_s_tr[-1]) - _v_adj
                                 _gaps.append(0.6 * _gap_vs_market + 0.4 * _gap_vs_vanilla)
                                 _s_list.append(float(_s_tr[-1]))
                                 _v_list.append(float(_vt[-1]))
