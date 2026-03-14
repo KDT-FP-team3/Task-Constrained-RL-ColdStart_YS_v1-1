@@ -274,7 +274,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     _fb_lbl_map    = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
     _fb_min_map    = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
     _fb_max_map    = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
-    _fb_def_map    = {"15m": 80, "1h": 120, "1d": 80, "1wk": 105, "1mo": 24}
+    _fb_def_map    = {"15m": 80, "1h": 120, "1d": 500, "1wk": 105, "1mo": 24}
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
@@ -294,7 +294,18 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         global_episodes = st.slider(
             _fb_lbl_map[fb_interval],
             _fb_min_map[fb_interval], _fb_max_map[fb_interval], _fb_def_map[fb_interval],
-            key=f"fb_epi_{fb_interval}"
+            key=f"fb_epi_{fb_interval}",
+            help="시장 데이터 봉 수 (데이터 창 크기)"
+        )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=False, key="fb_chk_train_epi", label_visibility="collapsed")
+    with _wg:
+        global_train_episodes = st.slider(
+            "Train Episodes", 10, 500, 100,
+            key="fb_train_epi",
+            help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
         )
 
     _ck, _wg = st.columns([1, 5])
@@ -368,6 +379,7 @@ if apply_all_clicked:
     _chks = {
         "timeframe": bool(st.session_state.get("fb_chk_timeframe", False)),
         "episodes":  bool(st.session_state.get("fb_chk_episodes",  False)),
+        "train_epi": bool(st.session_state.get("fb_chk_train_epi", False)),
         "frame":     bool(st.session_state.get("fb_chk_frame",     False)),
         "seed":      bool(st.session_state.get("fb_chk_seed",      False)),
         "auto":      bool(st.session_state.get("fb_chk_auto",      False)),
@@ -378,18 +390,19 @@ if apply_all_clicked:
         "v_eps":     bool(st.session_state.get("fb_chk_v_eps",     False)),
     }
     st.session_state.fallback_params = {
-        "timeframe":     fb_tf_sel,
-        "interval":      fb_interval,
-        "episodes":      global_episodes,
-        "frame_speed":   global_frame,
-        "seed":          int(global_seed),
-        "auto_runs":     int(global_auto_runs),
-        "active_agents": global_active_agents,
-        "lr":            global_lr,
-        "gamma":         global_gamma,
-        "epsilon":       global_epsilon,
-        "v_epsilon":     global_v_epsilon,
-        "checked":       _chks,
+        "timeframe":       fb_tf_sel,
+        "interval":        fb_interval,
+        "episodes":        global_episodes,
+        "train_episodes":  global_train_episodes,
+        "frame_speed":     global_frame,
+        "seed":            int(global_seed),
+        "auto_runs":       int(global_auto_runs),
+        "active_agents":   global_active_agents,
+        "lr":              global_lr,
+        "gamma":           global_gamma,
+        "epsilon":         global_epsilon,
+        "v_epsilon":       global_v_epsilon,
+        "checked":         _chks,
     }
     st.session_state.stock_use_fallback = "ALL"
     st.session_state.stocks_reverted    = set()
@@ -761,19 +774,21 @@ def _make_trial_box_fig(df_h):
     return fig
 
 
-def get_rl_data(ticker, lr, gamma, epsilon, episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d"):
+def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d"):
     """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환.
-    v_epsilon: Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용.
-    fee_rate: 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
-    interval: yfinance interval ('15m'|'1h'|'1d'|'1wk'|'1mo')"""
+    n_bars        : 데이터 봉 수 (Trading Days — 시장 데이터 크기)
+    train_episodes: RL 학습 반복 횟수 (Episodes — 훈련 데이터 재사용 횟수)
+    v_epsilon     : Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용.
+    fee_rate      : 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
+    interval      : yfinance interval ('15m'|'1h'|'1d'|'1wk'|'1mo')"""
     df_full = fetch_stock_data(ticker, interval=interval)
     if df_full.empty or len(df_full) < 10:
         return None, None, None, None, 0.0, [], []
-    df = df_full.tail(episodes).copy()
+    df = df_full.tail(n_bars).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
     _v_eps = v_epsilon if v_epsilon is not None else epsilon
-    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=episodes, use_static=False, seed=seed, fee_rate=fee_rate)
-    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=episodes, use_static=True,  seed=seed, fee_rate=fee_rate)
+    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=train_episodes, use_static=False, seed=seed, fee_rate=fee_rate)
+    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=train_episodes, use_static=True,  seed=seed, fee_rate=fee_rate)
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
 
@@ -828,7 +843,7 @@ if sim_all_btn:
 
 # ── All 적용: 모든 멤버·종목 슬라이더 키 일괄 업데이트 ──
 _ALL_INTERVALS = ["15m", "1h", "1d", "1wk", "1mo"]
-_ALL_CHK_KEYS  = ["timeframe","episodes","frame","seed","auto","active","lr","gamma","eps","v_eps"]
+_ALL_CHK_KEYS  = ["timeframe","episodes","train_epi","frame","seed","auto","active","lr","gamma","eps","v_eps"]
 if apply_all_clicked and st.session_state.fallback_params:
     _fp   = st.session_state.fallback_params
     _chks = _fp.get("checked", {k: True for k in _ALL_CHK_KEYS})
@@ -859,6 +874,10 @@ if apply_all_clicked and st.session_state.fallback_params:
                     _ek = f"epi_{_mn}_{_sn}_{_iv}"
                     if _ek in st.session_state:
                         _prev[_ek] = st.session_state[_ek]
+            if _chks.get("train_epi"):
+                _tk = f"train_epi_{_mn}_{_sn}"
+                if _tk in st.session_state:
+                    _prev[_tk] = st.session_state[_tk]
     st.session_state.fallback_prev_state = _prev
     # 새 값 일괄 적용 (체크된 파라미터만)
     for _mc in sorted_modules:
@@ -870,6 +889,8 @@ if apply_all_clicked and st.session_state.fallback_params:
                 st.session_state[f"tf_{_mn}_{_sn}"]            = _new_tf
             if _chks.get("episodes"):
                 st.session_state[f"epi_{_mn}_{_sn}_{_new_iv}"] = _fp["episodes"]
+            if _chks.get("train_epi"):
+                st.session_state[f"train_epi_{_mn}_{_sn}"] = _fp["train_episodes"]
             if _chks.get("frame"):
                 st.session_state[f"fspd_{_mn}_{_sn}"]          = _fp["frame_speed"]
             if _chks.get("seed"):
@@ -1001,8 +1022,8 @@ for m_config in sorted_modules:
                     _tf_lbl_map  = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
                     _tf_min_map  = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
                     _tf_max_map  = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
-                    _tf_def_map  = {"15m": 80, "1h": 120, "1d": 80, "1wk": 105, "1mo": 24}
-                    sc0, sc1, sc2, sc3, sc4, sc5 = st.columns(6)
+                    _tf_def_map  = {"15m": 80, "1h": 120, "1d": 500, "1wk": 105, "1mo": 24}
+                    sc0, sc1, sc1b, sc2, sc3, sc4, sc5 = st.columns(7)
                     with sc0:
                         _tf_sel = st.selectbox(
                             "Timeframe", _tf_options, index=2,
@@ -1017,7 +1038,15 @@ for m_config in sorted_modules:
                         _epi_val = min(max(int(p_settings.get("episodes", _tf_def)), _tf_min), _tf_max)
                         l_epi = st.slider(
                             _tf_lbl_map[l_interval], _tf_min, _tf_max, _epi_val,
-                            key=f"epi_{m_name}_{stock_name}_{l_interval}"
+                            key=f"epi_{m_name}_{stock_name}_{l_interval}",
+                            help="시장 데이터 봉 수 (데이터 창 크기)"
+                        )
+                    with sc1b:
+                        _train_epi_val = int(p_settings.get("train_episodes", 100))
+                        l_train_epi = st.slider(
+                            "Train Episodes", 10, 500, _train_epi_val,
+                            key=f"train_epi_{m_name}_{stock_name}",
+                            help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
                         )
                     with sc2:
                         l_frame_speed = st.slider(
@@ -1203,7 +1232,7 @@ for m_config in sorted_modules:
                             )
                             try:
                                 _, vt, s_tr, mkt, _, _, _ = get_rl_data(
-                                    ticker, l_lr, l_gamma, l_epsilon, l_epi, trial_seed,
+                                    ticker, l_lr, l_gamma, l_epsilon, l_epi, l_train_epi, trial_seed,
                                     v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval
                                 )
                             except Exception as _e:
@@ -1310,7 +1339,7 @@ for m_config in sorted_modules:
                                 _, _vt, _s_tr, _mkt_tr, _, _, _ = get_rl_data(
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
-                                    int(l_epi), _eseed, v_epsilon=candidate["v_epsilon"],
+                                    int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
                                     fee_rate=fee_rate, interval=l_interval
                                 )
                             except Exception:
@@ -1577,28 +1606,30 @@ for m_config in sorted_modules:
                 if _use_fb:
                     fp    = st.session_state.fallback_params
                     _fchk = fp.get("checked", {k: True for k in _ALL_CHK_KEYS})
-                    eff_lr      = fp["lr"]                                      if _fchk.get("lr")       else l_lr
-                    eff_gamma   = fp["gamma"]                                   if _fchk.get("gamma")    else l_gamma
-                    eff_eps     = fp["epsilon"]                                 if _fchk.get("eps")      else l_epsilon
-                    eff_epi     = fp["episodes"]                                if _fchk.get("episodes") else l_epi
-                    eff_seed    = fp["seed"]                                    if _fchk.get("seed")     else l_seed
-                    eff_v_eps   = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")    else l_v_epsilon
+                    eff_lr        = fp["lr"]                                      if _fchk.get("lr")        else l_lr
+                    eff_gamma     = fp["gamma"]                                   if _fchk.get("gamma")     else l_gamma
+                    eff_eps       = fp["epsilon"]                                 if _fchk.get("eps")       else l_epsilon
+                    eff_epi       = fp["episodes"]                                if _fchk.get("episodes")  else l_epi
+                    eff_train_epi = fp.get("train_episodes", 100)                 if _fchk.get("train_epi") else l_train_epi
+                    eff_seed      = fp["seed"]                                    if _fchk.get("seed")      else l_seed
+                    eff_v_eps     = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")     else l_v_epsilon
                     eff_active_agents = fp.get("active_agents", ["Vanilla RL", "STATIC RL"]) if _fchk.get("active") else l_active_agents
                     _fb_parts = []
-                    if _fchk.get("lr"):       _fb_parts.append(f"LR={eff_lr:.3f}")
-                    if _fchk.get("gamma"):    _fb_parts.append(f"γ={eff_gamma:.2f}")
-                    if _fchk.get("eps"):      _fb_parts.append(f"ε(S)={eff_eps:.2f}")
-                    if _fchk.get("v_eps"):    _fb_parts.append(f"ε(V)={eff_v_eps:.2f}")
-                    if _fchk.get("episodes"): _fb_parts.append(f"Days={eff_epi}")
-                    if _fchk.get("seed"):     _fb_parts.append(f"Seed={eff_seed}")
-                    if _fchk.get("active"):   _fb_parts.append(f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'}")
+                    if _fchk.get("lr"):        _fb_parts.append(f"LR={eff_lr:.3f}")
+                    if _fchk.get("gamma"):     _fb_parts.append(f"γ={eff_gamma:.2f}")
+                    if _fchk.get("eps"):       _fb_parts.append(f"ε(S)={eff_eps:.2f}")
+                    if _fchk.get("v_eps"):     _fb_parts.append(f"ε(V)={eff_v_eps:.2f}")
+                    if _fchk.get("episodes"):  _fb_parts.append(f"Days={eff_epi}")
+                    if _fchk.get("train_epi"): _fb_parts.append(f"Episodes={eff_train_epi}")
+                    if _fchk.get("seed"):      _fb_parts.append(f"Seed={eff_seed}")
+                    if _fchk.get("active"):    _fb_parts.append(f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'}")
                     st.info(
                         "Fallback 파라미터 적용 중 (" + "  ".join(_fb_parts) + ")",
                         icon="ℹ️"
                     )
                 else:
-                    eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed = (
-                        l_lr, l_gamma, l_epsilon, l_epi, l_seed
+                    eff_lr, eff_gamma, eff_eps, eff_epi, eff_train_epi, eff_seed = (
+                        l_lr, l_gamma, l_epsilon, l_epi, l_train_epi, l_seed
                     )
                     eff_v_eps         = l_v_epsilon
                     eff_active_agents = l_active_agents
@@ -1606,7 +1637,7 @@ for m_config in sorted_modules:
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
-                        ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_seed,
+                        ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_train_epi, eff_seed,
                         v_epsilon=eff_v_eps, fee_rate=fee_rate, interval=l_interval
                     )
 

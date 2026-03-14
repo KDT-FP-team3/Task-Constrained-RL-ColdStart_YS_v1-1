@@ -1,19 +1,18 @@
 MEMBER_NAME = "Member 3"
 TARGET_INDICES = [2] # KOSPI (^KS11)
 
-# [파라미터 최적화 근거 - improve 2-9]
-# ▶ episodes=80: train_episodes=max(240,500)=500 확보, 평가 윈도우 80일 → 빠른 피드백
-# ▶ lr=0.03: lr_actor=lr×1.0(구 0.6x) 기준 실질 5배 상향 → Actor-Critic 빠른 수렴
-# ▶ gamma=0.93: 일간 단기거래 최적 할인율 (구 0.98은 장기편향 → TD오차 노이즈)
-# ▶ epsilon=0.15: 4상태 공간 충분한 탐험 (구 0.10 대비 확장)
-# ▶ seed=2024: KOSPI(한국 시장) — 국내 시장 리듬과 친화적인 연도 기반 시드
-# ▶ Auto Run Count 권장: 6 (n_iters=48, _n_eval=2 → 총 96회 평가, 균형적 속도/품질)
+# [파라미터 설정 근거]
+# ▶ episodes=500: 일봉 500일(약 2년) 기준, 워크포워드 70%(350일) 학습
+# ▶ lr=0.03: Actor-Critic 정책 수렴에 적합한 학습률
+# ▶ gamma=0.93: 일간 단기 할인율 (장기편향 방지)
+# ▶ epsilon=0.15: 4상태 탐험에 충분한 탐험율
+# ▶ seed=2024: KOSPI(한국 시장) — 국내 시장 기준 연도 시드
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.03, "gamma": 0.93, "epsilon": 0.15,
-        "episodes": 80, "seed": 2024
+        "episodes": 500, "train_episodes": 100, "seed": 2024
     },
     "default": {
-        "lr": 0.03, "gamma": 0.93, "epsilon": 0.15, "episodes": 80, "seed": 42
+        "lr": 0.03, "gamma": 0.93, "epsilon": 0.15, "episodes": 500, "train_episodes": 100, "seed": 42
     }
 }
