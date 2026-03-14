@@ -109,7 +109,8 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 초기화: Q = 0  (편향 없음)
     """
     n_states, n_actions = 2, 2
-    q_table = np.zeros((n_states, n_actions))   # 편향 없는 초기화
+    q_table = np.zeros((n_states, n_actions))
+    q_table[:, 1] = fee_rate                    # BUY 초기값 = fee_rate (진입비용 상쇄)
 
     for ep in range(train_episodes):
         state = _make_state_vanilla(returns[0], prices[0], emas[0])

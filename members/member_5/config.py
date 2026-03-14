@@ -10,9 +10,9 @@ TARGET_INDICES = [4] # NVDA
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.03, "gamma": 0.93, "epsilon": 0.15,
-        "episodes": 500, "train_episodes": 100, "seed": 314
+        "episodes": 500, "train_episodes": 300, "seed": 314
     },
     "default": {
-        "lr": 0.03, "gamma": 0.93, "epsilon": 0.15, "episodes": 500, "train_episodes": 100, "seed": 42
+        "lr": 0.03, "gamma": 0.93, "epsilon": 0.15, "episodes": 500, "train_episodes": 300, "seed": 42
     }
 }
