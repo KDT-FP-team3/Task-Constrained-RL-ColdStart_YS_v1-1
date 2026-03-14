@@ -787,7 +787,8 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
     df = df_full.tail(n_bars).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
     _v_eps = v_epsilon if v_epsilon is not None else epsilon
-    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=train_episodes, use_static=False, seed=seed, fee_rate=fee_rate)
+    _v_train_epi = max(train_episodes * 2, 200)  # improve 4-3: Vanilla 2× 학습 (CASH 편향 해소)
+    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=_v_train_epi,  use_static=False, seed=seed, fee_rate=fee_rate)
     s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=train_episodes, use_static=True,  seed=seed, fee_rate=fee_rate)
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
@@ -1275,8 +1276,8 @@ for m_config in sorted_modules:
                     param_bounds = {
                         "lr":        (0.005, 0.1),
                         "gamma":     (0.85,  0.99),
-                        "epsilon":   (0.01,  0.5),
-                        "v_epsilon": (0.01,  0.5),
+                        "epsilon":   (0.01,  0.25),  # improve 4-3: 상한 0.5→0.25 (경계값 고착 방지)
+                        "v_epsilon": (0.01,  0.25),  # improve 4-3: 상한 0.5→0.25
                     }
 
                     # ── PG Actor-Critic Optimizer 초기화 ──
@@ -1302,7 +1303,7 @@ for m_config in sorted_modules:
 
                     # 복수 시드 평균으로 일반화 성능 측정
                     _n_eval     = min(4, max(3, int(l_auto_runs) // 2))  # 최소 3 보장
-                    _eval_seeds = [int(l_seed) + _j for _j in range(_n_eval)]
+                    _eval_seeds = [int(l_seed) + _j * 37 for _j in range(_n_eval)]  # improve 4-3: ×37 간격으로 OOS seed 포함
 
                     # Ghost 미리보기용 best traces 저장
                     _best_v_trace = None
