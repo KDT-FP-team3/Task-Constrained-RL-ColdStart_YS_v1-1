@@ -1225,7 +1225,7 @@ for m_config in sorted_modules:
                                 run_prog_slot.warning(f"⛔ 중단됨 ({run_i}/{n_runs} 완료)")
                                 _interrupted = True
                                 break
-                            trial_seed = int(l_seed) + (len(trials) + run_i) * 13  # improve 3-2-6: 소수 간격으로 분산 확보
+                            trial_seed = int(l_seed) + (len(trials) + run_i) * 37  # improve 4-1: 소수 간격 ×37로 시드 독립성 강화
                             run_prog_slot.progress(
                                 run_i / n_runs,
                                 text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
@@ -1274,7 +1274,7 @@ for m_config in sorted_modules:
                     n_iters = max(20, int(l_auto_runs) * 8)
                     param_bounds = {
                         "lr":        (0.001, 0.1),
-                        "gamma":     (0.5,   0.99),
+                        "gamma":     (0.85,  0.99),
                         "epsilon":   (0.01,  0.5),
                         "v_epsilon": (0.01,  0.5),
                     }
