@@ -21,28 +21,28 @@
 
 ### 알고리즘 비교
 
-| 항목 | STATIC RL | Vanilla RL |
-|------|-----------|------------|
-| 알고리즘 | Actor-Critic (Policy Gradient) | Tabular Q-Learning |
-| 상태 수 | 4 (추세 x EMA 위치) | 2 (추세만) |
-| 정책 표현 | Softmax 확률 정책 | argmax Q(s, a) |
-| Baseline | TD Critic V(s) | 없음 |
-| EMA 활용 | 초기 logit 편향 + 학습 | 미사용 |
-| 훈련 에피소드 | max(episodes x 3, 500) | episodes |
-| 역할 | 평가 대상 | 비교 기준선 |
+| 항목          | STATIC RL                      | Vanilla RL         |
+| ------------- | ------------------------------ | ------------------ |
+| 알고리즘      | Actor-Critic (Policy Gradient) | Tabular Q-Learning |
+| 상태 수       | 4 (추세 x EMA 위치)            | 2 (추세만)         |
+| 정책 표현     | Softmax 확률 정책              | argmax Q(s, a)     |
+| Baseline      | TD Critic V(s)                 | 없음               |
+| EMA 활용      | 초기 logit 편향 + 학습         | 미사용             |
+| 훈련 에피소드 | max(episodes x 3, 500)         | episodes           |
+| 역할          | 평가 대상                      | 비교 기준선        |
 
 ---
 
 ### 팀 구성 및 담당 종목
 
-| 멤버 | 담당 종목 | Ticker | 시드 |
-|------|-----------|--------|------|
-| Member 1 | S&P 500 ETF | SPY | 42 |
-| Member 2 | Nasdaq 100 ETF | QQQ | 137 |
-| Member 3 | KOSPI 지수 | ^KS11 | 2024 |
-| Member 4 | KOSDAQ 지수 | ^KQ11 | 777 |
-| Member 5 | NVIDIA | NVDA | 314 |
-| Member 6 | Tesla | TSLA | 99 |
+| 멤버     | 담당 종목      | Ticker | 시드 |
+| -------- | -------------- | ------ | ---- |
+| Member 1 | S&P 500 ETF    | SPY    | 42   |
+| Member 2 | Nasdaq 100 ETF | QQQ    | 137  |
+| Member 3 | KOSPI 지수     | ^KS11  | 2024 |
+| Member 4 | KOSDAQ 지수    | ^KQ11  | 777  |
+| Member 5 | NVIDIA         | NVDA   | 314  |
+| Member 6 | Tesla          | TSLA   | 99   |
 
 추가 지원 종목: GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
 
@@ -50,10 +50,10 @@
 
 ### 거래 수수료
 
-| 시장 | 매수 | 매도 | 왕복 합계 |
-|------|------|------|-----------|
-| 미국 주식·ETF | 0.05% | 0.05% | 0.10% |
-| 국내 주식·지수 | 0.015% | 0.215% | 0.23% |
+| 시장           | 매수   | 매도   | 왕복 합계 |
+| -------------- | ------ | ------ | --------- |
+| 미국 주식·ETF  | 0.05%  | 0.05%  | 0.10%     |
+| 국내 주식·지수 | 0.015% | 0.215% | 0.23%     |
 
 ---
 
@@ -77,6 +77,7 @@ streamlit run app.py
 ```
 
 ---
+
 ---
 
 ## 전체 상세 설명
@@ -99,7 +100,7 @@ streamlit run app.py
 ## 1. 시스템 아키텍처
 
 ```
-app.py  (Streamlit 웹 UI, 약 1800줄)
+app.py  (Streamlit 웹 UI, 약 1900줄)
  |
  +-- 사이드바
  |    +-- Eval. All / Simul. All 버튼
@@ -164,12 +165,12 @@ Critic (TD(0) 가치 함수 V):
 
 하드 매수 금지 대신 초기 logit 편향으로 EMA 위치 선호도를 표현하고, Policy Gradient가 학습을 통해 조정한다.
 
-| 상태 | 설명 | theta[s, BUY] 초기값 |
-|------|------|----------------------|
-| 0 | 하락 + EMA 아래 | -1.5 (강한 비선호) |
-| 1 | 상승 + EMA 아래 | -0.8 (비선호) |
-| 2 | 하락 + EMA 위   | +0.5 (가능) |
-| 3 | 상승 + EMA 위   | +1.2 (핵심 매수 신호) |
+| 상태 | 설명            | theta[s, BUY] 초기값                            |
+| ---- | --------------- | ----------------------------------------------- |
+| 0    | 하락 + EMA 아래 | -1.5 (강한 비선호)                              |
+| 1    | 상승 + EMA 아래 | -0.8 (비선호)                                   |
+| 2    | 하락 + EMA 위   | +0.3 (약한 선호, 강세장 buy-and-hold 고착 방지) |
+| 3    | 상승 + EMA 위   | +0.7 (매수 선호)                                |
 
 #### 훈련 설정
 
@@ -192,7 +193,7 @@ Q(s, a) += lr * [r + gamma * max_a' Q(s', a') - Q(s, a)]   (Bellman 업데이트
 
 - 상태 수: 2 (0: 하락, 1: 상승)
 - EMA 정보 미사용
-- 초기 Q 편향: `Q[1, BUY] = 0.05` (상승 시 매수 약간 선호)
+- 초기 Q 편향: `Q[0, BUY] = 0.02` (하락 시 CASH 고착 방지), `Q[1, BUY] = 0.05` (상승 시 매수 선호)
 - 초기 탐험율: `min(epsilon x 3.0, 0.6)`
 
 ---
@@ -223,10 +224,10 @@ df['EMA_10'] = df['Close'].ewm(span=10, adjust=False).mean()
 
 ### 2.4 행동 및 보상
 
-| 행동 | 코드 | 의미 |
-|------|------|------|
-| CASH | 0 | 현금 보유 (수익률 0%) |
-| BUY  | 1 | 매수·보유 (당일 수익률 반영) |
+| 행동 | 코드 | 의미                         |
+| ---- | ---- | ---------------------------- |
+| CASH | 0    | 현금 보유 (수익률 0%)        |
+| BUY  | 1    | 매수·보유 (당일 수익률 반영) |
 
 ```python
 fee        = fee_rate if (action == BUY and prev_action == CASH) else 0
@@ -261,11 +262,13 @@ cumulative_return_% = (current_capital - 1) * 100
    expected_gap = mean[STATIC_final(seed_i) - Vanilla_final(seed_i)]
 
 3. Advantage (REINFORCE with baseline):
-   V += value_alpha * (gap - V)     (Critic: EMA 방식 baseline 갱신)
-   A  = gap - V                     (현재 gap이 기대치 대비 우위 여부)
+   V      += value_alpha * (gap - V)           (Critic: EMA 방식 baseline 갱신)
+   A       = gap - V                           (raw advantage)
+   A_norm  = tanh(A / 10)                      ([-1,1] 정규화, 10% gap ≈ tanh(1) 포화)
 
 4. Actor 업데이트 (Policy Gradient):
-   mu += lr_actor * A * (Delta - mu) / sigma^2
+   pg_dir = clip(Delta / sigma, L2≤1)          (방향 벡터, 스텝 크기 상한 보장)
+   mu    += lr_actor * A_norm * pg_dir
 
 5. sigma 자동 스케줄링:
    A > 0  ->  sigma * 0.96  (수렴: 좋은 방향 집중)
@@ -274,11 +277,11 @@ cumulative_return_% = (current_capital - 1) * 100
 
 ### 탐색 페이즈
 
-| 단계 | 조건 | 설명 |
-|------|------|------|
-| PG Exploring | step < n_iters / 4 | 광역 탐험으로 파라미터 공간 초기 파악 |
-| PG Actor-Critic | sigma_mean > 0.12 | Policy Gradient 업데이트로 유망 방향 탐색 |
-| PG Converging | sigma_mean <= 0.12 | 수렴 단계, 최적 파라미터 정밀 탐색 |
+| 단계            | 조건               | 설명                                      |
+| --------------- | ------------------ | ----------------------------------------- |
+| PG Exploring    | step < n_iters / 4 | 광역 탐험으로 파라미터 공간 초기 파악     |
+| PG Actor-Critic | sigma_mean > 0.12  | Policy Gradient 업데이트로 유망 방향 탐색 |
+| PG Converging   | sigma_mean <= 0.12 | 수렴 단계, 최적 파라미터 정밀 탐색        |
 
 ### 반복 횟수 계산
 
@@ -294,24 +297,24 @@ _n_eval = min(3, max(2, Auto_Run_Count // 3))   # 기본: 2 eval seeds
 
 ### RL 학습 파라미터
 
-| 파라미터 | 기본값 | 탐색 범위 | 역할 |
-|----------|--------|-----------|------|
-| lr (alpha) | 0.03 | 0.001 ~ 0.1 | Actor / Q-Table 업데이트 속도 |
-| gamma | 0.93 | 0.5 ~ 0.99 | 미래 보상 할인율 |
-| epsilon | 0.15 | 0.01 ~ 0.5 | STATIC RL 탐험율 |
-| v_epsilon | = epsilon | 0.01 ~ 0.5 | Vanilla RL 전용 탐험율 (독립 최적화) |
-| episodes | 80 | 10 ~ 500 | 평가 윈도우 크기 (데이터 봉 수) |
+| 파라미터   | 기본값    | 탐색 범위   | 역할                                 |
+| ---------- | --------- | ----------- | ------------------------------------ |
+| lr (alpha) | 0.03      | 0.001 ~ 0.1 | Actor / Q-Table 업데이트 속도        |
+| gamma      | 0.93      | 0.5 ~ 0.99  | 미래 보상 할인율                     |
+| epsilon    | 0.15      | 0.01 ~ 0.5  | STATIC RL 탐험율                     |
+| v_epsilon  | = epsilon | 0.01 ~ 0.5  | Vanilla RL 전용 탐험율 (독립 최적화) |
+| episodes   | 80        | 10 ~ 500    | 평가 윈도우 크기 (데이터 봉 수)      |
 
 `gamma = 0.93`을 사용하는 이유: 일간 단기 거래에서 `gamma = 0.98`은 지나치게 먼 미래를 고려하여 TD 오차에 노이즈가 증가한다. `gamma = 0.93`은 단기 피드백을 효과적으로 반영한다.
 
 ### 시스템 파라미터
 
-| 파라미터 | 기본값 | 역할 |
-|----------|--------|------|
-| seed | 멤버별 상이 | 훈련 재현성 고정 |
-| Auto Run Count | 6 | Run Evaluation 자동 반복 횟수 |
-| Timeframe | 일봉 (1d) | 데이터 봉 단위 (15분봉 ~ 월봉) |
-| fee_rate | 종목별 | 매수 진입 시 1회 수수료 부과율 |
+| 파라미터       | 기본값      | 역할                           |
+| -------------- | ----------- | ------------------------------ |
+| seed           | 멤버별 상이 | 훈련 재현성 고정               |
+| Auto Run Count | 6           | Run Evaluation 자동 반복 횟수  |
+| Timeframe      | 일봉 (1d)   | 데이터 봉 단위 (15분봉 ~ 월봉) |
+| fee_rate       | 종목별      | 매수 진입 시 1회 수수료 부과율 |
 
 ### CTPT 성향 코드
 
@@ -323,16 +326,16 @@ RL 파라미터 조합으로 에이전트 투자 성향을 3자리 코드로 분
 3번째 자리: epsilon >= 0.10 -> V(Volatile), < 0.10 -> R(Reserved)
 ```
 
-| 코드 | 성향 |
-|------|------|
-| ALV | 적응형 모험가 |
-| ALR | 안정적 성장형 |
-| ASV | 단기 모험형 |
-| ASR | 단기 민첩형 |
-| PLV | 유연한 장기형 |
-| PLR | 신중한 장기형 |
-| PSV | 탐색형 |
-| PSR | 보수형 |
+| 코드 | 성향          |
+| ---- | ------------- |
+| ALV  | 적응형 모험가 |
+| ALR  | 안정적 성장형 |
+| ASV  | 단기 모험형   |
+| ASR  | 단기 민첩형   |
+| PLV  | 유연한 장기형 |
+| PLR  | 신중한 장기형 |
+| PSV  | 탐색형        |
+| PSR  | 보수형        |
 
 ---
 
@@ -346,14 +349,14 @@ np.random.seed(seed)  # 훈련 시작 전 고정
 
 epsilon-greedy 탐험 경로를 고정하여 동일 시드에서 항상 동일한 훈련 궤적이 재현된다. 종목별로 다른 시드를 사용하여 각 시장 특성에 맞는 탐험 패턴을 부여한다.
 
-| 종목 | 시드 | 선택 근거 |
-|------|------|-----------|
-| SPY | 42 | 안정 지수에 적합한 수렴성 |
-| QQQ | 137 | 기술주 고분산 환경에서 안정 수렴 확인 |
-| KOSPI | 2024 | 국내 시장 리듬과 친화적인 연도 기반 시드 |
-| KOSDAQ | 777 | 고변동성 시장, 탐험 다양성 확보 |
-| NVDA | 314 | 수학적 다양성(pi 근사), 반도체 고변동 환경 |
-| TSLA | 99 | 넓은 탐험 범위, 최고 변동성 대응 |
+| 종목   | 시드 | 선택 근거                                  |
+| ------ | ---- | ------------------------------------------ |
+| SPY    | 42   | 안정 지수에 적합한 수렴성                  |
+| QQQ    | 137  | 기술주 고분산 환경에서 안정 수렴 확인      |
+| KOSPI  | 2024 | 국내 시장 리듬과 친화적인 연도 기반 시드   |
+| KOSDAQ | 777  | 고변동성 시장, 탐험 다양성 확보            |
+| NVDA   | 314  | 수학적 다양성(pi 근사), 반도체 고변동 환경 |
+| TSLA   | 99   | 넓은 탐험 범위, 최고 변동성 대응           |
 
 ### 복수 평가 시드
 
@@ -381,12 +384,12 @@ Run Evaluation 반복마다 다른 시드를 사용하여 독립적인 Trial을 
 ### 지원 봉 단위
 
 | 봉 단위 | yfinance interval | 최대 조회 기간 |
-|---------|-------------------|----------------|
-| 15분봉 | 15m | 60일 |
-| 1시간봉 | 1h | 730일 (~2년) |
-| 일봉 | 1d | 2년 (기본값) |
-| 주봉 | 1wk | 10년 |
-| 월봉 | 1mo | 10년 |
+| ------- | ----------------- | -------------- |
+| 15분봉  | 15m               | 60일           |
+| 1시간봉 | 1h                | 730일 (~2년)   |
+| 일봉    | 1d                | 2년 (기본값)   |
+| 주봉    | 1wk               | 10년           |
+| 월봉    | 1mo               | 10년           |
 
 ### 전처리 흐름
 
@@ -417,12 +420,12 @@ dropna() 최종 정리
 
 ### 개별 종목 지표
 
-| 지표 | 계산 방법 |
-|------|-----------|
-| Final Return (%) | 누적 수익률 배열의 마지막 값 |
-| Alpha Gap (%) | STATIC RL - Vanilla RL 최종 수익률 차이 |
-| MDD (%) | min((wealth_index - running_peak) / running_peak) * 100 |
-| Volatility | 누적 수익률 배열의 표준편차 |
+| 지표             | 계산 방법                                                |
+| ---------------- | -------------------------------------------------------- |
+| Final Return (%) | 누적 수익률 배열의 마지막 값                             |
+| Alpha Gap (%)    | STATIC RL - Vanilla RL 최종 수익률 차이                  |
+| MDD (%)          | min((wealth_index - running_peak) / running_peak) \* 100 |
+| Volatility       | 누적 수익률 배열의 표준편차                              |
 
 ### 팀 포트폴리오 비중 — Softmax 가중 배분
 
@@ -445,12 +448,12 @@ Simulation에서 발견된 최적 파라미터로 산출한 수익 곡선을 점
 
 ### 8.1 사이드바 버튼
 
-| 버튼 | 동작 |
-|------|------|
-| Eval. All | 전체 멤버·종목을 현재 파라미터로 순차 평가 |
-| Simul. All | 전체 멤버·종목의 최적 파라미터 자동 탐색 후 config.py에 저장 및 평가 실행 |
-| Fallback 적용 중 / All 적용 | 체크된 Fallback Parameters를 모든 종목에 일괄 적용 |
-| 되돌리기 | 체크된 파라미터를 이전 상태로 복원 |
+| 버튼                        | 동작                                                                      |
+| --------------------------- | ------------------------------------------------------------------------- |
+| Eval. All                   | 전체 멤버·종목을 현재 파라미터로 순차 평가                                |
+| Simul. All                  | 전체 멤버·종목의 최적 파라미터 자동 탐색 후 config.py에 저장 및 평가 실행 |
+| Fallback 적용 중 / All 적용 | 체크된 Fallback Parameters를 모든 종목에 일괄 적용                        |
+| 되돌리기                    | 체크된 파라미터를 이전 상태로 복원                                        |
 
 ### 8.2 Fallback Parameters
 
@@ -458,18 +461,18 @@ Simulation에서 발견된 최적 파라미터로 산출한 수익 곡선을 점
 
 **파라미터 목록 및 체크박스 동작:**
 
-| 파라미터 | 설명 |
-|----------|------|
-| Timeframe | 데이터 봉 단위 |
-| Trading Weeks/Days 등 | 평가 윈도우 크기 |
-| Frame Speed (sec) | 차트 갱신 속도 |
-| Base Seed | 훈련 재현성 시드 |
-| Auto Run Count | Run Evaluation 자동 반복 횟수 |
-| Active Agents | 활성화할 에이전트 선택 (Vanilla RL / STATIC RL) |
-| Learning Rate (alpha) | RL 학습률 |
-| Discount Factor (gamma) | 미래 보상 할인율 |
-| STATIC epsilon | STATIC RL 탐험율 |
-| Vanilla epsilon | Vanilla RL 전용 탐험율 |
+| 파라미터                | 설명                                            |
+| ----------------------- | ----------------------------------------------- |
+| Timeframe               | 데이터 봉 단위                                  |
+| Trading Weeks/Days 등   | 평가 윈도우 크기                                |
+| Frame Speed (sec)       | 차트 갱신 속도                                  |
+| Base Seed               | 훈련 재현성 시드                                |
+| Auto Run Count          | Run Evaluation 자동 반복 횟수                   |
+| Active Agents           | 활성화할 에이전트 선택 (Vanilla RL / STATIC RL) |
+| Learning Rate (alpha)   | RL 학습률                                       |
+| Discount Factor (gamma) | 미래 보상 할인율                                |
+| STATIC epsilon          | STATIC RL 탐험율                                |
+| Vanilla epsilon         | Vanilla RL 전용 탐험율                          |
 
 - 체크한 항목만 "All 적용" 버튼 클릭 시 모든 종목에 일괄 적용된다.
 - "되돌리기" 버튼 클릭 시 적용 전 체크된 항목의 값만 이전 상태로 복원된다.
@@ -584,12 +587,12 @@ optimizer = PGActorCriticOptimizer(
 )
 ```
 
-| 변수 | 초기값 | 의미 |
-|------|--------|------|
-| mu | [0.5, 0.5, 0.5, 0.5] | 정규화 공간에서 정책 평균 (탐색 중심점) |
-| sigma | [0.18, 0.18, 0.18, 0.18] | 파라미터별 탐험 폭 |
-| V | 0.0 | Critic 기준값 (baseline) |
-| best_score | -inf | 현재까지 최고 Gap |
+| 변수       | 초기값                   | 의미                                    |
+| ---------- | ------------------------ | --------------------------------------- |
+| mu         | [0.5, 0.5, 0.5, 0.5]     | 정규화 공간에서 정책 평균 (탐색 중심점) |
+| sigma      | [0.18, 0.18, 0.18, 0.18] | 파라미터별 탐험 폭                      |
+| V          | 0.0                      | Critic 기준값 (baseline)                |
+| best_score | -inf                     | 현재까지 최고 Gap                       |
 
 ---
 
@@ -689,45 +692,52 @@ V += value_alpha * (expected_gap - V)
 
 ---
 
-### STEP 9 — Advantage 계산
+### STEP 9 — Advantage 계산 및 정규화
 
 ```python
-A = expected_gap - V
-# A > 0: 현재 파라미터가 평균보다 좋음
-# A < 0: 현재 파라미터가 평균보다 나쁨
+raw_advantage = expected_gap - V
+# raw_advantage > 0: 현재 파라미터가 기대 baseline보다 좋음
+# raw_advantage < 0: 현재 파라미터가 기대 baseline보다 나쁨
+
+# tanh 정규화: gap% 단위를 [0,1] 파라미터 공간과 통일 (10% gap ≈ tanh(1)=0.76 포화)
+A_norm = tanh(raw_advantage / 10.0)
 ```
 
-baseline 차감은 분산을 줄여 학습 안정성을 높인다.
+baseline 차감은 분산을 줄이고, tanh 정규화는 gap 스케일과 파라미터 스케일의 단위 불일치를 해소한다.
 
 ---
 
 ### STEP 10 — Actor 업데이트
 
 ```python
-# Score function (Gaussian 정책의 log 기울기)
-grad_log_pi = Delta / sigma^2
+# Gaussian 정책의 score function: Δ/σ (L2 노름 ≤ 1 클립으로 스텝 크기 상한 보장)
+pg_dir = Delta / sigma
+if L2_norm(pg_dir) > 1.0:
+    pg_dir = pg_dir / L2_norm(pg_dir)
 
 # Actor mu 업데이트
-mu += lr_actor * A * (Delta / sigma^2)
+mu += lr_actor * A_norm * pg_dir
 mu  = clip(mu, 0, 1)
 ```
+
+`Δ/σ`는 Gaussian log 정책의 기울기 방향이며, L2 노름 클립으로 과도한 스텝을 방지한다.
 
 ---
 
 ### STEP 11 — sigma 자동 스케줄링
 
 ```python
-if A > 0:
+if A_norm > 0:
     sigma = max(sigma * 0.96, sigma_min)   # 좋은 방향 발견 -> 수렴
 else:
     sigma = min(sigma * 1.04, sigma_max)   # 나쁜 방향 -> 재탐험
 ```
 
-| 상황 | sigma 변화 | 효과 |
-|------|-----------|------|
-| 연속으로 A > 0 | 단조 감소 -> sigma_min(0.02) | mu 주변 정밀 탐색 |
-| 연속으로 A < 0 | 단조 증가 -> sigma_max(0.45) | 전역 재탐험 |
-| A 부호 교번 | sigma 진동 유지 | 탐험-수렴 균형 |
+| 상황                | sigma 변화                   | 효과              |
+| ------------------- | ---------------------------- | ----------------- |
+| 연속으로 A_norm > 0 | 단조 감소 -> sigma_min(0.02) | mu 주변 정밀 탐색 |
+| 연속으로 A_norm < 0 | 단조 증가 -> sigma_max(0.45) | 전역 재탐험       |
+| A_norm 부호 교번    | sigma 진동 유지              | 탐험-수렴 균형    |
 
 ---
 
@@ -788,17 +798,19 @@ STEP 3: 복수 평가 시드 생성
   |  STEP 7: expected_gap = mean(gaps)              |
   |          |                                      |
   |          v                                      |
-  |  STEP 8: V += alpha * (gap - V)    [Critic]     |
+  |  STEP 8: V += alpha * (gap - V)        [Critic]  |
   |          |                                      |
   |          v                                      |
-  |  STEP 9: A = gap - V               [Advantage]  |
+  |  STEP 9: A = gap - V                            |
+  |          A_norm = tanh(A / 10)  [Advantage]     |
   |          |                                      |
   |          v                                      |
-  | STEP 10: mu += lr * A * (Delta/sigma^2) [Actor] |
+  | STEP 10: pg_dir = clip(Delta/sigma, L2≤1)       |
+  |          mu += lr * A_norm * pg_dir    [Actor]  |
   |          |                                      |
   | STEP 11: sigma 스케줄링                         |
-  |   A > 0  ->  sigma * 0.96  (수렴)               |
-  |   A <= 0 ->  sigma * 1.04  (탐험)               |
+  |   A_norm > 0  ->  sigma * 0.96  (수렴)          |
+  |   A_norm <= 0 ->  sigma * 1.04  (탐험)          |
   |          |                                      |
   | STEP 12: best 갱신, 차트 업데이트               |
   +---+---------------------------------------------+
@@ -833,14 +845,17 @@ Simul. All 모드  ->  best 파라미터 자동 저장 -> config.py 갱신 -> Ru
   V <- V + alpha_c * (gap - V)
 
 [3] Advantage
-  A = gap - V
+  A      = gap - V
+  A_norm = tanh(A / 10)              (gap% → [-1,1] 정규화)
 
 [4] Actor (Policy Gradient)
-  mu <- clip(mu + alpha_a * A * Delta / sigma^2, 0, 1)
+  pg_dir = Delta / sigma             (Gaussian score function 방향)
+  if L2(pg_dir) > 1: pg_dir /= L2(pg_dir)   (스텝 크기 상한 보장)
+  mu <- clip(mu + alpha_a * A_norm * pg_dir, 0, 1)
 
 [5] sigma 스케줄
-  sigma <- max(sigma * 0.96, sigma_min)   if A > 0
-  sigma <- min(sigma * 1.04, sigma_max)   if A <= 0
+  sigma <- max(sigma * 0.96, sigma_min)   if A_norm > 0
+  sigma <- min(sigma * 1.04, sigma_max)   if A_norm <= 0
 ```
 
 ---
