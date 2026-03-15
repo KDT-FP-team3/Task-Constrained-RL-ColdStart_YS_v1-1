@@ -524,7 +524,12 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             return 'color: #FF4B4B; font-weight: bold;'
         return ''
 
-    styled_table = pd.DataFrame(table_data).style.map(color_negative_red)
+    styled_table = (
+        pd.DataFrame(table_data).style
+        .map(color_negative_red)
+        .set_properties(**{"text-align": "right"})
+        .set_table_styles([{"selector": "th", "props": [("text-align", "right")]}])
+    )
 
     # [핵심 수정] is_updating 값에 따라 고유 key suffix를 부여해 DuplicateElementId 방지
     key_suffix = "upd" if is_updating else "fin"
@@ -629,8 +634,13 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                     return 'color: #FF4B4B; font-weight: bold;'
                 return ''
 
-            st.dataframe(pd.DataFrame(merged_rows).style.map(color_neg),
-                         use_container_width=True, hide_index=True)
+            st.dataframe(
+                pd.DataFrame(merged_rows).style
+                .map(color_neg)
+                .set_properties(**{"text-align": "right"})
+                .set_table_styles([{"selector": "th", "props": [("text-align", "right")]}]),
+                use_container_width=True, hide_index=True
+            )
         else:
             # traces 없을 때 col3에 안내 메시지
             with col3:
@@ -1114,7 +1124,7 @@ for m_config in sorted_modules:
                         "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
                         unsafe_allow_html=True
                     )
-                    hc1, hc2, hc3, hc4 = st.columns(4)
+                    hc1, hc2, hc3, hc4, hc5, hc6 = st.columns(6)
                     with hc1:
                         l_lr = st.slider(
                             "Learning Rate (α)", 0.001, 0.1,
@@ -1140,6 +1150,20 @@ for m_config in sorted_modules:
                             float(p_settings.get("v_epsilon", global_epsilon)),
                             key=f"v_eps_{m_name}_{stock_name}",
                             help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)"
+                        )
+                    with hc5:
+                        l_sim_min = st.number_input(
+                            "Sim Min Steps", min_value=5, max_value=200,
+                            value=30, step=5,
+                            key=f"sim_min_{m_name}_{stock_name}",
+                            help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
+                        )
+                    with hc6:
+                        l_sim_mult = st.number_input(
+                            "Sim Step Mult.", min_value=1, max_value=30,
+                            value=10, step=1,
+                            key=f"sim_mult_{m_name}_{stock_name}",
+                            help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
                         )
 
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
@@ -1303,7 +1327,7 @@ for m_config in sorted_modules:
                         update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
 
-                    n_iters = max(30, int(l_auto_runs) * 10)
+                    n_iters = max(int(l_sim_min), int(l_auto_runs) * int(l_sim_mult))
                     param_bounds = {
                         "lr":        (0.005, 0.1),
                         "gamma":     (0.85,  0.99),

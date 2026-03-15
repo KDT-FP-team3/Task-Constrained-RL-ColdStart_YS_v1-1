@@ -41,6 +41,7 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
 
     • 탐험: 상수 epsilon-greedy  (annealing 없음)
     • 초기화: fee_rate 비례 BUY 선호 (수수료가 높을수록 BUY 학습 난이도 증가 보정)
+    • 엔트로피 정규화: r_eff = r + 0.01·H(π)  [Buy&Hold 고착 방지, 정책 다양성 유지]
     """
     n_states, n_actions = 4, 2
     theta = np.zeros((n_states, n_actions))
@@ -74,8 +75,10 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
 
             next_state = _make_state_static(returns[t], prices[t], emas[t])
 
-            # TD 오차 (advantage 근사)
-            td_error = reward + gamma * V[next_state] - V[state]
+            # 엔트로피 보상: 정책 다양성 유지 (Buy&Hold 고착 방지)
+            entropy = -np.sum(probs * np.log(probs + 1e-10))
+            # TD 오차 (advantage 근사) — 엔트로피 정규화 포함
+            td_error = (reward + 0.01 * entropy) + gamma * V[next_state] - V[state]
 
             # Critic 업데이트
             V[state] += lr * td_error
@@ -108,19 +111,28 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
 
     • 상태: 2개 (0: 하락, 1: 상승)
     • 행동: 2개 (0: CASH, 1: BUY)
-    • 탐험: 상수 epsilon-greedy
-    • 초기화: Q[:,1] = max(fee_rate×50, 0.05)  (fee 비례 BUY 선호, CASH 고착 해소)
+    • 탐험: epsilon annealing (2ε → 0.5ε — 초반 탐험 강화, 후반 수렴)
+    • 초기화: 상태-차별화 + 훈련 데이터 시장 추세 적응 (general)
+      - 상승 상태 Q[1,BUY] > 하락 상태 Q[0,BUY]  (상태별 BUY 위험 차등)
+      - mkt_boost = clip(avg_daily_return × 300, -0.02, +0.10)
+        (강세장 훈련 → BUY init 높임, 횡보/약세 → 낮춤)
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
-    q_table[:, 1] = max(fee_rate * 50, 0.05)    # fee 비례 BUY 초기값 (최소 0.05)
+    # 훈련 데이터 시장 추세 → Q 초기값 적응적 조정
+    _avg_ret   = float(np.mean(returns))
+    _mkt_boost = float(np.clip(_avg_ret * 300, -0.02, 0.10))
+    q_table[0, 1] = max(fee_rate * 30, 0.03) + _mkt_boost  # 하락 상태: 낮은 BUY init
+    q_table[1, 1] = max(fee_rate * 70, 0.08) + _mkt_boost  # 상승 상태: 높은 BUY init
 
     for ep in range(train_episodes):
+        # epsilon annealing: 2ε → 0.5ε (초반 탐험↑, 후반 수렴↑)
+        _eps = epsilon * max(0.5, 2.0 - 1.5 * ep / max(train_episodes - 1, 1))
         state = _make_state_vanilla(returns[0], prices[0], emas[0])
         prev_action = 1  # BUY 시작 고정 (CASH 편향 완전 제거)
 
         for t in range(1, n_days):
-            if np.random.rand() < epsilon:
+            if np.random.rand() < _eps:
                 action = np.random.randint(0, n_actions)
             else:
                 action = int(np.argmax(q_table[state]))
