@@ -1964,10 +1964,10 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                                     "Market<br>Final (%)":  "{:.2f}",
                                     "Seed": "{:.0f}"
                                 })
-                                .set_properties(**{"text-align": "center"})
+                                .set_properties(**{"text-align": "right"})
                                 .set_table_styles([
                                     {"selector": "th", "props": [
-                                        ("text-align", "center"),
+                                        ("text-align", "right"),
                                         ("vertical-align", "middle"),
                                         ("padding", "4px 6px"),
                                         ("font-size", "12px"),
