@@ -112,18 +112,13 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 상태: 2개 (0: 하락, 1: 상승)
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: epsilon annealing (2ε → ε — 초반 탐험 강화, 후반 설정값 유지)
-    • 초기화: 상태-차별화 + 훈련 데이터 시장 추세 적응 (general)
-      - 상승 상태 Q[1,BUY] > 하락 상태 Q[0,BUY]  (상태별 BUY 위험 차등)
-      - mkt_boost = clip(avg_daily_return × 100, -0.01, +0.05)
-        (강세장 훈련 → BUY init 소폭 높임, 횡보/약세 → 소폭 낮춤)
+    • 초기화: Q[:,1] = max(fee_rate×50, 0.05)  (fee 비례 BUY 선호, improve 4-5 검증)
+    • 훈련 후 상승 상태 Q[BUY] 하한 보정: max(Q[1,BUY], 0.002)
+      (correction으로 상승 상태 Q까지 음수 고착 방지 — 6종목 공통 안전망)
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
-    # 훈련 데이터 시장 추세 → Q 초기값 적응적 조정 (감도 완화: 300× → 100×)
-    _avg_ret   = float(np.mean(returns))
-    _mkt_boost = float(np.clip(_avg_ret * 100, -0.01, 0.05))
-    q_table[0, 1] = max(fee_rate * 30, 0.03) + _mkt_boost  # 하락 상태: 낮은 BUY init
-    q_table[1, 1] = max(fee_rate * 70, 0.08) + _mkt_boost  # 상승 상태: 높은 BUY init
+    q_table[:, 1] = max(fee_rate * 50, 0.05)    # fee 비례 BUY 초기값 (최소 0.05)
 
     for ep in range(train_episodes):
         # epsilon annealing: 2ε → ε (초반 탐험↑, 후반 최소 ε 보장 — 복구 탐험 유지)
@@ -146,6 +141,10 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
             td_target = reward + gamma * q_table[next_state, best_next]
             q_table[state, action] += lr * (td_target - q_table[state, action])
             state = next_state
+
+    # 훈련 후 보정: 상승 상태 Q[BUY] 하한 (correction 영구 고착 방지 — 6종목 공통)
+    # Q[1,BUY]가 음수가 되면 상승 신호에서도 CASH 선택 → 부분적 BUY 회복 보장
+    q_table[1, 1] = max(float(q_table[1, 1]), 0.002)
 
     return q_table
 
