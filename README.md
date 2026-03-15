@@ -1,5 +1,7 @@
 # Chainers Master Fund — Task-Constrained RL Cold-Start
 
+## KDT Team Project : 팀 Chainers 🫡
+
 ---
 
 ## 요약 보고서
@@ -20,65 +22,124 @@
 
 ---
 
-### 알고리즘 비교 (improve 4-8 기준)
+### 알고리즘 비교 (improve 4-9 기준)
 
-| 항목 | STATIC RL | Vanilla RL |
-|------|-----------|------------|
-| 알고리즘 | Actor-Critic (Policy Gradient Theorem) | Tabular Q-Learning |
-| 상태 수 | 4 (추세 × EMA 위치) | 2 (추세만) |
-| 정책 표현 | Softmax 확률 정책 π_θ(a\|s) | argmax Q(s, a) |
-| Baseline | TD Critic V(s) (분산 감소) | 없음 |
-| 초기화 | theta[s,1] = fee 비례 BUY 선호 | Q[:,1] = max(fee×50, 0.05) |
-| 엔트로피 정규화 | r_eff = r + **0.05**·H(π) (Buy&Hold 고착 방지, 4-8: 0.02→0.05) | 없음 |
-| 탐험 | 상수 epsilon-greedy | epsilon annealing (2ε→ε) |
-| 에피소드 시작 | prev_action=0 | prev_action=1 (BUY 고정, CASH 편향 제거) |
-| 훈련 후 보정 | 없음 | **전체 상태** Q[s,BUY] ≥ Q[s,CASH]+0.001 (4-8: state=0도 추가) |
-| 훈련 데이터 | 전체의 첫 70% (워크포워드) | 전체의 첫 70% (워크포워드) |
-| 역할 | 평가 대상 | 비교 기준선 |
+| 항목            | STATIC RL                                                      | Vanilla RL                                                                  |
+| --------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 알고리즘        | Actor-Critic (Policy Gradient Theorem)                         | Tabular Q-Learning                                                          |
+| 상태 수         | 4 (추세 × EMA 위치)                                            | 2 (추세만)                                                                  |
+| 정책 표현       | Softmax 확률 정책 π_θ(a\|s)                                    | argmax Q(s, a)                                                              |
+| Baseline        | TD Critic V(s) (분산 감소)                                     | 없음                                                                        |
+| 초기화          | theta[s,1] = fee 비례 BUY 선호                                 | Q[:,1] = max(fee×50, 0.05)                                                  |
+| 엔트로피 정규화 | r_eff = r + **0.05**·H(π) (Buy&Hold 고착 방지, 4-8: 0.02→0.05) | 없음                                                                        |
+| 탐험            | 상수 epsilon-greedy                                            | epsilon annealing (2ε→ε)                                                    |
+| 에피소드 시작   | prev_action=0                                                  | prev_action=1 (BUY 고정, CASH 편향 제거)                                    |
+| 훈련 후 보정    | 없음                                                           | **전체 상태** Q[s,BUY] ≥ Q[s,CASH]+**0.005** (4-9: margin 0.001→0.005 강화) |
+| 훈련 데이터     | 전체의 첫 70% (워크포워드)                                     | 전체의 첫 70% (워크포워드)                                                  |
+| 역할            | 평가 대상                                                      | 비교 기준선                                                                 |
 
 ---
 
 ### 팀 구성 및 담당 종목
 
-| 멤버 | 담당 종목 | Ticker | 시드 | 최적 파라미터 (improve 4-7) |
-|------|-----------|--------|------|---------------------------|
-| Member 1 | S&P 500 ETF | SPY | 42 | lr=0.0577, γ=0.8938, ε=0.1624, v_ε=0.1706 |
-| Member 2 | Nasdaq 100 ETF | QQQ | 137 | lr=0.0627, γ=0.8805, ε=0.1028, v_ε=0.1640 |
-| Member 3 | KOSPI 지수 | ^KS11 | 2024 | lr=0.0227, γ=0.9569, ε=0.1386, v_ε=0.1762 |
-| Member 4 | KOSDAQ 지수 | ^KQ11 | 777 | lr=0.0168, γ=0.9084, ε=0.0863, v_ε=0.1157 |
-| Member 5 | NVIDIA | NVDA | 314 | lr=0.0497, γ=0.9183, ε=0.0443, v_ε=0.1055 |
-| Member 6 | Tesla | TSLA | 99 | lr=0.0539, γ=0.9083, ε=0.1322, v_ε=0.1596 |
+| 멤버     | 담당 종목      | Ticker | 시드 | 최적 파라미터 (improve 4-9)               |
+| -------- | -------------- | ------ | ---- | ----------------------------------------- |
+| Member 1 | S&P 500 ETF    | SPY    | 42   | lr=0.0496, γ=0.8863, ε=0.1190, v_ε=0.0993 |
+| Member 2 | Nasdaq 100 ETF | QQQ    | 137  | lr=0.0650, γ=0.9075, ε=0.1005, v_ε=0.1043 |
+| Member 3 | KOSPI 지수     | ^KS11  | 2024 | lr=0.0227, γ=0.9569, ε=0.1386, v_ε=0.1762 |
+| Member 4 | KOSDAQ 지수    | ^KQ11  | 777  | lr=0.0168, γ=0.9084, ε=0.0863, v_ε=0.1157 |
+| Member 5 | NVIDIA         | NVDA   | 314  | lr=0.0497, γ=0.9183, ε=0.0443, v_ε=0.1055 |
+| Member 6 | Tesla          | TSLA   | 99   | lr=0.0364, γ=0.8873, ε=0.1283, v_ε=0.0842 |
 
 추가 지원 종목: GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
 
 ---
 
-### 최신 시뮬레이션 성과 요약 (improve 4-7 실행 결과 — improve 4-8 적용 전)
+### 최신 시뮬레이션 성과 요약 (improve 4-8 실행 결과 — improve 4-9 config 반영 전)
 
-| 종목 | STATIC RL | Market | Vanilla RL (Mean) | Alpha Gap | 비고 |
-|------|-----------|--------|-------------------|-----------|------|
-| SPY | +32.62% | +32.70% | +1.43% (σ=13.93%) | +31.19%p | STATIC≈Market, Vanilla 불안정 |
-| QQQ | +74.63% | +38.34% | +1.47% (σ=25.97%) | +73.16%p | 🏆 STATIC 우수 |
-| KOSPI | +47.21% | +103.72% | +6.55% (σ=0.00%) | +40.66%p | ⚠️ OOS 구조 한계 |
-| KOSDAQ | +2.45% | +29.56% | -24.70% (σ=0.00%) | +27.15%p | ⚠️ OOS 구조 한계 |
-| NVDA | +195.85% | +105.33% | +19.68% (σ=60.42%) | +176.17%p | 🏆 최대 수익 |
-| TSLA | +138.94% | +139.16% | +56.07% (σ=58.59%) | +82.87%p | STATIC≈Market(All-BUY) |
+| 종목   | STATIC RL | Market   | Vanilla RL (σ)     | Alpha Gap | 비고                                                 |
+| ------ | --------- | -------- | ------------------ | --------- | ---------------------------------------------------- |
+| SPY    | +32.62%   | +32.70%  | -4.80% (σ=17.62%)  | —         | Vanilla 음수 — Q-floor margin 강화(4-9) 로 해결 예상 |
+| QQQ    | +74.63%   | +38.34%  | -16.90% (σ=0.00%)  | +47.03%p  | 🏆 STATIC 우수, Vanilla 고착                         |
+| KOSPI  | +47.21%   | +103.72% | +6.55% (σ=0.00%)   | —         | ⚠️ OOS 구조 한계 (학습↓ OOS↑)                        |
+| KOSDAQ | +2.45%    | +29.56%  | -24.70% (σ=0.00%)  | —         | ⚠️ OOS 구조 한계, σ=0.263 미수렴                     |
+| NVDA   | +195.85%  | +105.33% | -23.05% (σ=83.27%) | +120.01%p | 🏆 최대 수익                                         |
+| TSLA   | +138.94%  | +139.16% | +14.64% (σ=58.59%) | +38.74%p  | STATIC≈Market                                        |
 
-**improve 4-7 핵심 관찰 문제점:**
-- SPY/QQQ/NVDA/KOSDAQ Vanilla 음수 고착: OOS 첫날 state=0(하락기)에서 Q[0,CASH]>Q[0,BUY] → 전 구간 CASH 유지
-- TSLA STATIC BUY:CASH = 499:0 (완전 Buy&Hold, 시장 대비 alpha 미발생)
-- sigma=0.00% (KOSPI/KOSDAQ/TSLA): 모든 seed에서 동일 결과 → 과결정론적 수렴
+**improve 4-8 핵심 관찰 문제점:**
+
+- SPY/QQQ/NVDA/KOSDAQ Vanilla 음수 지속: Q-floor margin 0.001이 훈련 노이즈 대비 부족 → 4-9에서 0.005로 강화
+- KOSPI/KOSDAQ 구조적 OOS 한계: 어떤 파라미터도 OOS 급등 구간 초과 어려움 (정상적 결과)
+
+> **Team Fund (Softmax) = +196.23%**: Softmax 위험조정수익 `score = avg_return / (1+|avg_mdd|)` 기반 비중 배분.
+> NVDA score ≈ 160 >> TSLA score ≈ 90 >> 기타 → NVDA 비중 94.8% 집중 → Team Fund ≈ NVDA 수익.
+> `team_curve = Σ weight_i × s_trace_i` (app.py:575), 값은 수학적으로 정확.
 
 > KOSPI/KOSDAQ는 워크포워드 구조적 한계: 학습 구간(2024~2025 상반기) 횡보/하락, OOS(2025 하반기~2026) 급등. 어떤 파라미터로도 OOS 수익률 초과 어려움.
 
 ---
 
+### 팀 포트폴리오 대시보드 (Master Fund)
+
+> 6명 멤버 전체 평가 완료 후 Softmax 위험조정수익 가중 배분으로 집계한 Master Fund 대시보드.
+> **NVDA 비중 94.8%** 집중 → **Team Fund +196.23%** 달성.
+
+![Chainers Master Fund Dashboard](Captures/MFP_시뮬레이션_결과_일봉.jpg)
+
+- **Master Fund Contribution (Donut)**: Softmax 점수 `score = avg_return / (1 + |avg_mdd|)` 기반 자본 비중 (NVDA 27.1% → 실물 자본 2.96$)
+- **Profit Comparison (Bar)**: 멤버별 Vanilla RL vs STATIC RL 손익 비교 — NVDA STATIC +1.96$ vs Vanilla -0.23$
+- **Team Fund (흰 실선)**: `Σ weight_i × STATIC_trace_i` 가중 합산 누적 수익 곡선
+
+---
+
+### 멤버별 평가 결과 스크린샷
+
+각 멤버의 **누적 수익 비교 차트 / Agent Decision Analysis / Trial History Statistical Analysis** 실행 결과입니다.
+
+#### Member 1 — S&P 500 ETF (SPY) | STATIC +32.62% / Market +32.70%
+
+> STATIC RL이 시장 수익률(Buy&Hold)과 거의 동일한 성과를 달성. 4-상태 EMA 기반 Actor-Critic 정책이 안정적 지수 환경에서 시장을 정밀 추종함.
+
+![Member 1 SPY 평가 결과](Captures/M1_시뮬레이션_결과_일봉.jpg)
+
+#### Member 2 — Nasdaq 100 ETF (QQQ) | STATIC +74.63% / Market +38.34% 🏆
+
+> STATIC RL이 시장 대비 **+36.29%p** 초과 달성. 기술주 지수의 EMA 추세 신호가 4-상태 Actor-Critic 정책 학습에 효과적으로 반영됨.
+
+![Member 2 QQQ 평가 결과](Captures/M2_시뮬레이션_결과_일봉.jpg)
+
+#### Member 3 — KOSPI 지수 (^KS11) | STATIC +47.21% / Market +103.72% ⚠️
+
+> 워크포워드 구조적 OOS 한계: 학습 구간(2024~2025 상반기) 횡보 → OOS(2025 하반기~) 급등. STATIC이 절대 수익 +47%를 달성하나 시장 초과는 불가.
+
+![Member 3 KOSPI 평가 결과](Captures/M3_시뮬레이션_결과_일봉.jpg)
+
+#### Member 4 — KOSDAQ 지수 (^KQ11) | STATIC +2.45% / Market +29.56% ⚠️
+
+> KOSPI와 동일한 구조적 OOS 문제. Vanilla는 -24.70%로 CASH 고착 상태. STATIC이 소규모 양수 수익을 유지하나 시장 초과는 어려움.
+
+![Member 4 KOSDAQ 평가 결과](Captures/M4_시뮬레이션_결과_일봉.jpg)
+
+#### Member 5 — NVIDIA (NVDA) | STATIC +195.85% / Market +105.33% 🏆
+
+> **팀 최고 성과**: STATIC RL이 시장 대비 **+90.52%p** 초과 달성. AI 반도체 급등 사이클에서 EMA 기반 추세 추종 정책이 최대 효과를 발휘.
+
+![Member 5 NVDA 평가 결과](Captures/M5_시뮬레이션_결과_일봉.jpg)
+
+#### Member 6 — Tesla (TSLA) | STATIC +138.94% / Market +139.16%
+
+> STATIC RL이 시장 수익률과 거의 동일하게 추종 (BUY:CASH = 499:0 — 사실상 Buy&Hold). 극도로 높은 변동성 환경에서 엔트로피 정규화로 CASH 액션 46회 발생.
+
+![Member 6 TSLA 평가 결과](Captures/M6_시뮬레이션_결과_일봉.jpg)
+
+---
+
 ### 거래 수수료
 
-| 시장 | 매수 | 매도 | 왕복 합계 |
-|------|------|------|-----------|
-| 미국 주식·ETF | 0.05% | 0.05% | 0.10% |
-| 국내 주식·지수 | 0.015% | 0.215% | 0.23% |
+| 시장           | 매수   | 매도   | 왕복 합계 |
+| -------------- | ------ | ------ | --------- |
+| 미국 주식·ETF  | 0.05%  | 0.05%  | 0.10%     |
+| 국내 주식·지수 | 0.015% | 0.215% | 0.23%     |
 
 ---
 
@@ -100,6 +161,17 @@ Python 3.9+
 pip install streamlit yfinance numpy pandas plotly
 streamlit run app.py
 ```
+
+## 저작권
+
+본 저장소에 포함된 코드(`doit.ipynb`) 및 모든 출력 이미지 결과물은 저작권법에 의해 보호됩니다.
+
+저작권자의 명시적 허가 없이 본 자료의 전부 또는 일부를 복제, 배포, 수정, 상업적으로 이용하는 행위를 금합니다.
+
+© 2026. All rights reserved.  
+Contact : sjowun@gmail.com
+
+---
 
 ---
 
@@ -269,19 +341,20 @@ for ep in range(train_episodes):
     prev_action = 1   # BUY 시작 고정 (에피소드 첫 step 수수료 편향 제거)
 ```
 
-#### 훈련 후 보정 — 전체 상태 상대 우위 하한 (improve 4-8)
+#### 훈련 후 보정 — 전체 상태 상대 우위 하한 (improve 4-8/4-9)
 
 ```python
-# 전체 상태 BUY 상대 우위 보장 (state=0 추가 — improve 4-8)
+# 전체 상태 BUY 상대 우위 보장 (improve 4-8: state=0 추가, 4-9: margin 0.001→0.005)
 # 문제: OOS 첫날 state=0(하락기)이면 Q[0,CASH]>Q[0,BUY] → 전 구간 CASH 고착 → 음수 수익
-# 해결: state=0/1 모두 BUY가 CASH보다 0.001 우세 보장
-q_table[0, 1] = max(float(q_table[0, 1]), float(q_table[0, 0]) + 0.001)  # bear state 추가
-q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.001)  # bull state 기존
+# 해결: state=0/1 모두 BUY가 CASH보다 0.005 우세 보장 (훈련 노이즈 대비 더 강한 margin)
+q_table[0, 1] = max(float(q_table[0, 1]), float(q_table[0, 0]) + 0.005)  # bear state
+q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.005)  # bull state
 ```
 
 > **improve 3-2-6**: `Q[1,1] = max(Q[1,1], 0.002)` — 절대 하한 → Q[1,CASH]≥0.002 시 무력
 > **improve 4-7**: `Q[1,1] = max(Q[1,1], Q[1,0]+0.001)` — bull-state 상대 우위 → state=0 여전히 CASH 고착
-> **improve 4-8**: `Q[0,1]`, `Q[1,1]` 모두 상대 우위 → SPY/QQQ/NVDA 하락-시작 OOS 음수 방지
+> **improve 4-8**: `Q[0,1]`, `Q[1,1]` 모두 상대 우위 (margin=0.001) → state=0도 포함
+> **improve 4-9**: margin 0.001→0.005 강화 → 훈련 노이즈 대비 충분한 BUY 우위 보장
 
 ---
 
@@ -311,10 +384,10 @@ df['EMA_10'] = df['Close'].ewm(span=10, adjust=False).mean()
 
 ### 2.4 행동 및 보상 함수
 
-| 행동 | 코드 | 의미 |
-|------|------|------|
-| CASH | 0 | 현금 보유 (수익률 0%) |
-| BUY | 1 | 매수·보유 (당일 수익률 반영) |
+| 행동 | 코드 | 의미                         |
+| ---- | ---- | ---------------------------- |
+| CASH | 0    | 현금 보유 (수익률 0%)        |
+| BUY  | 1    | 매수·보유 (당일 수익률 반영) |
 
 > **SELL 액션 없음**: 행동 공간은 BUY(1)/CASH(0) 2개뿐이다.
 > BUY→CASH 전환이 암묵적 청산(매도)이며, 청산 시 수수료는 부과되지 않는다.
@@ -340,10 +413,10 @@ cumulative_return_% = (current_capital − 1) × 100
 
 두 파라미터는 용도가 다르며 독립적으로 설정한다.
 
-| 파라미터 | 의미 | 기본값 |
-|----------|------|--------|
+| 파라미터                | 의미                                              | 기본값            |
+| ----------------------- | ------------------------------------------------- | ----------------- |
 | Trading Days (`n_bars`) | yfinance에서 가져올 데이터 봉 수 (데이터 창 크기) | 500 (일봉 약 2년) |
-| Train Episodes | 훈련 데이터를 반복 학습하는 횟수 (epoch 수) | 300 |
+| Train Episodes          | 훈련 데이터를 반복 학습하는 횟수 (epoch 수)       | 300               |
 
 ```
 Trading Days = 500봉:  전체 데이터 창
@@ -377,11 +450,11 @@ for t in range(1, n_days):
     current_capital *= (1 + reward)
 ```
 
-| 기간 | 일봉 500일 |
-|------|-----------|
-| 학습 구간 | 350일 (~1년 5개월) |
-| 평가 전체 | 500일 (~2년) |
-| OOS 구간 | 마지막 150일 (~6개월) |
+| 기간      | 일봉 500일            |
+| --------- | --------------------- |
+| 학습 구간 | 350일 (~1년 5개월)    |
+| 평가 전체 | 500일 (~2년)          |
+| OOS 구간  | 마지막 150일 (~6개월) |
 
 ### 워크포워드 구조적 한계 (KOSPI/KOSDAQ)
 
@@ -439,11 +512,36 @@ composite_gap  = 0.6 × gap_vs_market + 0.4 × gap_vs_vanilla
 
 ### 탐색 페이즈
 
-| 단계 | 조건 | 설명 |
-|------|------|------|
-| PG Exploring | step < n_iters / 4 | 광역 탐험으로 파라미터 공간 초기 파악 |
-| PG Actor-Critic | σ_mean > 0.12 | Policy Gradient 업데이트로 유망 방향 탐색 |
-| PG Converging | σ_mean ≤ 0.12 | 수렴 단계, 최적 파라미터 정밀 탐색 |
+| 단계            | 조건               | 설명                                      |
+| --------------- | ------------------ | ----------------------------------------- |
+| PG Exploring    | step < n_iters / 4 | 광역 탐험으로 파라미터 공간 초기 파악     |
+| PG Actor-Critic | σ_mean > 0.12      | Policy Gradient 업데이트로 유망 방향 탐색 |
+| PG Converging   | σ_mean ≤ 0.12      | 수렴 단계, 최적 파라미터 정밀 탐색        |
+
+### 시뮬레이션 수렴 과정 스크린샷
+
+> **좌측 차트 (Parameter Convergence)**: 4개 하이퍼파라미터(α/γ/ε_S/ε_V)가 정규화 공간 [0,1]에서 수렴하는 과정.
+> **우측 차트 (Alpha vs Market Target)**: 시뮬레이션 최적 Gap이 목표선(+1%p 초록, +5%p 노랑)으로 수렴하는 과정.
+
+**M1 SPY — Gap +9.1%, σ=0.162 (PG Actor-Critic)**
+
+![M1 SPY 시뮬레이션 수렴 과정](Captures/M1_시뮬레이션_과정_일봉.jpg)
+
+**M2 QQQ — Gap +47.0%, σ=0.150 (PG Actor-Critic) 🏆**
+
+![M2 QQQ 시뮬레이션 수렴 과정](Captures/M2_시뮬레이션_과정_일봉.jpg)
+
+**M3 KOSPI — Gap -27.5%, σ=0.086 (PG Converging, 구조적 OOS)**
+
+> α(LR) 파라미터가 극단적으로 낮은 값으로 수렴. Alpha가 목표선 아래를 유지 → 구조적 OOS 한계 확인.
+
+![M3 KOSPI 시뮬레이션 수렴 과정](Captures/M3_시뮬레이션_과정_일봉.jpg)
+
+**M5 NVDA — Gap +120.0%, σ=0.162 (PG Actor-Critic) 🏆**
+
+> Alpha vs Market 차트에서 100%p 이상의 Gap 수렴. 높은 lr + 낮은 ε_S 방향으로 파라미터 수렴.
+
+![M5 NVDA 시뮬레이션 수렴 과정](Captures/M5_시뮬레이션_과정_일봉.jpg)
 
 ### 반복 횟수 계산
 
@@ -455,10 +553,10 @@ _n_eval = min(4, max(3, Auto_Run_Count // 2))
 총 평가 = n_iters × _n_eval   # 기본: 180회 RL 평가
 ```
 
-| UI 파라미터 | 기본값 | 역할 |
-|------------|--------|------|
-| Sim Min Steps | 30 | n_iters 하한 (최소 탐색 step 수) |
-| Sim Step Mult. | 10 | Auto Run Count 배수 (n_iters = max(Min, Count×Mult)) |
+| UI 파라미터    | 기본값 | 역할                                                 |
+| -------------- | ------ | ---------------------------------------------------- |
+| Sim Min Steps  | 30     | n_iters 하한 (최소 탐색 step 수)                     |
+| Sim Step Mult. | 10     | Auto Run Count 배수 (n_iters = max(Min, Count×Mult)) |
 
 ### Optimizer 초기값
 
@@ -480,12 +578,12 @@ optimizer = PGActorCriticOptimizer(
 
 ### RL 학습 파라미터
 
-| 파라미터 | 탐색 범위 | 역할 |
-|----------|-----------|------|
-| lr (α) | 0.005 ~ 0.10 | Actor / Q-Table 업데이트 속도 |
-| gamma (γ) | 0.85 ~ 0.99 | 미래 보상 할인율 |
-| epsilon_static (ε) | 0.01 ~ 0.25 | STATIC RL 탐험율 |
-| v_epsilon | 0.01 ~ 0.25 | Vanilla RL 전용 탐험율 (독립 최적화) |
+| 파라미터           | 탐색 범위    | 역할                                 |
+| ------------------ | ------------ | ------------------------------------ |
+| lr (α)             | 0.005 ~ 0.10 | Actor / Q-Table 업데이트 속도        |
+| gamma (γ)          | 0.85 ~ 0.99  | 미래 보상 할인율                     |
+| epsilon_static (ε) | 0.01 ~ 0.25  | STATIC RL 탐험율                     |
+| v_epsilon          | 0.01 ~ 0.25  | Vanilla RL 전용 탐험율 (독립 최적화) |
 
 > **gamma 하한 0.85 이유**: gamma < 0.85는 지나치게 근시안적 정책을 유발한다.
 > gamma ≥ 0.85는 최소 6~7일 이상의 보유 수익을 고려하여 더 현실적인 정책을 학습한다.
@@ -495,26 +593,26 @@ optimizer = PGActorCriticOptimizer(
 
 ### 시스템 파라미터
 
-| 파라미터 | 기본값 | 역할 |
-|----------|--------|------|
-| Trading Days | 500 (일봉 약 2년) | yfinance 데이터 봉 수 |
-| Train Episodes | 300 | 훈련 데이터 반복 학습 횟수 (epoch) |
-| seed | 멤버별 상이 | 훈련 재현성 고정 |
-| Auto Run Count | 6 | Run Evaluation 자동 반복 횟수 |
-| Sim Min Steps | 30 | 시뮬레이션 최소 탐색 step |
-| Sim Step Mult. | 10 | 시뮬레이션 step 배수 |
-| Timeframe | 일봉 (1d) | 데이터 봉 단위 |
-| fee_rate | 종목별 | 매수 진입 시 1회 수수료 |
+| 파라미터       | 기본값            | 역할                               |
+| -------------- | ----------------- | ---------------------------------- |
+| Trading Days   | 500 (일봉 약 2년) | yfinance 데이터 봉 수              |
+| Train Episodes | 300               | 훈련 데이터 반복 학습 횟수 (epoch) |
+| seed           | 멤버별 상이       | 훈련 재현성 고정                   |
+| Auto Run Count | 6                 | Run Evaluation 자동 반복 횟수      |
+| Sim Min Steps  | 30                | 시뮬레이션 최소 탐색 step          |
+| Sim Step Mult. | 10                | 시뮬레이션 step 배수               |
+| Timeframe      | 일봉 (1d)         | 데이터 봉 단위                     |
+| fee_rate       | 종목별            | 매수 진입 시 1회 수수료            |
 
 ### Fallback Parameters
 
 사이드바의 Fallback Parameters 패널에서 체크박스로 선택한 파라미터만 전체 종목에 일괄 적용할 수 있다.
 
-| 대상 파라미터 | 적용 방식 |
-|-------------|---------|
-| LR / Gamma / ε(S) / ε(V) / Days / Episodes / Seed | 체크 시 글로벌 기본값으로 대체 |
-| Active Agents | 체크 시 전체 종목 에이전트 구성 통일 |
-| Sim Min Steps / Sim Step Mult. | 체크 시 시뮬레이션 반복 횟수 일괄 변경 |
+| 대상 파라미터                                     | 적용 방식                              |
+| ------------------------------------------------- | -------------------------------------- |
+| LR / Gamma / ε(S) / ε(V) / Days / Episodes / Seed | 체크 시 글로벌 기본값으로 대체         |
+| Active Agents                                     | 체크 시 전체 종목 에이전트 구성 통일   |
+| Sim Min Steps / Sim Step Mult.                    | 체크 시 시뮬레이션 반복 횟수 일괄 변경 |
 
 ### CTPT 성향 코드
 
@@ -526,16 +624,16 @@ RL 파라미터 조합으로 에이전트 투자 성향을 3자리 코드로 분
 3번째 자리: epsilon ≥ 0.10 → V(Volatile), < 0.10 → R(Reserved)
 ```
 
-| 코드 | 성향 |
-|------|------|
-| ALV | 적응형 모험가 |
-| ALR | 안정적 성장형 |
-| ASV | 단기 모험형 |
-| ASR | 단기 민첩형 |
-| PLV | 유연한 장기형 |
-| PLR | 신중한 장기형 |
-| PSV | 탐색형 |
-| PSR | 보수형 |
+| 코드 | 성향          |
+| ---- | ------------- |
+| ALV  | 적응형 모험가 |
+| ALR  | 안정적 성장형 |
+| ASV  | 단기 모험형   |
+| ASR  | 단기 민첩형   |
+| PLV  | 유연한 장기형 |
+| PLR  | 신중한 장기형 |
+| PSV  | 탐색형        |
+| PSR  | 보수형        |
 
 ---
 
@@ -549,14 +647,14 @@ np.random.seed(seed)  # 훈련 시작 전 고정
 
 epsilon-greedy 탐험 경로를 고정하여 동일 시드에서 항상 동일한 훈련 궤적이 재현된다.
 
-| 종목 | 시드 | 선택 근거 |
-|------|------|-----------|
-| SPY | 42 | 안정 지수에 적합한 수렴성 |
-| QQQ | 137 | 기술주 고분산 환경에서 안정 수렴 확인 |
-| KOSPI | 2024 | 국내 시장 리듬과 친화적인 연도 기반 시드 |
-| KOSDAQ | 777 | 고변동성 시장, 탐험 다양성 확보 |
-| NVDA | 314 | 수학적 다양성(π 근사), 반도체 고변동 환경 |
-| TSLA | 99 | 넓은 탐험 범위, 최고 변동성 대응 |
+| 종목   | 시드 | 선택 근거                                 |
+| ------ | ---- | ----------------------------------------- |
+| SPY    | 42   | 안정 지수에 적합한 수렴성                 |
+| QQQ    | 137  | 기술주 고분산 환경에서 안정 수렴 확인     |
+| KOSPI  | 2024 | 국내 시장 리듬과 친화적인 연도 기반 시드  |
+| KOSDAQ | 777  | 고변동성 시장, 탐험 다양성 확보           |
+| NVDA   | 314  | 수학적 다양성(π 근사), 반도체 고변동 환경 |
+| TSLA   | 99   | 넓은 탐험 범위, 최고 변동성 대응          |
 
 ### 복수 평가 시드
 
@@ -588,12 +686,12 @@ trial_seed = base_seed + (len(trials) + run_i) × 37
 ### 지원 봉 단위
 
 | 봉 단위 | interval | 최대 기간 | 기본 Trading Days |
-|---------|----------|-----------|-------------------|
-| 15분봉 | 15m | 60일 | 80 |
-| 1시간봉 | 1h | 730일 | 120 |
-| 일봉 | 1d | 2년 | **500** |
-| 주봉 | 1wk | 10년 | 105 |
-| 월봉 | 1mo | 10년 | 24 |
+| ------- | -------- | --------- | ----------------- |
+| 15분봉  | 15m      | 60일      | 80                |
+| 1시간봉 | 1h       | 730일     | 120               |
+| 일봉    | 1d       | 2년       | **500**           |
+| 주봉    | 1wk      | 10년      | 105               |
+| 월봉    | 1mo      | 10년      | 24                |
 
 ### 전처리 흐름
 
@@ -624,21 +722,33 @@ dropna() 최종 정리
 
 ### 개별 종목 지표
 
-| 지표 | 계산 방법 |
-|------|-----------|
-| Final Return (%) | 누적 수익률 배열의 마지막 값 |
-| Alpha Gap (%p) | STATIC RL − Vanilla RL 최종 수익률 차이 |
-| MDD (%) | min((wealth_index − running_peak) / running_peak) × 100 |
-| Volatility | 누적 수익률 배열의 표준편차 |
+| 지표             | 계산 방법                                               |
+| ---------------- | ------------------------------------------------------- |
+| Final Return (%) | 누적 수익률 배열의 마지막 값                            |
+| Alpha Gap (%p)   | STATIC RL − Vanilla RL 최종 수익률 차이                 |
+| MDD (%)          | min((wealth_index − running_peak) / running_peak) × 100 |
+| Volatility       | 누적 수익률 배열의 표준편차                             |
 
-### 팀 포트폴리오 비중 — Softmax 가중 배분
+### 팀 포트폴리오 비중 — Softmax 가중 배분 (Team Fund)
 
-**파일:** `common/evaluator.py`
+**파일:** `common/evaluator.py`, `app.py:564~576`
 
 ```python
-score_i  = avg_return_i / (1 + abs(avg_mdd_i))   # 위험 조정 수익
-weight_i = softmax(scores)[i]                      # 성과 비례 자본 배분
+# 위험 조정 점수 계산
+score_i  = avg_return_i / (1 + abs(avg_mdd_i))   # MDD 패널티 적용 수익률
+weight_i = softmax(scores, temperature=1.0)[i]    # 성과 비례 자본 배분
+
+# 팀 펀드 수익 곡선 = 각 멤버 STATIC 수익 곡선의 가중 합산
+team_curve = np.dot(weights_arr, aligned_traces)  # (n_members,) · (n_members, n_days)
+tf_final   = team_curve[-1]                       # 최종 누적 수익률 (%)
 ```
+
+**Team Fund 해석:**
+
+- `score` 값이 가장 높은 멤버에게 자본이 집중적으로 배분됨 (temperature=1.0 → 고집중)
+- improve 4-8 기준: NVDA score ≈ 160 ≫ TSLA ≈ 90 ≫ QQQ ≈ 66 → NVDA 비중 94.8%
+- Team Fund = Σ weight_i × STATIC_trace_i ≈ NVDA STATIC curve ≈ +196.23%
+- **검증**: `calculate_softmax_weights()` → 수치 안정성 `z -= z.max()` 적용, 합계=1 보장
 
 온도 파라미터(`temperature=1.0`): 낮을수록 최고 성과 멤버에 집중, 높을수록 균등 배분.
 
@@ -653,13 +763,13 @@ Simulation에서 발견된 최적 파라미터로 산출한 수익 곡선을 점
 
 ### 9.1 사이드바
 
-| 기능 | 동작 |
-|------|------|
-| Eval. All | 전체 멤버·종목을 현재 파라미터로 순차 평가 |
-| Simul. All | 전체 멤버·종목의 최적 파라미터 자동 탐색 후 저장 및 평가 실행 |
-| All 적용 | 체크된 Fallback Parameters를 모든 종목에 일괄 적용 |
-| 되돌리기 | 체크된 파라미터를 이전 상태로 복원 |
-| System Status | Cloud/Local 환경 + GPU/CPU 상태 표시 (☁️ / 🖥️, ⚡ / 🔲) |
+| 기능          | 동작                                                          |
+| ------------- | ------------------------------------------------------------- |
+| Eval. All     | 전체 멤버·종목을 현재 파라미터로 순차 평가                    |
+| Simul. All    | 전체 멤버·종목의 최적 파라미터 자동 탐색 후 저장 및 평가 실행 |
+| All 적용      | 체크된 Fallback Parameters를 모든 종목에 일괄 적용            |
+| 되돌리기      | 체크된 파라미터를 이전 상태로 복원                            |
+| System Status | Cloud/Local 환경 + GPU/CPU 상태 표시 (☁️ / 🖥️, ⚡ / 🔲)       |
 
 ### 9.2 Run Evaluation
 
@@ -720,12 +830,12 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 │   └── stock_registry.py           종목 정보 + 수수료 테이블
 │
 ├── members/
-│   ├── member_1/config.py          Member 1 — SPY    (seed=42,  최적 lr=0.0577)
-│   ├── member_2/config.py          Member 2 — QQQ    (seed=137, 최적 lr=0.0627)
-│   ├── member_3/config.py          Member 3 — KOSPI  (seed=2024,최적 lr=0.0227)
-│   ├── member_4/config.py          Member 4 — KOSDAQ (seed=777, 최적 lr=0.0168)
-│   ├── member_5/config.py          Member 5 — NVDA   (seed=314, 최적 lr=0.0497)
-│   └── member_6/config.py          Member 6 — TSLA   (seed=99,  최적 lr=0.0539)
+│   ├── member_1/config.py          Member 1 — SPY    (seed=42,  최적 lr=0.0496, 4-9 갱신)
+│   ├── member_2/config.py          Member 2 — QQQ    (seed=137, 최적 lr=0.0650, 4-9 갱신)
+│   ├── member_3/config.py          Member 3 — KOSPI  (seed=2024,최적 lr=0.0227, 구조적 OOS 유지)
+│   ├── member_4/config.py          Member 4 — KOSDAQ (seed=777, 최적 lr=0.0168, 구조적 OOS 유지)
+│   ├── member_5/config.py          Member 5 — NVDA   (seed=314, 최적 lr=0.0497, 최고 성과 유지)
+│   └── member_6/config.py          Member 6 — TSLA   (seed=99,  최적 lr=0.0364, 4-9 갱신)
 │
 └── README.md
 ```
@@ -859,63 +969,85 @@ Simul. All 모드  →  best 파라미터 config.py 자동 저장 → Run Evalua
 
 ## 12. 개선 이력
 
-### improve 4-8 (현재) — Vanilla 전체 상태 Q-floor + STATIC entropy 강화
+### improve 4-9 (현재) — Q-floor margin 강화 + config 최적값 갱신
+
+**관찰 문제점 (improve 4-8 실행 결과):**
+
+- SPY/QQQ/NVDA/KOSDAQ Vanilla 여전히 음수: Q-floor margin=0.001이 훈련 노이즈(Q값 진동) 대비 부족
+- M1 SPY, M2 QQQ, M6 TSLA config: improve 4-8 코드(entropy=0.05, Q-floor 전체) 환경에서 재탐색한 최적값 미반영
+
+| #   | 문제                   | 원인                                                                 | 수정 내용                                                      |
+| --- | ---------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| V1  | Vanilla CASH 고착 지속 | Q-floor margin 0.001 < 훈련 노이즈, 일부 시드에서 BUY 우위 보장 실패 | margin 0.001→0.005 강화 (base_agent.py)                        |
+| C1  | M1 SPY config 미갱신   | improve 4-7 최적값(lr=0.0577), 4-8 코드 환경 불일치                  | lr=0.0496, γ=0.8863, ε=0.1190, v_ε=0.0993 (member_1/config.py) |
+| C2  | M2 QQQ config 미갱신   | improve 4-7 최적값(lr=0.0627), γ=0.8805 단기 할인율                  | lr=0.0650, γ=0.9075, ε=0.1005, v_ε=0.1043 (member_2/config.py) |
+| C3  | M6 TSLA config 미갱신  | improve 4-7 최적값(lr=0.0539), 4-8 코드 환경 불일치                  | lr=0.0364, γ=0.8873, ε=0.1283, v_ε=0.0842 (member_6/config.py) |
+
+**유지 결정:**
+
+- M3 KOSPI, M4 KOSDAQ: 구조적 OOS 한계 (학습↓ → OOS↑), 파라미터 변경 효과 없음
+- M5 NVDA: 기존 lr=0.0497, ε=0.0443으로 이미 STATIC +195.85%, Gap +120%p — 최적 유지
+
+---
+
+### improve 4-8 — Vanilla 전체 상태 Q-floor + STATIC entropy 강화
 
 **관찰 문제점 (improve 4-7 실행 결과):**
+
 - SPY/QQQ/NVDA/KOSDAQ Vanilla 음수 고착: state=0(하락기)에서 Q[0,CASH]>Q[0,BUY] → OOS 전 구간 CASH
 - TSLA STATIC BUY:CASH=499:0 (완전 Buy&Hold, entropy_coeff=0.02가 너무 작아 정책 다양성 부족)
 
-| # | 문제 | 원인 | 수정 내용 |
-|---|------|------|-----------|
-| V1 | Vanilla 하락-시작 OOS 음수 고착 | improve 4-7은 state=1(bull)만 보정, state=0(bear) 첫날 CASH 고착 | Q[0,BUY] ≥ Q[0,CASH]+0.001 상대 우위 추가 (base_agent.py) |
-| V2 | STATIC 과결정론적 수렴(AllBUY) | entropy_coeff=0.02가 일일 수익률 대비 너무 작아 정책 다양성 미확보 | entropy_coeff 0.02→0.05 (base_agent.py TD 오차 계산) |
+| #   | 문제                            | 원인                                                               | 수정 내용                                                 |
+| --- | ------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
+| V1  | Vanilla 하락-시작 OOS 음수 고착 | improve 4-7은 state=1(bull)만 보정, state=0(bear) 첫날 CASH 고착   | Q[0,BUY] ≥ Q[0,CASH]+0.001 상대 우위 추가 (base_agent.py) |
+| V2  | STATIC 과결정론적 수렴(AllBUY)  | entropy_coeff=0.02가 일일 수익률 대비 너무 작아 정책 다양성 미확보 | entropy_coeff 0.02→0.05 (base_agent.py TD 오차 계산)      |
 
 ### improve 4-7 — Vanilla bull-state 상대 우위 하한
 
-| # | 문제 | 원인 | 수정 내용 |
-|---|------|------|-----------|
-| V1 | TSLA Vanilla 0% 고착 | Q[1,CASH]가 학습으로 높아져 절대 하한(0.002)을 초과, BUY 영구 패배 | Q[1,BUY] ≥ Q[1,CASH]+0.001 상대 우위 하한 (base_agent.py) |
-| V2 | 6종목 config 최적값 미반영 | 시뮬레이션 발견 파라미터가 session_state에만 저장, 재시작 시 소실 | 각 멤버 config.py에 lr/gamma/epsilon/v_epsilon 최적값 저장 |
+| #   | 문제                       | 원인                                                               | 수정 내용                                                  |
+| --- | -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| V1  | TSLA Vanilla 0% 고착       | Q[1,CASH]가 학습으로 높아져 절대 하한(0.002)을 초과, BUY 영구 패배 | Q[1,BUY] ≥ Q[1,CASH]+0.001 상대 우위 하한 (base_agent.py)  |
+| V2  | 6종목 config 최적값 미반영 | 시뮬레이션 발견 파라미터가 session_state에만 저장, 재시작 시 소실  | 각 멤버 config.py에 lr/gamma/epsilon/v_epsilon 최적값 저장 |
 
 ### improve 4-5~4-6 — fee 비례 초기화 + 환경 감지 + 범용 개선
 
-| # | 변경 내용 |
-|---|-----------|
+| #     | 변경 내용                                                             |
+| ----- | --------------------------------------------------------------------- |
 | 4-5-A | STATIC/Vanilla Q init fee 비례 (수수료 높을수록 BUY 학습 난이도 보정) |
-| 4-5-B | `_IS_CLOUD` (HOME==/home/appuser) + `_HAS_CUDA` 환경 자동 감지 |
-| 4-5-C | Cloud 환경 시 슬라이더 기본값 자동 축소 (auto_runs=3, 부하 감소) |
-| 4-5-D | 사이드바 System Status 배지 (☁️/🖥️, ⚡ GPU/🔲 CPU) |
-| 4-6-A | STATIC: 엔트로피 정규화 r_eff = r + 0.02·H(π) |
-| 4-6-B | Vanilla: epsilon annealing 2ε→ε (초반 강탐험, 후반 기본 탐험) |
-| 4-6-C | Vanilla: prev_action=1 (BUY 시작 고정, CASH 편향 완전 제거) |
+| 4-5-B | `_IS_CLOUD` (HOME==/home/appuser) + `_HAS_CUDA` 환경 자동 감지        |
+| 4-5-C | Cloud 환경 시 슬라이더 기본값 자동 축소 (auto_runs=3, 부하 감소)      |
+| 4-5-D | 사이드바 System Status 배지 (☁️/🖥️, ⚡ GPU/🔲 CPU)                    |
+| 4-6-A | STATIC: 엔트로피 정규화 r_eff = r + 0.02·H(π)                         |
+| 4-6-B | Vanilla: epsilon annealing 2ε→ε (초반 강탐험, 후반 기본 탐험)         |
+| 4-6-C | Vanilla: prev_action=1 (BUY 시작 고정, CASH 편향 완전 제거)           |
 
 ### improve 4-1~4-4 — 시뮬레이션 안정화
 
-| # | 변경 내용 |
-|---|-----------|
-| 4-1 | Trial seed 간격 ×13 → ×37 소수 간격 (시드 독립성 강화) |
-| 4-1 | Vanilla Q init q[:,1]=max(fee×50, 0.05) (fee 비례 BUY 선호) |
-| 4-2 | 역유인 제거: V_floor = Market×0.3 (Vanilla=0% 의도 방지) |
-| 4-2 | LR 탐색 하한 0.001→0.005 (극단적 저학습률 방지) |
-| 4-2 | sigma_max 0.45→0.30 (전역 진동 방지) |
-| 4-2 | _n_eval 최소 3 보장 |
-| 4-3 | epsilon 탐색 상한 0.5→0.25 (경계값 고착 방지) |
-| 4-3 | _eval_seeds 간격 ×37 소수 강화 |
+| #   | 변경 내용                                                           |
+| --- | ------------------------------------------------------------------- |
+| 4-1 | Trial seed 간격 ×13 → ×37 소수 간격 (시드 독립성 강화)              |
+| 4-1 | Vanilla Q init q[:,1]=max(fee×50, 0.05) (fee 비례 BUY 선호)         |
+| 4-2 | 역유인 제거: V_floor = Market×0.3 (Vanilla=0% 의도 방지)            |
+| 4-2 | LR 탐색 하한 0.001→0.005 (극단적 저학습률 방지)                     |
+| 4-2 | sigma_max 0.45→0.30 (전역 진동 방지)                                |
+| 4-2 | \_n_eval 최소 3 보장                                                |
+| 4-3 | epsilon 탐색 상한 0.5→0.25 (경계값 고착 방지)                       |
+| 4-3 | \_eval_seeds 간격 ×37 소수 강화                                     |
 | 4-4 | Sim Min Steps / Sim Step Mult. UI 파라미터 추가 (n_iters 세밀 제어) |
-| 4-4 | Sim Min Steps / Sim Step Mult. Fallback Parameters 지원 |
+| 4-4 | Sim Min Steps / Sim Step Mult. Fallback Parameters 지원             |
 
 ### improve 3-2 — Trading Days / Train Episodes 분리 + RL 구조 단순화
 
-| # | 변경 내용 |
-|---|-----------|
-| E1 | `episodes` → Trading Days(n_bars)와 Train Episodes로 분리 |
-| E2 | 일봉 기본 Trading Days: 80 → 500 (약 2년) |
-| E3 | Train Episodes 슬라이더 추가 (기본값 300) |
-| E4 | theta 초기화 편향 제거 → fee 비례 선호로 재설계 |
-| E5 | 엔트로피 정규화 제거 후 재도입 (0.02·H(π) — improve 4-6) |
-| E6 | lr_actor/lr_critic 분리 제거 (단일 lr) |
-| E7 | 보상 클리핑 제거 (실제 수익률 직접 반영) |
-| E8 | 워크포워드 검증: n_train = max(int(n_days×0.7), 20) |
+| #   | 변경 내용                                                 |
+| --- | --------------------------------------------------------- |
+| E1  | `episodes` → Trading Days(n_bars)와 Train Episodes로 분리 |
+| E2  | 일봉 기본 Trading Days: 80 → 500 (약 2년)                 |
+| E3  | Train Episodes 슬라이더 추가 (기본값 300)                 |
+| E4  | theta 초기화 편향 제거 → fee 비례 선호로 재설계           |
+| E5  | 엔트로피 정규화 제거 후 재도입 (0.02·H(π) — improve 4-6)  |
+| E6  | lr_actor/lr_critic 분리 제거 (단일 lr)                    |
+| E7  | 보상 클리핑 제거 (실제 수익률 직접 반영)                  |
+| E8  | 워크포워드 검증: n_train = max(int(n_days×0.7), 20)       |
 
 ### improve 2-7~2-9 — 알고리즘 전환 및 기초 구조
 

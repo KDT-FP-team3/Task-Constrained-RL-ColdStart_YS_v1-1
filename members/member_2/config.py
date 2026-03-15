@@ -1,20 +1,20 @@
 MEMBER_NAME = "Member 2"
 TARGET_INDICES = [1] # QQQ
 
-# [파라미터 설정 근거 — improve 4-7 기준 최적값]
+# [파라미터 설정 근거 — improve 4-9 기준 최적값]
 # ▶ episodes=500: 일봉 500일(약 2년) 기준, 워크포워드 70%(350일) 학습
-# ▶ lr=0.0627: PG Actor-Critic Optimizer 탐색 최적값 (QQQ 기술주 지수 적합)
-# ▶ gamma=0.8805: 단기 할인율 — 기술주 단기 변동성 최적화
-# ▶ epsilon=0.1028: STATIC ε — 4상태 탐험율 (낮은 값으로 수렴성 강화)
-# ▶ v_epsilon=0.1640: Vanilla ε — STATIC와 독립 최적화
+# ▶ lr=0.0650: PG Actor-Critic Optimizer 탐색 최적값 (improve 4-8 코드 기반 재탐색)
+# ▶ gamma=0.9075: 중간 할인율 — 기술주 중기 추세 반영 (4-7의 0.8805에서 상향)
+# ▶ epsilon=0.1005: STATIC ε — 4상태 탐험율 (entropy_coeff=0.05 환경)
+# ▶ v_epsilon=0.1043: Vanilla ε — STATIC와 독립 최적화 (Q-floor margin 0.005 환경)
 # ▶ seed=137: QQQ(기술주 지수) — 분산 환경 안정 시드
 RL_PARAMS = {
     TARGET_INDICES[0]: {
-        "lr": 0.0627, "gamma": 0.8805, "epsilon": 0.1028, "v_epsilon": 0.1640,
+        "lr": 0.0650, "gamma": 0.9075, "epsilon": 0.1005, "v_epsilon": 0.1043,
         "episodes": 500, "train_episodes": 300, "seed": 137
     },
     "default": {
-        "lr": 0.0627, "gamma": 0.8805, "epsilon": 0.1028, "v_epsilon": 0.1640,
+        "lr": 0.0650, "gamma": 0.9075, "epsilon": 0.1005, "v_epsilon": 0.1043,
         "episodes": 500, "train_episodes": 300, "seed": 42
     }
 }

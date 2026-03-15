@@ -242,6 +242,12 @@ st.sidebar.caption(f"{_env_icon} &nbsp;|&nbsp; {_gpu_icon}")
 # ─────────────────────────────────────────────────
 master_progress_placeholder = st.sidebar.empty()
 gauge_placeholder = st.sidebar.empty()
+_pbar_css_ph = st.sidebar.empty()  # 100% 완료 시 녹색 하이라이트 주입용
+_GREEN_PBAR_CSS = """<style>
+section[data-testid="stSidebar"] div[data-testid="stProgress"] div[role="progressbar"] > div {
+    background-color: #44dd44 !important;
+}
+</style>"""
 # 스크립트 재실행 시 즉시 이전 값으로 렌더링 → 공백(사라짐) 방지
 update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
 
@@ -1001,6 +1007,10 @@ _member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock
 _pct0 = st.session_state.master_pbar_pct
 _pct0_txt = f"Analyzing Agents... ({int(_pct0 * 100)}%)" if _pct0 > 0 else "Analyzing Agents..."
 master_pbar = master_progress_placeholder.progress(_pct0, text=_pct0_txt)
+if _pct0 >= 1.0:
+    _pbar_css_ph.markdown(_GREEN_PBAR_CSS, unsafe_allow_html=True)
+else:
+    _pbar_css_ph.empty()
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -1102,7 +1112,10 @@ for m_config in sorted_modules:
                         l_epi = st.slider(
                             _tf_lbl_map[l_interval], _tf_min, _tf_max, _epi_val,
                             key=f"epi_{m_name}_{stock_name}_{l_interval}",
-                            help="시장 데이터 봉 수 (데이터 창 크기)"
+                            # [RL] 데이터 창 크기(n_bars): 학습+평가에 사용할 봉 수.
+                            # 일봉 500 = 약 2년 데이터. 첫 70%(350봉)로 학습, 전체(500봉)로 평가.
+                            # 너무 작으면 OOS 구간 부족, 너무 크면 시장 체제 변화 포함 위험.
+                            help="시장 데이터 봉 수 (n_bars). 첫 70%=학습, 전체=평가(워크포워드). 일봉 500≈2년."
                         )
                     with sc1b:
                         _train_epi_val = int(p_settings.get("train_episodes", 100))
@@ -1111,27 +1124,36 @@ for m_config in sorted_modules:
                         l_train_epi = st.slider(
                             "Train Episodes", 10, 500, _train_epi_val,
                             key=f"train_epi_{m_name}_{stock_name}",
-                            help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
+                            # [RL] 훈련 에피소드 수 (epoch): 같은 훈련 데이터를 반복 학습하는 횟수.
+                            # 300 에피소드 × 350봉 = 105,000 TD 업데이트 step.
+                            # 많을수록 정책 수렴 향상, 과적합(in-sample 최적화) 위험 증가.
+                            help="RL 학습 에피소드 수 (epoch). 훈련 데이터 반복 횟수. 많을수록 수렴↑/과적합↑."
                         )
                     with sc2:
                         l_frame_speed = st.slider(
                             "Frame Speed (sec)", 0.01, 2.0,
                             0.05, step=0.01, format="%.2f",
                             key=f"fspd_{m_name}_{stock_name}",
-                            help="시뮬레이션 재생 프레임 간격"
+                            help="시뮬레이션 수렴 차트 업데이트 간격(초). 낮을수록 빠른 재생."
                         )
                     with sc3:
                         l_seed = st.number_input(
                             "Base Seed",
                             value=int(p_settings.get("seed", global_seed)),
-                            step=1, key=f"seed_{m_name}_{stock_name}"
+                            step=1, key=f"seed_{m_name}_{stock_name}",
+                            # [RL] 훈련 재현성 시드: np.random.seed(seed)로 ε-greedy 탐험 경로 고정.
+                            # 동일 seed → 동일 탐험 경로 → 동일 학습 궤적 → 동일 정책 → 동일 성과.
+                            # Trial History의 각 Trial은 seed + trial_idx×37 로 독립 시드 사용.
                         )
                     with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1,
                             value=(3 if _IS_CLOUD else 6), step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
-                            help="Run Evaluation 클릭 시 자동 반복 횟수"
+                            # [RL] Run Evaluation 자동 반복 횟수: 다양한 시드로 성과 분포 측정.
+                            # trial_seed = base_seed + run_i × 37 (소수 간격으로 시드 독립성 확보).
+                            # Simulation에서는 _n_eval = min(4, max(3, auto_runs//2)) 평가 시드 결정.
+                            help="Run Evaluation 자동 반복 횟수. 다양한 시드로 Trial 분포 측정. Sim _n_eval = min(4, max(3, count//2))."
                         )
                     with sc5:
                         l_active_agents = st.multiselect(
@@ -1139,7 +1161,7 @@ for m_config in sorted_modules:
                             options=["Vanilla RL", "STATIC RL"],
                             default=["Vanilla RL", "STATIC RL"],
                             key=f"active_{m_name}_{stock_name}",
-                            help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
+                            help="비활성화된 에이전트는 연산 생략, 수익 0%로 표시. 단독 비교 시 사용."
                         )
                     # ─ 행 2: RL Hyperparameters ─
                     st.markdown(
@@ -1153,41 +1175,56 @@ for m_config in sorted_modules:
                         l_lr = st.slider(
                             "Learning Rate (α)", 0.001, 0.1,
                             float(p_settings.get("lr", global_lr)),
-                            step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}"
+                            step=0.001, format="%.3f", key=f"lr_{m_name}_{stock_name}",
+                            # [RL] 학습률 α: θ += α·δ·∇logπ (Actor), V += α·δ (Critic), Q += α·δ (Q-Learning).
+                            # 크면 빠른 수렴/불안정, 작으면 느린 수렴/안정. 탐색 범위: 0.005~0.10.
                         )
                     with hc2:
                         l_gamma = st.slider(
                             "Discount Factor (γ)", 0.1, 0.99,
                             float(p_settings.get("gamma", global_gamma)),
-                            key=f"gamma_{m_name}_{stock_name}"
+                            key=f"gamma_{m_name}_{stock_name}",
+                            # [RL] 할인율 γ: V(s) = E[r₀ + γr₁ + γ²r₂ + ...].
+                            # γ=0.99: 100봉 후 보상을 0.99^100≈0.37배로 할인 (장기 중시).
+                            # γ=0.85: 빠른 할인 (단기 수익 집중). 권장: 0.85~0.99.
                         )
                     with hc3:
                         l_epsilon = st.slider(
                             "STATIC ε", 0.01, 0.5,
                             float(p_settings.get("epsilon", global_epsilon)),
                             key=f"eps_{m_name}_{stock_name}",
-                            help="STATIC RL 탐험율"
+                            # [RL] STATIC RL 탐험율 ε: ε 확률로 무작위 행동, (1-ε)로 정책 행동.
+                            # 상수 ε (annealing 없음). 너무 높으면 정책 수렴 방해.
+                            help="STATIC RL ε-greedy 탐험율. ε=0.16 → 16% 확률 무작위 행동. 권장: 0.01~0.25."
                         )
                     with hc4:
                         l_v_epsilon = st.slider(
                             "Vanilla ε", 0.01, 0.5,
                             float(p_settings.get("v_epsilon", global_epsilon)),
                             key=f"v_eps_{m_name}_{stock_name}",
-                            help="Vanilla RL 탐험율 (STATIC과 독립적으로 조정)"
+                            # [RL] Vanilla RL 탐험율 (STATIC과 독립 최적화).
+                            # Vanilla는 epsilon annealing 적용: 훈련 초반 2ε → 후반 ε.
+                            help="Vanilla RL ε-greedy 탐험율. STATIC과 독립 설정. 훈련 시 2ε→ε annealing 적용."
                         )
                     with hc5:
                         l_sim_min = st.number_input(
                             "Sim Min Steps", min_value=5, max_value=200,
                             value=30, step=5,
                             key=f"sim_min_{m_name}_{stock_name}",
-                            help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
+                            # [RL] PG Optimizer 최소 탐색 step 수.
+                            # n_iters = max(Sim_Min, Auto_Run × Sim_Mult).
+                            # 30 step × 3 eval_seeds = 최소 90회 RL 학습+평가.
+                            help="시뮬레이션 최소 탐색 step (n_iters 하한). n_iters=max(Min, AutoRun×Mult)."
                         )
                     with hc6:
                         l_sim_mult = st.number_input(
                             "Sim Step Mult.", min_value=1, max_value=30,
                             value=10, step=1,
                             key=f"sim_mult_{m_name}_{stock_name}",
-                            help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
+                            # [RL] Auto Run Count 배수로 총 탐색 step 결정.
+                            # AutoRun=6, Mult=10 → n_iters=60 step.
+                            # n_iters × _n_eval = 총 RL 평가 횟수.
+                            help="n_iters = max(Min Steps, Auto Run Count × Mult.). Mult=10, Count=6 → 60 step."
                         )
 
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
@@ -2029,6 +2066,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 if final_contributions:
     st.session_state.master_pbar_pct = 1.0
     master_progress_placeholder.progress(1.0, text="Analyzing Agents... (100%)")
+    _pbar_css_ph.markdown(_GREEN_PBAR_CSS, unsafe_allow_html=True)
 
     # 첫 번째 데이터 도착 시 st.rerun() → 상단 container에 즉시 차트 표시
     _first_data = not bool(st.session_state.prev_final_contributions)
