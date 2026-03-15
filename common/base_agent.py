@@ -43,7 +43,9 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
     • 초기화: theta = 0  (학습으로만 편향 형성)
     """
     n_states, n_actions = 4, 2
-    theta = np.zeros((n_states, n_actions))   # 편향 없는 초기화
+    theta = np.zeros((n_states, n_actions))
+    theta[2, 1] = 0.1   # EMA 위+하락 상태: BUY 초기 선호 (이분화 해소)
+    theta[3, 1] = 0.2   # EMA 위+상승 상태: BUY 초기 선호 강화
     V = np.zeros(n_states)                    # Critic 가치함수
 
     def softmax_policy(state):
@@ -106,11 +108,11 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 상태: 2개 (0: 하락, 1: 상승)
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: 상수 epsilon-greedy
-    • 초기화: Q[:,1] = 0.01  (BUY 미세 선호, CASH 편향 해소)
+    • 초기화: Q[:,1] = 0.03  (BUY 선호, seed 116/338 CASH 고착 해소)
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
-    q_table[:, 1] = 0.01                         # BUY 초기값 = 0.01 (fee_rate 10배, CASH 편향 강제 해소)
+    q_table[:, 1] = 0.03                         # BUY 초기값 = 0.03 (fee_rate 30배, seed 116/338 CASH 고착 해소)
 
     for ep in range(train_episodes):
         state = _make_state_vanilla(returns[0], prices[0], emas[0])

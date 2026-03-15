@@ -936,9 +936,7 @@ _gauge_loading_set = False  # 로딩 표시 중복 방지 플래그
 # 멤버별 에쿼티 곡선 누적 버퍼 (팀 펀드 합성용)
 _member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock_names': []}
 
-master_pbar = None
-if total_charts > 0:
-    master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
+master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -1889,7 +1887,7 @@ border:1px solid rgba(128,128,128,0.3);'>
 
                 total_episodes_run += l_epi
                 rendered_count += 1
-                if master_pbar is not None:
+                if total_charts > 0:
                     pct = min(rendered_count / total_charts, 1.0)
                     master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct * 100)}%)")
 
