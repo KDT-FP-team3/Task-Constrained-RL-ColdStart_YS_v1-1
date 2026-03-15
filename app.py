@@ -1943,17 +1943,17 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                             # 스페이서: 통계 요약 섹션을 하단으로 이동
                             st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
                             st.markdown(f"""
-<div style='background:var(--secondary-background-color);padding:14px 16px;border-radius:10px;
-border:1px solid rgba(128,128,128,0.3);'>
-<h4 style='margin-top:0;margin-bottom:10px;font-weight:900;font-size:16px;'>Statistics Summary (Expected &amp; Risk)</h4>
-<div style='display:flex;gap:12px;'>
-  <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:10px;'>
+<div style='background:var(--secondary-background-color);padding:10px 6px 12px 6px;border-radius:10px;
+border:1px solid rgba(128,128,128,0.3);width:100%;box-sizing:border-box;'>
+<h4 style='margin-top:0;margin-bottom:8px;font-weight:900;font-size:15px;line-height:1.25;'>Statistics Summary<br>(Expected &amp; Risk)</h4>
+<div style='display:flex;gap:6px;'>
+  <div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:6px;'>
     <ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'>
     <li style='margin-bottom:8px;'><b style='color:#e05050;'>Vanilla Mean</b><br>{v_mean:.2f}% (σ={v_std:.2f}%)</li>
     <li style='margin-bottom:4px;'><b style='color:#e05050;'>Vanilla Range</b><br>{v_min:.2f}% ~ {v_max:.2f}%</li>
     </ul>
   </div>
-  <div style='flex:1;padding-left:2px;'>
+  <div style='flex:1;padding-left:4px;'>
     <ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'>
     <li style='margin-bottom:8px;'><b style='color:#4a90d9;'>STATIC Mean</b><br>{s_mean:.2f}% (σ={s_std:.2f}%)</li>
     <li style='margin-bottom:4px;'><b style='color:#4a90d9;'>STATIC Range</b><br>{s_min:.2f}% ~ {s_max:.2f}%</li>
