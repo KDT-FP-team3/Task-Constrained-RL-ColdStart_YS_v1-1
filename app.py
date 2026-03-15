@@ -358,6 +358,26 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
+        st.checkbox("", value=False, key="fb_chk_sim_min", label_visibility="collapsed")
+    with _wg:
+        global_sim_min = st.number_input(
+            "Sim Min Steps", min_value=5, max_value=200,
+            value=30, step=5, key="fb_sim_min",
+            help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
+        )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=False, key="fb_chk_sim_mult", label_visibility="collapsed")
+    with _wg:
+        global_sim_mult = st.number_input(
+            "Sim Step Mult.", min_value=1, max_value=30,
+            value=10, step=1, key="fb_sim_mult",
+            help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
+        )
+
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
         st.checkbox("", value=False, key="fb_chk_active", label_visibility="collapsed")
     with _wg:
         global_active_agents = st.multiselect(
@@ -411,6 +431,8 @@ if apply_all_clicked:
         "frame":     bool(st.session_state.get("fb_chk_frame",     False)),
         "seed":      bool(st.session_state.get("fb_chk_seed",      False)),
         "auto":      bool(st.session_state.get("fb_chk_auto",      False)),
+        "sim_min":   bool(st.session_state.get("fb_chk_sim_min",   False)),
+        "sim_mult":  bool(st.session_state.get("fb_chk_sim_mult",  False)),
         "active":    bool(st.session_state.get("fb_chk_active",    False)),
         "lr":        bool(st.session_state.get("fb_chk_lr",        False)),
         "gamma":     bool(st.session_state.get("fb_chk_gamma",     False)),
@@ -425,6 +447,8 @@ if apply_all_clicked:
         "frame_speed":     global_frame,
         "seed":            int(global_seed),
         "auto_runs":       int(global_auto_runs),
+        "sim_min":         int(global_sim_min),
+        "sim_mult":        int(global_sim_mult),
         "active_agents":   global_active_agents,
         "lr":              global_lr,
         "gamma":           global_gamma,
@@ -1327,7 +1351,14 @@ for m_config in sorted_modules:
                         update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
 
-                    n_iters = max(int(l_sim_min), int(l_auto_runs) * int(l_sim_mult))
+                    # fallback override for sim parameters
+                    _fb_p0 = st.session_state.get("fallback_params", {})
+                    _fb_c0 = _fb_p0.get("checked", {})
+                    _ufb0  = (st.session_state.get("stock_use_fallback", "") == "ALL"
+                              and hist_key not in st.session_state.get("stocks_reverted", set()))
+                    eff_sim_min  = int(_fb_p0.get("sim_min",  l_sim_min))  if _ufb0 and _fb_c0.get("sim_min")  else int(l_sim_min)
+                    eff_sim_mult = int(_fb_p0.get("sim_mult", l_sim_mult)) if _ufb0 and _fb_c0.get("sim_mult") else int(l_sim_mult)
+                    n_iters = max(eff_sim_min, int(l_auto_runs) * eff_sim_mult)
                     param_bounds = {
                         "lr":        (0.005, 0.1),
                         "gamma":     (0.85,  0.99),
@@ -1672,6 +1703,8 @@ for m_config in sorted_modules:
                     eff_seed      = fp["seed"]                                    if _fchk.get("seed")      else l_seed
                     eff_v_eps     = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")     else l_v_epsilon
                     eff_active_agents = fp.get("active_agents", ["Vanilla RL", "STATIC RL"]) if _fchk.get("active") else l_active_agents
+                    eff_sim_min  = fp.get("sim_min",  l_sim_min)  if _fchk.get("sim_min")  else l_sim_min
+                    eff_sim_mult = fp.get("sim_mult", l_sim_mult) if _fchk.get("sim_mult") else l_sim_mult
                     _fb_parts = []
                     if _fchk.get("lr"):        _fb_parts.append(f"LR={eff_lr:.3f}")
                     if _fchk.get("gamma"):     _fb_parts.append(f"γ={eff_gamma:.2f}")
@@ -1681,6 +1714,8 @@ for m_config in sorted_modules:
                     if _fchk.get("train_epi"): _fb_parts.append(f"Episodes={eff_train_epi}")
                     if _fchk.get("seed"):      _fb_parts.append(f"Seed={eff_seed}")
                     if _fchk.get("active"):    _fb_parts.append(f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'}")
+                    if _fchk.get("sim_min"):   _fb_parts.append(f"MinSteps={eff_sim_min}")
+                    if _fchk.get("sim_mult"):  _fb_parts.append(f"SimMult={eff_sim_mult}")
                     st.info(
                         "Fallback 파라미터 적용 중 (" + "  ".join(_fb_parts) + ")",
                         icon="ℹ️"
@@ -1691,6 +1726,8 @@ for m_config in sorted_modules:
                     )
                     eff_v_eps         = l_v_epsilon
                     eff_active_agents = l_active_agents
+                    eff_sim_min       = l_sim_min
+                    eff_sim_mult      = l_sim_mult
 
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
                 with st.spinner(f"Processing {stock_name}..."):
@@ -1929,15 +1966,24 @@ border:1px solid rgba(128,128,128,0.3);'>
                                     return 'color: #e05050; font-weight: bold;'
                                 return 'font-weight: bold;'
 
+                            _disp_df = df_h.rename(columns={
+                                "Vanilla Final (%)": "Vanilla\nFinal (%)",
+                                "STATIC Final (%)":  "STATIC\nFinal (%)",
+                                "Market Final (%)":  "Market\nFinal (%)",
+                            }).set_index("Trial")
                             st.dataframe(
-                                df_h.set_index("Trial").style.map(_color_neg).format(
-                                    {"Vanilla Final (%)": "{:.2f}", "STATIC Final (%)": "{:.2f}",
-                                     "Market Final (%)": "{:.2f}", "Seed": "{:.0f}"}
+                                _disp_df.style.map(_color_neg).format(
+                                    {"Vanilla\nFinal (%)": "{:.2f}", "STATIC\nFinal (%)": "{:.2f}",
+                                     "Market\nFinal (%)": "{:.2f}", "Seed": "{:.0f}"}
                                 )
                                 .set_properties(**{"text-align": "center"})
                                 .set_table_styles([{
                                     "selector": "th",
-                                    "props": [("text-align", "center")]
+                                    "props": [("text-align", "center"),
+                                              ("white-space", "pre-wrap"),
+                                              ("word-break", "break-word"),
+                                              ("min-width", "60px"),
+                                              ("max-width", "90px")]
                                 }]),
                                 height=300, use_container_width=True
                             )

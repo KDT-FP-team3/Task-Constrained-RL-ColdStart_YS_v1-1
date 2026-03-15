@@ -113,8 +113,10 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: epsilon annealing (2ε → ε — 초반 탐험 강화, 후반 설정값 유지)
     • 초기화: Q[:,1] = max(fee_rate×50, 0.05)  (fee 비례 BUY 선호, improve 4-5 검증)
-    • 훈련 후 상승 상태 Q[BUY] 하한 보정: max(Q[1,BUY], 0.002)
-      (correction으로 상승 상태 Q까지 음수 고착 방지 — 6종목 공통 안전망)
+    • 훈련 후 보정 — 상대 우위 하한 (improve 4-7):
+        Q[1,BUY] = max(Q[1,BUY], Q[1,CASH] + 0.001)
+        이유: Q[1,CASH]가 학습으로 높아지면 절대 하한(0.002)을 초과 → BUY 영구 패배
+             TSLA처럼 고변동성 종목에서 Q[1,CASH] 고착을 상대 우위로 극복
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
@@ -142,9 +144,9 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
             q_table[state, action] += lr * (td_target - q_table[state, action])
             state = next_state
 
-    # 훈련 후 보정: 상승 상태 Q[BUY] 하한 (correction 영구 고착 방지 — 6종목 공통)
-    # Q[1,BUY]가 음수가 되면 상승 신호에서도 CASH 선택 → 부분적 BUY 회복 보장
-    q_table[1, 1] = max(float(q_table[1, 1]), 0.002)
+    # 훈련 후 보정: 상승 상태 Q[BUY] 상대 우위 보장 (improve 4-7)
+    # Q[1,CASH]가 학습으로 높아져도 Q[1,BUY] ≥ Q[1,CASH]+0.001 → 고변동성(TSLA) 0% 고착 방지
+    q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.001)
 
     return q_table
 
