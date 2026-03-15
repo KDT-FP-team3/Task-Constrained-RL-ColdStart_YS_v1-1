@@ -807,7 +807,7 @@ def _make_trial_box_fig(df_h):
 
     fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
     fig.add_annotation(x=1.625, xref="x", y=avg_market,
-        text=f"<b>Market (Buy&Hold)<br>{avg_market:.2f}%</b>",
+        text=f"<b>Market<br>(Buy&Hold)<br>{avg_market:.2f}%</b>",
         showarrow=False, yshift=18, xanchor='center', align='center',
         font=dict(color="green", size=13, family="Arial Black"), bgcolor="rgba(0,0,0,0)")
 
@@ -1967,25 +1967,36 @@ border:1px solid rgba(128,128,128,0.3);'>
                                 return 'font-weight: bold;'
 
                             _disp_df = df_h.rename(columns={
-                                "Vanilla Final (%)": "Vanilla\nFinal (%)",
-                                "STATIC Final (%)":  "STATIC\nFinal (%)",
-                                "Market Final (%)":  "Market\nFinal (%)",
+                                "Vanilla Final (%)": "Vanilla<br>Final (%)",
+                                "STATIC Final (%)":  "STATIC<br>Final (%)",
+                                "Market Final (%)":  "Market<br>Final (%)",
                             }).set_index("Trial")
-                            st.dataframe(
-                                _disp_df.style.map(_color_neg).format(
-                                    {"Vanilla\nFinal (%)": "{:.2f}", "STATIC\nFinal (%)": "{:.2f}",
-                                     "Market\nFinal (%)": "{:.2f}", "Seed": "{:.0f}"}
-                                )
+                            _tbl_html = (
+                                _disp_df.style
+                                .map(_color_neg)
+                                .format({
+                                    "Vanilla<br>Final (%)": "{:.2f}",
+                                    "STATIC<br>Final (%)":  "{:.2f}",
+                                    "Market<br>Final (%)":  "{:.2f}",
+                                    "Seed": "{:.0f}"
+                                })
                                 .set_properties(**{"text-align": "center"})
-                                .set_table_styles([{
-                                    "selector": "th",
-                                    "props": [("text-align", "center"),
-                                              ("white-space", "pre-wrap"),
-                                              ("word-break", "break-word"),
-                                              ("min-width", "60px"),
-                                              ("max-width", "90px")]
-                                }]),
-                                height=300, use_container_width=True
+                                .set_table_styles([
+                                    {"selector": "th", "props": [
+                                        ("text-align", "center"),
+                                        ("vertical-align", "middle"),
+                                        ("padding", "4px 6px"),
+                                        ("font-size", "12px"),
+                                        ("line-height", "1.3"),
+                                    ]},
+                                    {"selector": "td", "props": [("padding", "3px 6px")]},
+                                    {"selector": "table", "props": [("width", "100%"), ("border-collapse", "collapse")]},
+                                ])
+                                .to_html(escape=False)
+                            )
+                            st.markdown(
+                                f'<div style="max-height:300px;overflow-y:auto;font-size:13px;">{_tbl_html}</div>',
+                                unsafe_allow_html=True
                             )
 
                 total_episodes_run += l_epi
