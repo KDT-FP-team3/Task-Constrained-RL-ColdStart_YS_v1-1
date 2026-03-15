@@ -10,5 +10,4 @@ __pycache__/
 # Streamlit Secrets
 .streamlit/secrets.toml
 
-memo.txt
 Logic.txt
