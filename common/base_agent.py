@@ -41,7 +41,7 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
 
     • 탐험: 상수 epsilon-greedy  (annealing 없음)
     • 초기화: fee_rate 비례 BUY 선호 (수수료가 높을수록 BUY 학습 난이도 증가 보정)
-    • 엔트로피 정규화: r_eff = r + 0.02·H(π)  [Buy&Hold 고착 방지, 정책 다양성 유지]
+    • 엔트로피 정규화: r_eff = r + 0.05·H(π)  [Buy&Hold 고착 방지, 정책 다양성 유지 — improve 4-8: 0.02→0.05]
     """
     n_states, n_actions = 4, 2
     theta = np.zeros((n_states, n_actions))
@@ -78,7 +78,7 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
             # 엔트로피 보상: 정책 다양성 유지 (Buy&Hold 고착 방지)
             entropy = -np.sum(probs * np.log(probs + 1e-10))
             # TD 오차 (advantage 근사) — 엔트로피 정규화 포함
-            td_error = (reward + 0.02 * entropy) + gamma * V[next_state] - V[state]
+            td_error = (reward + 0.05 * entropy) + gamma * V[next_state] - V[state]
 
             # Critic 업데이트
             V[state] += lr * td_error
@@ -113,10 +113,11 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: epsilon annealing (2ε → ε — 초반 탐험 강화, 후반 설정값 유지)
     • 초기화: Q[:,1] = max(fee_rate×50, 0.05)  (fee 비례 BUY 선호, improve 4-5 검증)
-    • 훈련 후 보정 — 상대 우위 하한 (improve 4-7):
-        Q[1,BUY] = max(Q[1,BUY], Q[1,CASH] + 0.001)
-        이유: Q[1,CASH]가 학습으로 높아지면 절대 하한(0.002)을 초과 → BUY 영구 패배
-             TSLA처럼 고변동성 종목에서 Q[1,CASH] 고착을 상대 우위로 극복
+    • 훈련 후 보정 — 전체 상태 상대 우위 하한 (improve 4-8):
+        Q[0,BUY] = max(Q[0,BUY], Q[0,CASH] + 0.001)  ← state=0(하락기) 추가
+        Q[1,BUY] = max(Q[1,BUY], Q[1,CASH] + 0.001)  ← state=1(상승기) 기존
+        이유: state=0에서 Q[0,CASH]가 높으면 OOS 첫날부터 CASH 고착 → 전 구간 음수
+             SPY/QQQ/NVDA 하락-시작 상태에서도 BUY 미세 우위 보장
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
@@ -144,8 +145,10 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
             q_table[state, action] += lr * (td_target - q_table[state, action])
             state = next_state
 
-    # 훈련 후 보정: 상승 상태 Q[BUY] 상대 우위 보장 (improve 4-7)
-    # Q[1,CASH]가 학습으로 높아져도 Q[1,BUY] ≥ Q[1,CASH]+0.001 → 고변동성(TSLA) 0% 고착 방지
+    # 훈련 후 보정: 전체 상태 Q[BUY] 상대 우위 보장 (improve 4-8)
+    # state=0(하락기)도 추가: OOS 첫날 state=0이면 Q[0,CASH]>Q[0,BUY] → 전 구간 CASH 고착
+    # → SPY/QQQ/NVDA 등 하락-시작 OOS에서 Vanilla 음수 고착 방지
+    q_table[0, 1] = max(float(q_table[0, 1]), float(q_table[0, 0]) + 0.001)
     q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.001)
 
     return q_table
