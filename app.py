@@ -1303,7 +1303,7 @@ for m_config in sorted_modules:
                         update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder, is_loading=True)
                         _gauge_loading_set = True
 
-                    n_iters = max(20, int(l_auto_runs) * 8)
+                    n_iters = max(30, int(l_auto_runs) * 10)
                     param_bounds = {
                         "lr":        (0.005, 0.1),
                         "gamma":     (0.85,  0.99),

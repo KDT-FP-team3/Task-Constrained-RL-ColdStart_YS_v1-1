@@ -117,7 +117,7 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
 
     for ep in range(train_episodes):
         state = _make_state_vanilla(returns[0], prices[0], emas[0])
-        prev_action = int(np.random.randint(0, 2))  # 랜덤 시작 포지션 (CASH 편향 해소)
+        prev_action = 1  # BUY 시작 고정 (CASH 편향 완전 제거)
 
         for t in range(1, n_days):
             if np.random.rand() < epsilon:
