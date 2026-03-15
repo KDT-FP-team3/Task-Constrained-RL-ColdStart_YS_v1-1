@@ -1863,8 +1863,8 @@ for m_config in sorted_modules:
                             st.plotly_chart(fig_bar, use_container_width=True,
                                             key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
-                            _td = "padding:3px 8px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);"
-                            _th = "padding:5px 8px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;background:var(--secondary-background-color);"
+                            _td = "padding:3px 3px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);"
+                            _th = "padding:5px 3px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;background:var(--secondary-background-color);"
                             _rows = ""
                             for _day, _r in df_log.iterrows():
                                 _va = _r["Vanilla Action"]
@@ -1971,6 +1971,7 @@ border:1px solid rgba(128,128,128,0.3);width:100%;box-sizing:border-box;'>
                                 "STATIC Final (%)":  "STATIC<br>Final (%)",
                                 "Market Final (%)":  "Market<br>Final (%)",
                             }).set_index("Trial")
+                            _disp_df.index.name = None
                             _tbl_html = (
                                 _disp_df.style
                                 .map(_color_neg)
@@ -1995,7 +1996,7 @@ border:1px solid rgba(128,128,128,0.3);width:100%;box-sizing:border-box;'>
                                 .to_html(escape=False)
                             )
                             st.markdown(
-                                f'<div style="max-height:300px;overflow-y:auto;font-size:13px;">{_tbl_html}</div>',
+                                f'<div style="max-height:300px;overflow-y:auto;font-size:13px;width:100%;box-sizing:border-box;">{_tbl_html}</div>',
                                 unsafe_allow_html=True
                             )
 
