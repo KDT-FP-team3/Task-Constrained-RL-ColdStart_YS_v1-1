@@ -112,6 +112,8 @@ if 'prev_final_contributions' not in st.session_state:
     st.session_state.prev_final_contributions = []
 if 'prev_episodes_run' not in st.session_state:
     st.session_state.prev_episodes_run = 0
+if 'master_pbar_pct' not in st.session_state:
+    st.session_state.master_pbar_pct = 0.0
 if 'stock_trial_history' not in st.session_state:
     st.session_state.stock_trial_history = {}  # key: f"{m_name}_{stock_name}" → list of trial dicts
 if 'fallback_params' not in st.session_state:
@@ -936,7 +938,9 @@ _gauge_loading_set = False  # 로딩 표시 중복 방지 플래그
 # 멤버별 에쿼티 곡선 누적 버퍼 (팀 펀드 합성용)
 _member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock_names': []}
 
-master_pbar = master_progress_placeholder.progress(0.0, text="Analyzing Agents...")
+_pct0 = st.session_state.master_pbar_pct
+_pct0_txt = f"Analyzing Agents... ({int(_pct0 * 100)}%)" if _pct0 > 0 else "Analyzing Agents..."
+master_pbar = master_progress_placeholder.progress(_pct0, text=_pct0_txt)
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -1889,6 +1893,7 @@ border:1px solid rgba(128,128,128,0.3);'>
                 rendered_count += 1
                 if total_charts > 0:
                     pct = min(rendered_count / total_charts, 1.0)
+                    st.session_state.master_pbar_pct = pct
                     master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct * 100)}%)")
 
                 mem_s_rets.append(s_final)
@@ -1928,7 +1933,8 @@ border:1px solid rgba(128,128,128,0.3);'>
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
 
 if final_contributions:
-    master_progress_placeholder.empty()
+    st.session_state.master_pbar_pct = 1.0
+    master_progress_placeholder.progress(1.0, text="Analyzing Agents... (100%)")
 
     # 첫 번째 데이터 도착 시 st.rerun() → 상단 container에 즉시 차트 표시
     _first_data = not bool(st.session_state.prev_final_contributions)
