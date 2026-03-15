@@ -40,12 +40,13 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
       Actor:    θ[s,a]  += lr · δ · ∇log π(a|s)
 
     • 탐험: 상수 epsilon-greedy  (annealing 없음)
-    • 초기화: theta = 0  (학습으로만 편향 형성)
+    • 초기화: fee_rate 비례 BUY 선호 (수수료가 높을수록 BUY 학습 난이도 증가 보정)
     """
     n_states, n_actions = 4, 2
     theta = np.zeros((n_states, n_actions))
-    theta[2, 1] = 0.1   # EMA 위+하락 상태: BUY 초기 선호 (이분화 해소)
-    theta[3, 1] = 0.2   # EMA 위+상승 상태: BUY 초기 선호 강화
+    theta[1, 1] = max(0.05, fee_rate * 30)   # EMA아래+상승: 미세 BUY 선호
+    theta[2, 1] = max(0.1,  fee_rate * 50)   # EMA위+하락:  BUY 선호 (이분화 해소)
+    theta[3, 1] = max(0.2,  fee_rate * 80)   # EMA위+상승:  BUY 선호 강화
     V = np.zeros(n_states)                    # Critic 가치함수
 
     def softmax_policy(state):
@@ -108,11 +109,11 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
     • 상태: 2개 (0: 하락, 1: 상승)
     • 행동: 2개 (0: CASH, 1: BUY)
     • 탐험: 상수 epsilon-greedy
-    • 초기화: Q[:,1] = 0.03  (BUY 선호, seed 116/338 CASH 고착 해소)
+    • 초기화: Q[:,1] = max(fee_rate×50, 0.05)  (fee 비례 BUY 선호, CASH 고착 해소)
     """
     n_states, n_actions = 2, 2
     q_table = np.zeros((n_states, n_actions))
-    q_table[:, 1] = 0.03                         # BUY 초기값 = 0.03 (fee_rate 30배, seed 116/338 CASH 고착 해소)
+    q_table[:, 1] = max(fee_rate * 50, 0.05)    # fee 비례 BUY 초기값 (최소 0.05)
 
     for ep in range(train_episodes):
         state = _make_state_vanilla(returns[0], prices[0], emas[0])
