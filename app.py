@@ -173,34 +173,54 @@ if 'roll_period_val' not in st.session_state:
 # 시뮬레이션 파라미터 영구 저장: config.py 재작성
 # ══════════════════════════════════════════════════════════════════════
 def _save_sim_params_to_config(m_config, stock_idx, new_params):
-    """시뮬레이션 최적 파라미터(lr/gamma/epsilon)를 해당 멤버의 config.py에 영구 저장.
-    episodes·seed는 현재 값을 유지하고, lr/gamma/epsilon만 덮어씁니다."""
+    """시뮬레이션 최적 파라미터를 해당 멤버의 config.py에 영구 저장.
+    lr/gamma/epsilon/v_epsilon은 new_params로 덮어쓰고,
+    episodes/train_episodes/seed/use_vol/roll_period는 현재 값 유지."""
     config_path = inspect.getfile(m_config)
     rl = {k: dict(v) for k, v in m_config.RL_PARAMS.items()}
 
     # 대상 종목 키 결정 (int 인덱스 또는 "default")
     target_key = stock_idx if stock_idx in rl else "default"
-    rl[target_key]["lr"]      = round(float(new_params["lr"]),      6)
-    rl[target_key]["gamma"]   = round(float(new_params["gamma"]),   6)
-    rl[target_key]["epsilon"] = round(float(new_params["epsilon"]),  6)
+    rl[target_key]["lr"]        = round(float(new_params["lr"]),        6)
+    rl[target_key]["gamma"]     = round(float(new_params["gamma"]),     6)
+    rl[target_key]["epsilon"]   = round(float(new_params["epsilon"]),   6)
+    rl[target_key]["v_epsilon"] = round(float(new_params["v_epsilon"]), 6)
+
+    # "default" 키도 동기화 (lr/gamma/epsilon/v_epsilon)
+    if target_key != "default" and "default" in rl:
+        rl["default"]["lr"]        = rl[target_key]["lr"]
+        rl["default"]["gamma"]     = rl[target_key]["gamma"]
+        rl["default"]["epsilon"]   = rl[target_key]["epsilon"]
+        rl["default"]["v_epsilon"] = rl[target_key]["v_epsilon"]
 
     # 종목명 주석용
     _tgt_name = STOCK_REGISTRY.get(m_config.TARGET_INDICES[0], {}).get("name", "")
+    _gap_str = (f"gap={new_params.get('gap', 0.0):.4f}, "
+                f"s_final={new_params.get('s_final', 0.0):.2f}%, "
+                f"v_final={new_params.get('v_final', 0.0):.2f}%")
 
     lines = [
         f'MEMBER_NAME = "{m_config.MEMBER_NAME}"\n',
         f'TARGET_INDICES = {m_config.TARGET_INDICES} # {_tgt_name}\n',
         '\n',
-        '# [파라미터 — Simulation 저장]\n',
+        f'# [파라미터 — Simulation 저장: {_gap_str}]\n',
         'RL_PARAMS = {\n',
     ]
     for k, v in rl.items():
         key_str = 'TARGET_INDICES[0]' if k != "default" else '"default"'
         lines.append(f'    {key_str}: {{\n')
         lines.append(
-            f'        "lr": {v["lr"]}, "gamma": {v["gamma"]}, "epsilon": {v["epsilon"]},\n'
+            f'        "lr": {v["lr"]}, "gamma": {v["gamma"]}, '
+            f'"epsilon": {v["epsilon"]}, "v_epsilon": {v["v_epsilon"]},\n'
         )
-        lines.append(f'        "episodes": {v["episodes"]}, "seed": {v["seed"]}\n')
+        lines.append(
+            f'        "episodes": {v["episodes"]}, '
+            f'"train_episodes": {v.get("train_episodes", 300)}, "seed": {v["seed"]},\n'
+        )
+        lines.append(
+            f'        "use_vol": {v.get("use_vol", False)}, '
+            f'"roll_period": {v.get("roll_period", None)}\n'
+        )
         lines.append('    },\n')
     lines.append('}\n')
 
@@ -339,7 +359,7 @@ revert_all_clicked = _sb_r2c2.button(
 )
 
 with st.sidebar.expander("Fund & Agent Settings", expanded=False):
-    st.markdown("<small><b>[P1] Team Fund 배분 설정</b></small>", unsafe_allow_html=True)
+    st.markdown("<div style='margin:0 0 2px 0'><small><b>[P1] Team Fund 배분 설정</b></small></div>", unsafe_allow_html=True)
     _fund_temp = st.slider(
         "Softmax Temperature (T)", 1.0, 5.0,
         float(st.session_state.fund_temperature), step=0.5,
@@ -355,8 +375,8 @@ with st.sidebar.expander("Fund & Agent Settings", expanded=False):
     ) / 100.0
     st.session_state.fund_max_weight = _fund_cap
 
-    st.markdown("---")
-    st.markdown("<small><b>[P3] 상태 공간 확장 — 변동성 신호</b></small>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:4px 0;border-color:rgba(128,128,128,0.3)'>", unsafe_allow_html=True)
+    st.markdown("<div style='margin:2px 0'><small><b>[P3] 상태 공간 확장 — 변동성 신호</b></small></div>", unsafe_allow_html=True)
     _use_vol = st.toggle(
         "8-State Mode (변동성 신호 추가)",
         value=st.session_state.use_vol_feature,
@@ -365,8 +385,8 @@ with st.sidebar.expander("Fund & Agent Settings", expanded=False):
     )
     st.session_state.use_vol_feature = _use_vol
 
-    st.markdown("---")
-    st.markdown("<small><b>[P4] Rolling Window 재학습</b></small>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:4px 0;border-color:rgba(128,128,128,0.3)'>", unsafe_allow_html=True)
+    st.markdown("<div style='margin:2px 0'><small><b>[P4] Rolling Window 재학습</b></small></div>", unsafe_allow_html=True)
     _roll_active = st.toggle(
         "Rolling Retrain (OOS 주기 재학습)",
         value=st.session_state.roll_period_active,
@@ -558,6 +578,15 @@ with st.container():
 # 차트+테이블 영역: sticky 컨테이너 밖, st.container()로 항상 안정 렌더
 summary_placeholder = st.container()
 
+# 대시보드 초기화 버튼 (우측 정렬)
+_dash_reset_col = st.columns([10, 1])[1]
+with _dash_reset_col:
+    if st.button("🗑 초기화", key="btn_reset_dashboard",
+                 help="포트폴리오 차트 및 누적 리턴 데이터를 초기화합니다."):
+        st.session_state.member_traces = {}
+        st.session_state.prev_final_contributions = []
+        st.rerun()
+
 # ==========================================
 # 2. 통합 대시보드 (Alpha 비교 + 팀 펀드 에쿼티)
 # ==========================================
@@ -611,11 +640,13 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     fig_profit = go.Figure()
     fig_profit.add_trace(go.Bar(
         x=df_contrib['Member_Bar_Label'], y=df_contrib['Vanilla_Profit'],
+        orientation='v',
         name="Vanilla RL", marker_color="#ff4b4b", opacity=0.7,
         text=df_contrib['Vanilla_Profit'].apply(lambda x: f"<b>{x:.2f}$</b>"), textposition='outside'
     ))
     fig_profit.add_trace(go.Bar(
         x=df_contrib['Member_Bar_Label'], y=df_contrib['Profit_Dollar'],
+        orientation='v',
         name="STATIC RL", marker_color="#2196f3",
         text=df_contrib['Profit_Dollar'].apply(lambda x: f"<b>{x:.2f}$</b>"), textposition='outside'
     ))
@@ -625,9 +656,9 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     _ypad = (_ymax - _ymin) * 0.28  # 라벨과 제목 사이 여백 확보
     fig_profit.update_layout(
         title="<b>Profit Comparison ($): Vanilla vs STATIC</b>", barmode='group',
-        height=350, margin=dict(l=0, r=0, t=75, b=10),
-        yaxis=dict(range=[_ymin - _ypad, _ymax + _ypad]),
-        xaxis=dict(tickangle=0, automargin=True),
+        height=380, margin=dict(l=0, r=0, t=75, b=60),
+        yaxis=dict(title="<b>Profit ($)</b>", range=[_ymin - _ypad, _ymax + _ypad]),
+        xaxis=dict(title="", tickangle=-30, automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="center", x=0.5)
     )
 
@@ -727,11 +758,19 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
                     bordercolor=tf_color, borderwidth=1, borderpad=5,
                     align="right", xanchor="right", yanchor="bottom"
                 )
+                # All Members Y축 범위: 팀펀드 포함 전체 데이터 기준
+                _am_vals = list(team_curve)
+                for _mn in member_names_sorted:
+                    _am_vals += list(member_traces_snap[_mn]['s_trace'][:min_len])
+                _am_ymin = min(0.0, float(np.min(_am_vals))) if _am_vals else 0.0
+                _am_ymax = max(float(np.max(_am_vals)), 1.0) * 1.12 if _am_vals else 10.0
+
                 fig_members.update_layout(
                     title=dict(text="<b>All Members: STATIC RL Cumulative Returns + Team Fund</b>",
                                font=dict(size=14)),
                     xaxis=dict(title="<b>Trading Days</b>", showgrid=True),
-                    yaxis=dict(title="<b>Cumulative Return (%)</b>", showgrid=True),
+                    yaxis=dict(title="<b>Cumulative Return (%)</b>", showgrid=True,
+                               range=[_am_ymin, _am_ymax]),
                     # 범례: 그래프 내부 좌측 상단
                     legend=dict(font=dict(size=10), orientation="v",
                                 yanchor="top", y=0.99, xanchor="left", x=0.01,
@@ -806,39 +845,47 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
     legend_size = 12
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=df.index, y=v_trace, mode='lines', name='<b>Vanilla RL</b>',
-        line=dict(color='#e05050', width=2, dash='solid')
-    ))
-    fig.add_trace(go.Scatter(
-        x=df.index, y=s_trace, mode='lines', name='<b>STATIC RL</b>',
-        line=dict(color='#4a90d9', width=2.5, dash='solid')
-    ))
-    fig.add_trace(go.Scatter(
-        x=df.index, y=real_ret_trace, mode='lines', name='<b>Market</b>',
-        line=dict(color='#2ecc71', width=1.8, dash='dot')
-    ))
 
-    # ── Ghost Lines (Optimal ✦) — 점선으로 최적해 투영 ──
+    # ── Ghost Lines 먼저 (배경) — 메인 라인보다 아래 레이어 ──
     if opt_v_trace is not None and len(opt_v_trace) > 0:
         fig.add_trace(go.Scatter(
             x=df.index[:len(opt_v_trace)], y=opt_v_trace,
             mode='lines', name='<b>Vanilla RL (Optimal ✦)</b>',
-            line=dict(color='#e05050', width=1.5, dash='dash'),
-            opacity=0.55
+            line=dict(color='#e05050', width=1.2, dash='dash'),
+            opacity=0.35
         ))
     if opt_s_trace is not None and len(opt_s_trace) > 0:
         fig.add_trace(go.Scatter(
             x=df.index[:len(opt_s_trace)], y=opt_s_trace,
             mode='lines', name='<b>STATIC RL (Optimal ✦)</b>',
-            line=dict(color='#4a90d9', width=1.5, dash='dash'),
-            opacity=0.55
+            line=dict(color='#4a90d9', width=1.2, dash='dash'),
+            opacity=0.35
         ))
+
+    # ── 메인 라인 나중에 (전경) — Ghost 위에 표시 ──
+    fig.add_trace(go.Scatter(
+        x=list(df.index), y=list(v_trace), mode='lines', name='<b>Vanilla RL</b>',
+        line=dict(color='#e05050', width=2, dash='dash')
+    ))
+    fig.add_trace(go.Scatter(
+        x=list(df.index), y=list(s_trace), mode='lines', name='<b>STATIC RL</b>',
+        line=dict(color='#4a90d9', width=3, dash='solid')
+    ))
+    fig.add_trace(go.Scatter(
+        x=list(df.index), y=list(real_ret_trace), mode='lines', name='<b>Market (Buy&Hold)</b>',
+        line=dict(color='#2ecc71', width=1.5, dash='dot')
+    ))
+
+    # Y축 범위: 메인 데이터 기준으로만 산출 (Ghost Line 제외 — 극단값 왜곡 방지)
+    _all_vals = list(s_trace) + list(v_trace) + list(real_ret_trace)
+    _y_min = min(0.0, float(np.min(_all_vals))) if _all_vals else 0.0
+    _y_max = max(float(np.max(_all_vals)), 1.0) * 1.15 if _all_vals else 10.0
 
     fig.update_layout(
         title=dict(text=f"<b>Cumulative Return Comparison ({stock_name})</b>", font=dict(size=title_size)),
         xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=axis_size)), showgrid=True),
-        yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=axis_size)), showgrid=True),
+        yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=axis_size)),
+                   showgrid=True, range=[_y_min, _y_max]),
         legend=dict(font=dict(size=legend_size), x=0.01, y=0.99,
                     bgcolor='rgba(128,128,128,0.15)', bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
@@ -857,15 +904,20 @@ def _make_trend_fig(df_h):
     s_max  = df_h['STATIC Final (%)'].max()
     s_min  = df_h['STATIC Final (%)'].min()
 
+    _t_min = int(df_h['Trial'].min())
+    _t_max = int(df_h['Trial'].max())
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['Vanilla Final (%)'],
         mode='lines+markers', name='<b>Vanilla Return</b>',
         line=dict(color='#e05050', width=2),
-        marker=dict(size=7, symbol='circle', color='#e05050')))
+        marker=dict(size=10, symbol='circle', color='#e05050',
+                    line=dict(color='white', width=1.5))))
     fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['STATIC Final (%)'],
         mode='lines+markers', name='<b>STATIC Return (Ours)</b>',
         line=dict(color='#4a90d9', width=2),
-        marker=dict(size=7, symbol='square', color='#4a90d9')))
+        marker=dict(size=10, symbol='square', color='#4a90d9',
+                    line=dict(color='white', width=1.5))))
 
     for y, dash, color, label, pos in [
         (v_mean, "solid",  "#e05050", "Vanilla Mean", "top right"),
@@ -881,7 +933,8 @@ def _make_trend_fig(df_h):
     fig.update_layout(
         title=dict(text="<b>Trial-by-Trial Return Progression & Stability</b>",
                    font=dict(size=20, family="Arial Black")),
-        xaxis=dict(title="<b>Trial Number</b>", tickmode='linear', dtick=1),
+        xaxis=dict(title="<b>Trial Number</b>", tickmode='linear', dtick=1,
+                   range=[_t_min - 0.5, _t_max + 0.5]),
         yaxis=dict(title="<b>Final Return (%)</b>"),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         height=320, margin=dict(t=45, b=25, l=40, r=80)
@@ -898,31 +951,42 @@ def _make_trial_box_fig(df_h):
     med_s      = df_h['STATIC Final (%)'].median()
     avg_market = df_h['Market Final (%)'].mean()
 
+    _n = len(df_h)
     fig = go.Figure()
-    fig.add_trace(go.Box(y=df_h['Vanilla Final (%)'], x0=1.0,
-        name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=3),
-        fillcolor='rgba(224,80,80,0.05)', boxmean=True, width=0.5))
-    fig.add_trace(go.Box(y=df_h['STATIC Final (%)'], x0=2.25,
-        name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=3),
-        fillcolor='rgba(74,144,217,0.05)', boxmean=True, width=0.5))
+    fig.add_trace(go.Box(
+        y=df_h['Vanilla Final (%)'],
+        x=['Vanilla RL'] * _n,
+        name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=2),
+        fillcolor='rgba(224,80,80,0.20)', boxmean=True, width=0.4,
+        boxpoints='all', jitter=0.4, pointpos=0,
+        marker=dict(color='#e05050', size=9, opacity=0.9,
+                    line=dict(color='white', width=1.5))))
+    fig.add_trace(go.Box(
+        y=df_h['STATIC Final (%)'],
+        x=['STATIC RL (Ours)'] * _n,
+        name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=2),
+        fillcolor='rgba(74,144,217,0.20)', boxmean=True, width=0.4,
+        boxpoints='all', jitter=0.4, pointpos=0,
+        marker=dict(color='#4a90d9', size=9, opacity=0.9,
+                    line=dict(color='white', width=1.5))))
 
-    fig.add_annotation(x=0.75, y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
-        showarrow=False, xshift=-4, yshift=8, xanchor='right',
+    fig.add_annotation(x='Vanilla RL', y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
+        showarrow=False, xshift=-50, yshift=8, xanchor='right',
         font=dict(color='#e05050', size=13, family="Arial Black"))
-    fig.add_annotation(x=0.75, y=med_v, text=f"<b>Median: {med_v:.2f}%</b>",
-        showarrow=False, xshift=-4, yshift=-8, xanchor='right',
+    fig.add_annotation(x='Vanilla RL', y=med_v, text=f"<b>Median: {med_v:.2f}%</b>",
+        showarrow=False, xshift=-50, yshift=-8, xanchor='right',
         font=dict(color='#e05050', size=13, family="Arial Black"))
-    fig.add_annotation(x=2.5, y=med_s, text=f"<b>Median: {med_s:.2f}%</b>",
-        showarrow=False, xshift=4, yshift=8, xanchor='left',
+    fig.add_annotation(x='STATIC RL (Ours)', y=med_s, text=f"<b>Median: {med_s:.2f}%</b>",
+        showarrow=False, xshift=50, yshift=8, xanchor='left',
         font=dict(color='#4a90d9', size=13, family="Arial Black"))
-    fig.add_annotation(x=2.5, y=s_mean, text=f"<b>Mean: {s_mean:.2f}%</b>",
-        showarrow=False, xshift=4, yshift=-8, xanchor='left',
+    fig.add_annotation(x='STATIC RL (Ours)', y=s_mean, text=f"<b>Mean: {s_mean:.2f}%</b>",
+        showarrow=False, xshift=50, yshift=-8, xanchor='left',
         font=dict(color='#4a90d9', size=13, family="Arial Black"))
 
     fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
-    fig.add_annotation(x=1.625, xref="x", y=avg_market,
-        text=f"<b>Market<br>(Buy&Hold)<br>{avg_market:.2f}%</b>",
-        showarrow=False, yshift=18, xanchor='center', align='center',
+    fig.add_annotation(x='Vanilla RL', xref="x", y=avg_market,
+        text=f"<b>Market (Buy&Hold) {avg_market:.2f}%</b>",
+        showarrow=False, yshift=18, xanchor='left',
         font=dict(color="green", size=13, family="Arial Black"), bgcolor="rgba(0,0,0,0)")
 
     _box_vals = (list(df_h['Vanilla Final (%)']) + list(df_h['STATIC Final (%)'])
@@ -939,8 +1003,6 @@ def _make_trial_box_fig(df_h):
         ),
         xaxis=dict(
             title=dict(text="<b>Performance Metrics</b>", font=dict(size=18, family="Arial Black")),
-            tickmode='array', tickvals=[1.0, 2.25],
-            ticktext=['<b>Vanilla RL</b>', '<b>STATIC RL (Ours)</b>'], range=[0.3, 2.9]
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         height=510, margin=dict(t=100, b=50, l=50, r=50),
@@ -1427,6 +1489,18 @@ for m_config in sorted_modules:
                         st.session_state.sim_all_queue = []
                         st.session_state.interrupt_requested = True
                 run_prog_slot = run_prog_col.empty()
+                if _has_confirm:
+                    _pending = st.session_state.get(_sim_confirm_key, {})
+                    run_prog_col.markdown(
+                        f"**저장 예정 파라미터**  \n"
+                        f"lr=`{_pending.get('lr', 0):.4f}` · "
+                        f"γ=`{_pending.get('gamma', 0):.4f}` · "
+                        f"ε=`{_pending.get('epsilon', 0):.4f}` · "
+                        f"v_ε=`{_pending.get('v_epsilon', 0):.4f}`  \n"
+                        f"STATIC: `{_pending.get('s_final', 0):+.2f}%` · "
+                        f"Vanilla: `{_pending.get('v_final', 0):+.2f}%` · "
+                        f"Gap: `{_pending.get('gap', 0):+.4f}`"
+                    )
 
                 # ── 이전 Simulation 결과 배너 ──
                 if hist_key in st.session_state.sim_result:
@@ -1568,6 +1642,8 @@ for m_config in sorted_modules:
                     # Ghost 미리보기용 best traces 저장
                     _best_v_trace = None
                     _best_s_trace = None
+                    _best_mkt_trace = None
+                    _best_df_stock = None
 
                     # 페이즈 경계 (탐험→수렴)
                     _explore_end = max(6, n_iters // 4)
@@ -1594,10 +1670,10 @@ for m_config in sorted_modules:
 
                         # ─ 복수 시드로 평가 → 평균 gap (STATIC vs Market) ─
                         _gaps, _s_list, _v_list, _m_list = [], [], [], []
-                        _tmp_v_trace, _tmp_s_trace = None, None
+                        _tmp_v_trace, _tmp_s_trace, _tmp_mkt_trace, _tmp_df_cand = None, None, None, None
                         for _eseed in _eval_seeds:
                             try:
-                                _, _vt, _s_tr, _mkt_tr, _, _, _, _, _ = get_rl_data(
+                                _df_tmp, _vt, _s_tr, _mkt_tr, _, _, _, _, _ = get_rl_data(
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
@@ -1620,6 +1696,8 @@ for m_config in sorted_modules:
                                 if _tmp_v_trace is None:
                                     _tmp_v_trace = _vt
                                     _tmp_s_trace = _s_tr
+                                    _tmp_mkt_trace = _mkt_tr
+                                    _tmp_df_cand = _df_tmp
 
                         _iter_gap_val = None
                         if _gaps:
@@ -1637,6 +1715,8 @@ for m_config in sorted_modules:
                                 best = candidate.copy()
                                 _best_v_trace = _tmp_v_trace
                                 _best_s_trace = _tmp_s_trace
+                                _best_mkt_trace = _tmp_mkt_trace
+                                _best_df_stock = _tmp_df_cand
 
                         gap_history.append(best["gap"])
                         gap_iter_history.append(_iter_gap_val)
@@ -1819,6 +1899,16 @@ for m_config in sorted_modules:
                                     )
                                     st.plotly_chart(_fig_gap, use_container_width=True,
                                                     key=f"gap_chart_{m_name}_{stock_name}_{_i}")
+
+                            # ── 실시간 누적 수익률 비교 차트 ──
+                            if (_best_v_trace is not None and _best_s_trace is not None
+                                    and _best_mkt_trace is not None and _best_df_stock is not None):
+                                _fig_rt = _make_cumulative_fig(
+                                    stock_name, _best_df_stock,
+                                    _best_v_trace, _best_s_trace, _best_mkt_trace,
+                                )
+                                st.plotly_chart(_fig_rt, use_container_width=True,
+                                                key=f"rt_curve_{m_name}_{stock_name}_{_i}")
 
                     # ─ 완료: Ghost 데이터 저장 ─
                     best["found"] = best["gap"] >= 1.0
@@ -2029,6 +2119,7 @@ for m_config in sorted_modules:
                             for _, row in action_counts.iterrows():
                                 fig_bar.add_trace(go.Bar(
                                     x=[row["Action"]], y=[row["Count"]],
+                                    orientation='v',
                                     name=row["Action"],
                                     marker_color=_bar_colors.get(row["Action"], "#888"),
                                     width=0.35,
@@ -2047,8 +2138,8 @@ for m_config in sorted_modules:
                             st.plotly_chart(fig_bar, use_container_width=True,
                                             key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
-                            _td = "padding:3px 3px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);background:var(--background-color);"
-                            _th = "padding:5px 3px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;background:var(--secondary-background-color);"
+                            _td = "padding:3px 3px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);background:var(--background-color,#0e1117);position:relative;z-index:1;"
+                            _th = "padding:5px 3px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;z-index:10;background:var(--secondary-background-color,#1e1e2e);"
                             _rows = ""
                             for _day, _r in df_log.iterrows():
                                 _va = _r["Vanilla Action"]
@@ -2182,6 +2273,8 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 </div>""", unsafe_allow_html=True)
                     else:
                         df_h = pd.DataFrame(trials)
+                        # Trial > 0 필터: 이전 세션 잔류 데이터(음수/0) 제거
+                        df_h = df_h[df_h['Trial'] > 0].reset_index(drop=True)
                         v_mean = df_h['Vanilla Final (%)'].mean()
                         s_mean = df_h['STATIC Final (%)'].mean()
                         v_std  = df_h['Vanilla Final (%)'].std(ddof=0) if len(df_h) > 1 else 0.0

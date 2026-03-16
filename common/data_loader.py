@@ -1,6 +1,7 @@
 import yfinance as yf
 import streamlit as st
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FuturesTimeout
 
 # interval → 요청 기간 매핑 (yfinance API 제한 반영)
 # 15m: 최대 60일 / 1h: 최대 730일(~2y) / 1d~: 무제한
@@ -11,6 +12,21 @@ _INTERVAL_PERIOD = {
     "1wk": "10y",
     "1mo": "10y",
 }
+
+_FETCH_TIMEOUT = 15  # yfinance 요청 최대 대기 시간 (초)
+
+
+def _run_with_timeout(fn, timeout=_FETCH_TIMEOUT):
+    """ThreadPoolExecutor로 fn()을 실행하고 timeout 초 내 결과 반환. 초과 시 None."""
+    with ThreadPoolExecutor(max_workers=1) as _ex:
+        _fut = _ex.submit(fn)
+        try:
+            return _fut.result(timeout=timeout)
+        except _FuturesTimeout:
+            return None
+        except Exception:
+            return None
+
 
 def _postprocess_df(df: pd.DataFrame, interval: str = "1d") -> pd.DataFrame:
     """공통 후처리: 컬럼 정리 → EMA_10 → Daily_Return → dropna"""
@@ -42,14 +58,18 @@ def fetch_stock_data(ticker, period="2y", interval="1d"):
     yfinance를 사용하여 주가 데이터를 로드합니다.
     interval: '15m' | '1h' | '1d' | '1wk' | '1mo'
     yf.download → yf.Ticker().history() 순으로 폴백하여 안정성 강화.
+    각 요청은 _FETCH_TIMEOUT 초 내 응답이 없으면 포기하고 폴백으로 전환.
     """
     _period = _INTERVAL_PERIOD.get(interval, period)
 
-    # ── 1차 시도: yf.download (progress=False 로 콘솔 출력 억제) ──
+    # ── 1차 시도: yf.download ──
     try:
-        df = yf.download(ticker, period=_period, interval=interval, progress=False, auto_adjust=True)
-        if not df.empty:
-            result = _postprocess_df(df, interval)
+        _raw = _run_with_timeout(
+            lambda: yf.download(ticker, period=_period, interval=interval,
+                                progress=False, auto_adjust=True)
+        )
+        if _raw is not None and not _raw.empty:
+            result = _postprocess_df(_raw, interval)
             if not result.empty:
                 return result
     except Exception:
@@ -57,9 +77,12 @@ def fetch_stock_data(ticker, period="2y", interval="1d"):
 
     # ── 2차 시도 (폴백): yf.Ticker().history() ──
     try:
-        df = yf.Ticker(ticker).history(period=_period, interval=interval, auto_adjust=True)
-        if not df.empty:
-            result = _postprocess_df(df, interval)
+        _raw2 = _run_with_timeout(
+            lambda: yf.Ticker(ticker).history(period=_period, interval=interval,
+                                              auto_adjust=True)
+        )
+        if _raw2 is not None and not _raw2.empty:
+            result = _postprocess_df(_raw2, interval)
             if not result.empty:
                 return result
     except Exception as e:

@@ -2,3 +2,33 @@ https://task-constrained-rl-coldstartysv1-1-azz5zvkw3zr9he2qcx2pze.streamlit.app
 
 
 # Chainers Master Fund — Task-Constrained RL Cold-Start
+
+
+로컬 실행 방법을 간단히 안내해 드립니다.
+
+1. 환경 준비 (최초 1회)
+
+cd c:\yssong\KDT-FT-team3-Chainers\Task-Constrained-RL-ColdStart_YS_v1-1
+pip install -r requirements.txt
+2. 앱 실행
+
+streamlit run app.py
+브라우저가 자동으로 열리거나 http://localhost:8501 접속
+
+3. 시뮬레이션 절차
+멤버 탭 선택 → 시뮬레이션할 종목 탭 클릭
+파라미터 설정 (상단 6개 슬라이더)
+Trading Days: 500, Train Episodes: 300
+Auto Run Count: 10, Sim Min Steps: 30, Sim Step Mult: 10
+Simulation 버튼 클릭 → PG Actor-Critic 파라미터 탐색 시작
+완료 후 → "저장 및 반영" 버튼이 나타남
+오른쪽에 저장 예정 파라미터 미리보기 표시
+저장 및 반영 클릭 → 해당 멤버의 config.py 자동 업데이트
+4. 저장 후 배포
+
+git add members/member_N/config.py
+git commit -m "optimize member N params"
+git push
+웹 앱은 업데이트된 config.py를 기본값으로 사용하므로, 시뮬레이션 없이도 최적 파라미터로 Run Evaluation 가능합니다.
+
+참고: GPU가 있어도 현재 코드는 CPU 기반 Q-Learning/Actor-Critic이라 GPU 가속은 없습니다. 빠른 테스트가 필요하면 Train Episodes를 100으로 낮추세요.

@@ -1,23 +1,16 @@
 MEMBER_NAME = "Member 6"
-TARGET_INDICES = [8] # 005930.KS (Samsung Electronics)
+TARGET_INDICES = [8] # 삼성전자
 
-# [파라미터 설정 근거 — 초기값, 미최적화]
-# ▶ episodes=500: 일봉 500일(약 2년) 기준, 워크포워드 70%(350일) 학습
-# ▶ lr=0.0227: 낮은 학습률 — 국내 대형주 과적합 방지 (KOSPI 기반)
-# ▶ gamma=0.9569: 높은 할인율 — 국내 시장 장기 추세 반영
-# ▶ epsilon=0.1386: STATIC ε — 4상태 탐험율 초기값
-# ▶ v_epsilon=0.1762: Vanilla ε — 독립 탐험율 초기값
-# ▶ seed=42: 기본값 (Simulation으로 최적화 필요)
-# ※ 삼성전자: 국내 대형주, KOSPI 유사 특성 — Simulation 후 파라미터 갱신 권장
+# [파라미터 — Simulation 저장: gap=-999.0000, s_final=0.00%, v_final=0.00%]
 RL_PARAMS = {
     TARGET_INDICES[0]: {
-        "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
-        "use_vol": False, "roll_period": None   # [P3/P4] 삼성전자: 초기값 — Simulation 최적화 후 갱신 권장
-    },
-    "default": {
-        "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
+        "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
         "episodes": 500, "train_episodes": 300, "seed": 42,
         "use_vol": False, "roll_period": None
-    }
+    },
+    "default": {
+        "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None
+    },
 }
