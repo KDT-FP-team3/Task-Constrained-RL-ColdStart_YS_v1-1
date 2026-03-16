@@ -562,11 +562,25 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     distinct_colors = px.colors.qualitative.Plotly
     df_contrib['Unique_Color'] = [distinct_colors[i % len(distinct_colors)] for i in range(len(df_contrib))]
 
+    # 도넛 범례: "Member N (종목명)", 바 차트 x축: "Member N<br>(종목명)"
+    if 'Stocks' in df_contrib.columns:
+        df_contrib['Member_Donut_Label'] = df_contrib.apply(
+            lambda r: f"{r['Member']} ({r['Stocks']})"
+            if str(r.get('Stocks', '-')) not in ('', '-') else r['Member'], axis=1
+        )
+        df_contrib['Member_Bar_Label'] = df_contrib.apply(
+            lambda r: f"{r['Member']}<br>({r['Stocks']})"
+            if str(r.get('Stocks', '-')) not in ('', '-') else r['Member'], axis=1
+        )
+    else:
+        df_contrib['Member_Donut_Label'] = df_contrib['Member']
+        df_contrib['Member_Bar_Label']   = df_contrib['Member']
+
     total_fund_capital = df_contrib['Final_Capital'].sum()
 
     # (1) 도넛 그래프
     fig_donut = go.Figure(go.Pie(
-        labels=df_contrib['Member'], values=df_contrib['Final_Capital'], hole=0.6,
+        labels=df_contrib['Member_Donut_Label'], values=df_contrib['Final_Capital'], hole=0.6,
         marker=dict(colors=df_contrib['Unique_Color']), textinfo="percent",
         texttemplate="<b>%{percent}</b><br><b>%{value:.2f}$</b>",
         textfont=dict(size=15, weight='bold'), sort=False
@@ -587,12 +601,12 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     # (2) 수익 바 차트 (Vanilla vs STATIC 비교)
     fig_profit = go.Figure()
     fig_profit.add_trace(go.Bar(
-        x=df_contrib['Member'], y=df_contrib['Vanilla_Profit'],
+        x=df_contrib['Member_Bar_Label'], y=df_contrib['Vanilla_Profit'],
         name="Vanilla RL", marker_color="#ff4b4b", opacity=0.7,
         text=df_contrib['Vanilla_Profit'].apply(lambda x: f"<b>{x:.2f}$</b>"), textposition='outside'
     ))
     fig_profit.add_trace(go.Bar(
-        x=df_contrib['Member'], y=df_contrib['Profit_Dollar'],
+        x=df_contrib['Member_Bar_Label'], y=df_contrib['Profit_Dollar'],
         name="STATIC RL", marker_color="#2196f3",
         text=df_contrib['Profit_Dollar'].apply(lambda x: f"<b>{x:.2f}$</b>"), textposition='outside'
     ))
@@ -602,8 +616,9 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
     _ypad = (_ymax - _ymin) * 0.28  # 라벨과 제목 사이 여백 확보
     fig_profit.update_layout(
         title="<b>Profit Comparison ($): Vanilla vs STATIC</b>", barmode='group',
-        height=350, margin=dict(l=0, r=0, t=75, b=0),
+        height=350, margin=dict(l=0, r=0, t=75, b=10),
         yaxis=dict(range=[_ymin - _ypad, _ymax + _ypad]),
+        xaxis=dict(tickangle=0, automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="center", x=0.5)
     )
 
