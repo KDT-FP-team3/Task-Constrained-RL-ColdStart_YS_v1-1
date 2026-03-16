@@ -1343,7 +1343,7 @@ for m_config in sorted_modules:
                     with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1,
-                            value=10, step=1,
+                            value=5, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             # [RL] Run Evaluation 자동 반복 횟수: 다양한 시드로 성과 분포 측정.
                             # trial_seed = base_seed + run_i × 37 (소수 간격으로 시드 독립성 확보).
@@ -1404,7 +1404,7 @@ for m_config in sorted_modules:
                     with hc5:
                         l_sim_min = st.number_input(
                             "Sim Min Steps", min_value=5, max_value=200,
-                            value=30, step=5,
+                            value=20, step=5,
                             key=f"sim_min_{m_name}_{stock_name}",
                             # [RL] PG Optimizer 최소 탐색 step 수.
                             # n_iters = max(Sim_Min, Auto_Run × Sim_Mult).
@@ -1414,7 +1414,7 @@ for m_config in sorted_modules:
                     with hc6:
                         l_sim_mult = st.number_input(
                             "Sim Step Mult.", min_value=1, max_value=30,
-                            value=10, step=1,
+                            value=6, step=1,
                             key=f"sim_mult_{m_name}_{stock_name}",
                             # [RL] Auto Run Count 배수로 총 탐색 step 결정.
                             # AutoRun=6, Mult=10 → n_iters=60 step.
