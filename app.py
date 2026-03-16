@@ -603,7 +603,8 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             text=f"Total Capital<br><b>{total_fund_capital:.2f} $</b>",
             x=0.5, y=0.5, font_size=18, showarrow=False
         )],
-        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4, traceorder="normal")
+        legend=dict(orientation="v", yanchor="top", y=1.0, xanchor="left", x=-0.4, traceorder="normal",
+                    bgcolor='rgba(0,0,0,0)')
     )
 
     # (2) 수익 바 차트 (Vanilla vs STATIC 비교)
