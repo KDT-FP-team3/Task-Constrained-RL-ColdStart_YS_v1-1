@@ -222,8 +222,9 @@ if 'interrupt_requested' not in st.session_state:
 # ==========================================
 def update_load_bar(episodes_run, placeholder, is_loading=False):
     """컬러 그라디언트 수평 막대로 Real-time Load 표시.
-    50% 시 파랑→주황, 100% 시 파랑→주황→빨강 (background-size 트릭으로 비율 반영)."""
-    max_load = 6000
+    50% 시 파랑→주황, 100% 시 파랑→주황→빨강 (background-size 트릭으로 비율 반영).
+    max_load = 6멤버 × 500에피소드 = 3000 (전체 실행 완료 시 100%)."""
+    max_load = 3000  # 6 members × 500 episodes
     load_pct = min(episodes_run / max_load, 1.0)
     pct_val = load_pct * 100
     bar_width = max(pct_val, 1.5) if pct_val > 0 else 0
