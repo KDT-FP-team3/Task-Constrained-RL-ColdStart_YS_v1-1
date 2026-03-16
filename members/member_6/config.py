@@ -1,23 +1,23 @@
 MEMBER_NAME = "Member 6"
-TARGET_INDICES = [5] # TSLA
+TARGET_INDICES = [8] # 005930.KS (Samsung Electronics)
 
-# [파라미터 설정 근거 — improve 4-9 기준 최적값]
+# [파라미터 설정 근거 — 초기값, 미최적화]
 # ▶ episodes=500: 일봉 500일(약 2년) 기준, 워크포워드 70%(350일) 학습
-# ▶ lr=0.0364: PG Actor-Critic Optimizer 탐색 최적값 (improve 4-8 코드 기반 재탐색)
-# ▶ gamma=0.8873: 단기 할인율 — TSLA 단기 변동성 필터링
-# ▶ epsilon=0.1283: STATIC ε — 4상태 탐험율 (entropy_coeff=0.05 환경)
-# ▶ v_epsilon=0.0842: Vanilla ε — 독립 최적화 (Q-floor margin 0.005 환경)
-# ▶ seed=99: TSLA(최고 변동성) — 단순하고 넓은 탐험 범위 확보
-# ▶ 결과: STATIC +138.94% vs Market +139.16% (Alpha +38.74%)
+# ▶ lr=0.0227: 낮은 학습률 — 국내 대형주 과적합 방지 (KOSPI 기반)
+# ▶ gamma=0.9569: 높은 할인율 — 국내 시장 장기 추세 반영
+# ▶ epsilon=0.1386: STATIC ε — 4상태 탐험율 초기값
+# ▶ v_epsilon=0.1762: Vanilla ε — 독립 탐험율 초기값
+# ▶ seed=42: 기본값 (Simulation으로 최적화 필요)
+# ※ 삼성전자: 국내 대형주, KOSPI 유사 특성 — Simulation 후 파라미터 갱신 권장
 RL_PARAMS = {
     TARGET_INDICES[0]: {
-        "lr": 0.0364, "gamma": 0.8873, "epsilon": 0.1283, "v_epsilon": 0.0842,
-        "episodes": 500, "train_episodes": 300, "seed": 99,
-        "use_vol": True, "roll_period": 20     # [P3/P4] TSLA: 고변동성 — 8상태 유리, 재학습 주기 완만
+        "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None   # [P3/P4] 삼성전자: 초기값 — Simulation 최적화 후 갱신 권장
     },
     "default": {
-        "lr": 0.0364, "gamma": 0.8873, "epsilon": 0.1283, "v_epsilon": 0.0842,
+        "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
         "episodes": 500, "train_episodes": 300, "seed": 42,
-        "use_vol": True, "roll_period": 20
+        "use_vol": False, "roll_period": None
     }
 }

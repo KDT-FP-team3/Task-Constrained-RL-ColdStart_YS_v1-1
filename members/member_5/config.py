@@ -1,23 +1,23 @@
 MEMBER_NAME = "Member 5"
-TARGET_INDICES = [4] # NVDA
+TARGET_INDICES = [6] # GOOGL
 
-# [파라미터 설정 근거 — improve 4-7 기준 최적값]
+# [파라미터 설정 근거 — 초기값, 미최적화]
 # ▶ episodes=500: 일봉 500일(약 2년) 기준, 워크포워드 70%(350일) 학습
-# ▶ lr=0.0497: 중간 학습률 — NVDA 반도체 고변동성 환경에서 안정 수렴
-# ▶ gamma=0.9183: 중간 할인율 — 반도체 사이클 단기~중기 반영
-# ▶ epsilon=0.0443: 낮은 STATIC ε — 수렴된 정책에서 정밀 탐험
-# ▶ v_epsilon=0.1055: Vanilla ε — 독립 최적화
-# ▶ seed=314: NVDA(반도체 고변동성) — 수학적 다양성(π 근사), 고변동 환경 적합
-# ▶ 결과: STATIC +195.85% vs Market +105.33% (Alpha +120.01%) — 최고 성과 종목
+# ▶ lr=0.0500: 중간 학습률 — 대형 기술주 안정 수렴 초기값 (QQQ 기반)
+# ▶ gamma=0.9100: 중간 할인율 — 기술주 중기 추세 반영
+# ▶ epsilon=0.1000: STATIC ε — 4상태 탐험율 초기값
+# ▶ v_epsilon=0.1000: Vanilla ε — 독립 탐험율 초기값
+# ▶ seed=42: 기본값 (Simulation으로 최적화 필요)
+# ※ GOOGL: 대형 기술주, QQQ 유사 특성 — Simulation 후 파라미터 갱신 권장
 RL_PARAMS = {
     TARGET_INDICES[0]: {
-        "lr": 0.0497, "gamma": 0.9183, "epsilon": 0.0443, "v_epsilon": 0.1055,
-        "episodes": 500, "train_episodes": 300, "seed": 314,
-        "use_vol": True, "roll_period": 15     # [P3/P4] NVDA: 고변동성 — 8상태+빈번 재학습 유리
+        "lr": 0.0500, "gamma": 0.9100, "epsilon": 0.1000, "v_epsilon": 0.1000,
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None   # [P3/P4] GOOGL: 초기값 — Simulation 최적화 후 갱신 권장
     },
     "default": {
-        "lr": 0.0497, "gamma": 0.9183, "epsilon": 0.0443, "v_epsilon": 0.1055,
+        "lr": 0.0500, "gamma": 0.9100, "epsilon": 0.1000, "v_epsilon": 0.1000,
         "episodes": 500, "train_episodes": 300, "seed": 42,
-        "use_vol": True, "roll_period": 15
+        "use_vol": False, "roll_period": None
     }
 }
