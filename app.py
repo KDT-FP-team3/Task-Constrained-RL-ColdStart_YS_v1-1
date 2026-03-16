@@ -297,17 +297,7 @@ def _render_master_pbar_html(pct, placeholder=None):
     return html
 
 
-_ss_reset_col, _ss_title_col = st.sidebar.columns([1, 3])
-with _ss_reset_col:
-    st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
-    if st.button("🗑 초기화", key="btn_reset_dashboard",
-                 help="포트폴리오 차트 및 누적 리턴 데이터를 초기화합니다."):
-        st.session_state.member_traces = {}
-        st.session_state.prev_final_contributions = []
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
-with _ss_title_col:
-    st.markdown("### System Status")
+st.sidebar.markdown("### System Status")
 # ── 실행 환경 배지 ──────────────────────────────
 _env_icon  = "☁️ Cloud" if _IS_CLOUD else "🖥️ Local"
 _gpu_icon  = f"⚡ GPU ({_CUDA_DEVICE})" if _HAS_CUDA else "🔲 CPU"
@@ -351,11 +341,11 @@ if _sb_stop:
     st.session_state.sim_auto_save = False
     st.session_state.interrupt_requested = True
 
-# ── 2행: [🔁 All 적용] [↩ 되돌리기] ──
+# ── 2행: [🔁 All 적용] [↩ 되돌리기] [🗑 초기화] ──
 _fb_active = st.session_state.stock_use_fallback == "ALL"
 _fb_label  = "✅ Fallback 적용 중" if _fb_active else "적용"
 _has_prev  = bool(st.session_state.fallback_prev_state)
-_sb_r2c1, _sb_r2c2 = st.sidebar.columns([3, 2])
+_sb_r2c1, _sb_r2c2, _sb_r2c3 = st.sidebar.columns([3, 2, 2])
 apply_all_clicked = _sb_r2c1.button(
     _fb_label, key="sidebar_apply_all", type="primary",
     use_container_width=True,
@@ -367,6 +357,12 @@ revert_all_clicked = _sb_r2c2.button(
     disabled=not _has_prev,
     help="All 적용 이전 상태로 모든 파라미터를 복원합니다"
 )
+if _sb_r2c3.button("🗑 초기화", key="btn_reset_dashboard",
+                   use_container_width=True,
+                   help="포트폴리오 차트 및 누적 리턴 데이터를 초기화합니다."):
+    st.session_state.member_traces = {}
+    st.session_state.prev_final_contributions = []
+    st.rerun()
 
 with st.sidebar.expander("Fund & Agent Settings", expanded=False):
     st.markdown("<div style='margin:0 0 2px 0'><small><b>[P1] Team Fund 배분 설정</b></small></div>", unsafe_allow_html=True)
