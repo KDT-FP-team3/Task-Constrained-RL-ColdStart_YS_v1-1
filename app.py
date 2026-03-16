@@ -2047,7 +2047,7 @@ for m_config in sorted_modules:
                             st.plotly_chart(fig_bar, use_container_width=True,
                                             key=f"bar_{m_name}_{stock_name}")
                         with tbl_col:
-                            _td = "padding:3px 3px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);"
+                            _td = "padding:3px 3px;text-align:right;font-weight:bold;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.1);background:var(--background-color);"
                             _th = "padding:5px 3px;text-align:right;font-size:12px;border-bottom:2px solid rgba(128,128,128,0.4);position:sticky;top:0;background:var(--secondary-background-color);"
                             _rows = ""
                             for _day, _r in df_log.iterrows():
@@ -2070,6 +2070,7 @@ for m_config in sorted_modules:
                                 )
                             st.markdown(
                                 f"<div style='max-height:253px;overflow-y:auto;"
+                                f"background:var(--background-color);"
                                 f"border:1px solid rgba(128,128,128,0.3);border-radius:4px;'>"
                                 f"<table style='width:100%;border-collapse:collapse;'>"
                                 f"<thead><tr>"
