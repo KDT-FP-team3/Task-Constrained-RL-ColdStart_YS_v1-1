@@ -234,6 +234,24 @@ def update_load_bar(episodes_run, placeholder, is_loading=False):
             unsafe_allow_html=True
         )
 
+def _render_master_pbar_html(pct, placeholder=None):
+    """Analyzing Agents 진행률 바를 커스텀 HTML로 렌더링 (CSS injection 없이 즉시 색상 적용)."""
+    bar_pct = min(int(pct * 100), 100)
+    bar_color = "#AAFF00" if pct >= 1.0 else "#1C83E1"
+    html = (
+        f"<div style='margin-bottom:4px;font-size:13px;font-weight:600;"
+        f"color:rgba(210,210,210,0.95);'>Analyzing Agents... ({bar_pct}%)</div>"
+        f"<div style='background:rgba(50,50,60,0.6);border-radius:5px;height:14px;"
+        f"width:100%;overflow:hidden;border:1px solid rgba(120,120,140,0.3);'>"
+        f"<div style='height:100%;width:{bar_pct}%;border-radius:5px;"
+        f"background:{bar_color};transition:width 0.3s ease;'></div>"
+        f"</div>"
+    )
+    if placeholder is not None:
+        placeholder.markdown(html, unsafe_allow_html=True)
+    return html
+
+
 st.sidebar.markdown("### System Status")
 # ── 실행 환경 배지 ──────────────────────────────
 _env_icon  = "☁️ Cloud" if _IS_CLOUD else "🖥️ Local"
@@ -242,13 +260,8 @@ st.sidebar.caption(f"{_env_icon} &nbsp;|&nbsp; {_gpu_icon}")
 # ─────────────────────────────────────────────────
 master_progress_placeholder = st.sidebar.empty()
 gauge_placeholder = st.sidebar.empty()
-_pbar_css_ph = st.sidebar.empty()  # 100% 완료 시 녹색 하이라이트 주입용
-_GREEN_PBAR_CSS = """<style>
-section[data-testid="stSidebar"] div[data-testid="stProgress"] div[role="progressbar"] > div {
-    background-color: #AAFF00 !important;
-}
-</style>"""
 # 스크립트 재실행 시 즉시 이전 값으로 렌더링 → 공백(사라짐) 방지
+_render_master_pbar_html(st.session_state.master_pbar_pct, master_progress_placeholder)
 update_load_bar(st.session_state.prev_episodes_run, gauge_placeholder)
 
 st.sidebar.markdown("---")
@@ -1005,12 +1018,8 @@ _gauge_loading_set = False  # 로딩 표시 중복 방지 플래그
 _member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock_names': []}
 
 _pct0 = st.session_state.master_pbar_pct
-_pct0_txt = f"Analyzing Agents... ({int(_pct0 * 100)}%)"
-master_pbar = master_progress_placeholder.progress(_pct0, text=_pct0_txt)
-if _pct0 >= 1.0:
-    _pbar_css_ph.markdown(_GREEN_PBAR_CSS, unsafe_allow_html=True)
-else:
-    _pbar_css_ph.empty()
+_render_master_pbar_html(_pct0, master_progress_placeholder)
+master_pbar = master_progress_placeholder
 
 st.markdown("### Portfolio Managers (Independent RL Labs)")
 
@@ -2025,7 +2034,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                 if total_charts > 0:
                     pct = min(rendered_count / total_charts, 1.0)
                     st.session_state.master_pbar_pct = pct
-                    master_pbar.progress(pct, text=f"Analyzing Agents... ({int(pct * 100)}%)")
+                    _render_master_pbar_html(pct, master_pbar)
 
                 mem_s_rets.append(s_final)
                 mem_v_rets.append(v_final)
@@ -2065,8 +2074,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 
 if final_contributions:
     st.session_state.master_pbar_pct = 1.0
-    master_progress_placeholder.progress(1.0, text="Analyzing Agents... (100%)")
-    _pbar_css_ph.markdown(_GREEN_PBAR_CSS, unsafe_allow_html=True)
+    _render_master_pbar_html(1.0, master_progress_placeholder)
 
     # 첫 번째 데이터 도착 시 st.rerun() → 상단 container에 즉시 차트 표시
     _first_data = not bool(st.session_state.prev_final_contributions)
