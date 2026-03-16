@@ -419,7 +419,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_train_epi", label_visibility="collapsed")
     with _wg:
         global_train_episodes = st.slider(
-            "Train Episodes", 10, 500, 300,
+            "Train Episodes", 10, 500, 100,
             key="fb_train_epi",
             help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
         )
@@ -451,7 +451,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_min = st.number_input(
             "Sim Min Steps", min_value=5, max_value=200,
-            value=30, step=5, key="fb_sim_min",
+            value=10, step=5, key="fb_sim_min",
             help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
         )
 
@@ -461,7 +461,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_mult = st.number_input(
             "Sim Step Mult.", min_value=1, max_value=30,
-            value=10, step=1, key="fb_sim_mult",
+            value=3, step=1, key="fb_sim_mult",
             help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
         )
 
@@ -1254,9 +1254,9 @@ for m_config in sorted_modules:
                             help="시장 데이터 봉 수 (n_bars). 첫 70%=학습, 전체=평가(워크포워드). 일봉 500≈2년."
                         )
                     with sc1b:
-                        _train_epi_val = int(p_settings.get("train_episodes", 300))
+                        _train_epi_val = int(p_settings.get("train_episodes", 100))
                         if _IS_CLOUD:
-                            _train_epi_val = min(_train_epi_val, 300)  # 클라우드 부하 제한
+                            _train_epi_val = min(_train_epi_val, 100)  # 클라우드 부하 제한
                         l_train_epi = st.slider(
                             "Train Episodes", 10, 500, _train_epi_val,
                             key=f"train_epi_{m_name}_{stock_name}",
@@ -1284,7 +1284,7 @@ for m_config in sorted_modules:
                     with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1,
-                            value=15, step=1,
+                            value=3, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             # [RL] Run Evaluation 자동 반복 횟수: 다양한 시드로 성과 분포 측정.
                             # trial_seed = base_seed + run_i × 37 (소수 간격으로 시드 독립성 확보).
@@ -1345,7 +1345,7 @@ for m_config in sorted_modules:
                     with hc5:
                         l_sim_min = st.number_input(
                             "Sim Min Steps", min_value=5, max_value=200,
-                            value=30, step=5,
+                            value=10, step=5,
                             key=f"sim_min_{m_name}_{stock_name}",
                             # [RL] PG Optimizer 최소 탐색 step 수.
                             # n_iters = max(Sim_Min, Auto_Run × Sim_Mult).
@@ -1355,7 +1355,7 @@ for m_config in sorted_modules:
                     with hc6:
                         l_sim_mult = st.number_input(
                             "Sim Step Mult.", min_value=1, max_value=30,
-                            value=10, step=1,
+                            value=3, step=1,
                             key=f"sim_mult_{m_name}_{stock_name}",
                             # [RL] Auto Run Count 배수로 총 탐색 step 결정.
                             # AutoRun=6, Mult=10 → n_iters=60 step.
