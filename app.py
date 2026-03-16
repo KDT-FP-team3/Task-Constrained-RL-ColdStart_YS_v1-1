@@ -297,9 +297,7 @@ def _render_master_pbar_html(pct, placeholder=None):
     return html
 
 
-_ss_title_col, _ss_reset_col = st.sidebar.columns([3, 1])
-with _ss_title_col:
-    st.markdown("### System Status")
+_ss_reset_col, _ss_title_col = st.sidebar.columns([1, 3])
 with _ss_reset_col:
     st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
     if st.button("🗑 초기화", key="btn_reset_dashboard",
@@ -308,6 +306,8 @@ with _ss_reset_col:
         st.session_state.prev_final_contributions = []
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
+with _ss_title_col:
+    st.markdown("### System Status")
 # ── 실행 환경 배지 ──────────────────────────────
 _env_icon  = "☁️ Cloud" if _IS_CLOUD else "🖥️ Local"
 _gpu_icon  = f"⚡ GPU ({_CUDA_DEVICE})" if _HAS_CUDA else "🔲 CPU"
