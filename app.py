@@ -156,7 +156,7 @@ if 'member_traces' not in st.session_state:
 if 'fund_temperature' not in st.session_state:
     st.session_state.fund_temperature = 1.0   # Softmax 온도 (높을수록 균등 배분)
 if 'fund_max_weight' not in st.session_state:
-    st.session_state.fund_max_weight = 1.0    # 단일 종목 최대 비중 (1.0 = 무제한)
+    st.session_state.fund_max_weight = 0.40   # 단일 종목 최대 비중 (1.0 = 무제한)
 # [P2] 학습된 정책 캐시 (State Analysis Dashboard용)
 if 'policy_cache' not in st.session_state:
     st.session_state.policy_cache = {}
@@ -419,7 +419,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_train_epi", label_visibility="collapsed")
     with _wg:
         global_train_episodes = st.slider(
-            "Train Episodes", 10, 500, 100,
+            "Train Episodes", 10, 500, 300,
             key="fb_train_epi",
             help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
         )
@@ -1254,9 +1254,9 @@ for m_config in sorted_modules:
                             help="시장 데이터 봉 수 (n_bars). 첫 70%=학습, 전체=평가(워크포워드). 일봉 500≈2년."
                         )
                     with sc1b:
-                        _train_epi_val = int(p_settings.get("train_episodes", 100))
+                        _train_epi_val = int(p_settings.get("train_episodes", 300))
                         if _IS_CLOUD:
-                            _train_epi_val = min(_train_epi_val, 100)  # 클라우드 부하 제한
+                            _train_epi_val = min(_train_epi_val, 300)  # 클라우드 부하 제한
                         l_train_epi = st.slider(
                             "Train Episodes", 10, 500, _train_epi_val,
                             key=f"train_epi_{m_name}_{stock_name}",
@@ -1284,7 +1284,7 @@ for m_config in sorted_modules:
                     with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1,
-                            value=(3 if _IS_CLOUD else 6), step=1,
+                            value=15, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             # [RL] Run Evaluation 자동 반복 횟수: 다양한 시드로 성과 분포 측정.
                             # trial_seed = base_seed + run_i × 37 (소수 간격으로 시드 독립성 확보).
