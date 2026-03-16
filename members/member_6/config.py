@@ -5,12 +5,12 @@ TARGET_INDICES = [8] # 삼성전자
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": False, "roll_period": None
     },
     "default": {
         "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": False, "roll_period": None
     },
 }

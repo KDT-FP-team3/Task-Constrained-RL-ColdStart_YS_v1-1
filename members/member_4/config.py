@@ -5,12 +5,12 @@ TARGET_INDICES = [3] # KOSDAQ 지수
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
-        "episodes": 500, "train_episodes": 300, "seed": 777,
+        "episodes": 300, "train_episodes": 150, "seed": 777,
         "use_vol": False, "roll_period": None
     },
     "default": {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": False, "roll_period": None
     },
 }
