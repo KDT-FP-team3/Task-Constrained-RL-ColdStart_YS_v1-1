@@ -28,6 +28,10 @@ def _postprocess_df(df: pd.DataFrame, interval: str = "1d") -> pd.DataFrame:
         df.index = pd.to_datetime(df.index).date
     df['EMA_10'] = df['Close'].ewm(span=10, adjust=False).mean()
     df['Daily_Return'] = df['Close'].pct_change().fillna(0)
+    # [P3] 변동성 신호: 10봉 Rolling 표준편차 (데이터 부족 구간은 expanding으로 보완)
+    _std_rolling = df['Daily_Return'].rolling(10).std()
+    _std_expand  = df['Daily_Return'].expanding().std()
+    df['Rolling_Std'] = _std_rolling.where(_std_rolling.notna(), _std_expand).fillna(0.0)
     df = df.dropna()
     return df
 

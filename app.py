@@ -152,6 +152,23 @@ if 'ghost_data' not in st.session_state:
 if 'member_traces' not in st.session_state:
     st.session_state.member_traces = {}
     # key: member_name → {'s_trace': np.array, 'dates': index, 'stocks': list[str]}
+# [P1] Team Fund 배분 설정
+if 'fund_temperature' not in st.session_state:
+    st.session_state.fund_temperature = 1.0   # Softmax 온도 (높을수록 균등 배분)
+if 'fund_max_weight' not in st.session_state:
+    st.session_state.fund_max_weight = 1.0    # 단일 종목 최대 비중 (1.0 = 무제한)
+# [P2] 학습된 정책 캐시 (State Analysis Dashboard용)
+if 'policy_cache' not in st.session_state:
+    st.session_state.policy_cache = {}
+    # key: f"{m_name}_{stock_name}" → {'theta': np.array, 'q_table': np.array, 'n_states': int}
+# [P3] 변동성 상태 신호 활성화
+if 'use_vol_feature' not in st.session_state:
+    st.session_state.use_vol_feature = False  # True: 8상태 (변동성 포함), False: 4상태 (기본)
+# [P4] Rolling Window 재학습 설정
+if 'roll_period_active' not in st.session_state:
+    st.session_state.roll_period_active = False  # True: OOS 주기 재학습 활성화
+if 'roll_period_val' not in st.session_state:
+    st.session_state.roll_period_val = 20        # 재학습 주기 (봉 수)
 # ══════════════════════════════════════════════════════════════════════
 # 시뮬레이션 파라미터 영구 저장: config.py 재작성
 # ══════════════════════════════════════════════════════════════════════
@@ -312,6 +329,51 @@ revert_all_clicked = _sb_r2c2.button(
     disabled=not _has_prev,
     help="All 적용 이전 상태로 모든 파라미터를 복원합니다"
 )
+
+with st.sidebar.expander("Fund & Agent Settings", expanded=False):
+    st.markdown("<small><b>[P1] Team Fund 배분 설정</b></small>", unsafe_allow_html=True)
+    _fund_temp = st.slider(
+        "Softmax Temperature (T)", 1.0, 5.0,
+        float(st.session_state.fund_temperature), step=0.5,
+        key="sb_fund_temp",
+        help="낮을수록 성과 우수 종목 집중 / 높을수록 균등 배분 (T=5.0 ≈ 1/N)"
+    )
+    st.session_state.fund_temperature = _fund_temp
+    _fund_cap = st.slider(
+        "Max Single Weight (%)", 10, 100,
+        int(st.session_state.fund_max_weight * 100), step=5,
+        key="sb_fund_cap",
+        help="단일 종목 최대 비중 상한 (100% = 무제한, 30% = 분산 강제)"
+    ) / 100.0
+    st.session_state.fund_max_weight = _fund_cap
+
+    st.markdown("---")
+    st.markdown("<small><b>[P3] 상태 공간 확장 — 변동성 신호</b></small>", unsafe_allow_html=True)
+    _use_vol = st.toggle(
+        "8-State Mode (변동성 신호 추가)",
+        value=st.session_state.use_vol_feature,
+        key="sb_use_vol",
+        help="ON: 4상태→8상태 (Rolling_Std 이분 신호 추가). 기존 파라미터 최적화 재탐색 권장."
+    )
+    st.session_state.use_vol_feature = _use_vol
+
+    st.markdown("---")
+    st.markdown("<small><b>[P4] Rolling Window 재학습</b></small>", unsafe_allow_html=True)
+    _roll_active = st.toggle(
+        "Rolling Retrain (OOS 주기 재학습)",
+        value=st.session_state.roll_period_active,
+        key="sb_roll_active",
+        help="ON: OOS 구간에서 roll_period 봉마다 최근 데이터로 재학습. STATIC RL 전용."
+    )
+    st.session_state.roll_period_active = _roll_active
+    if _roll_active:
+        _roll_val = st.number_input(
+            "Roll Period (봉)", min_value=5, max_value=100,
+            value=int(st.session_state.roll_period_val), step=5,
+            key="sb_roll_val",
+            help="OOS 구간에서 매 N봉마다 재학습 (예: 20 = 약 1개월 일봉)"
+        )
+        st.session_state.roll_period_val = int(_roll_val)
 
 with st.sidebar.expander("Fallback Parameters", expanded=False):
     st.markdown("<small><b>System Parameters &nbsp;—&nbsp; ☑ 체크한 항목만 일괄 적용</b></small>", unsafe_allow_html=True)
@@ -586,7 +648,16 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             scores_map = {row['Member']: row['Avg_Return'] / (1.0 + abs(row['Avg_MDD']))
                           for _, row in df_contrib.iterrows()}
             scores_arr = np.array([scores_map.get(mn, 0.0) for mn in member_names_sorted], dtype=float)
-            weights_arr = calculate_softmax_weights(scores_arr, temperature=1.0)
+            # [P1] session_state의 온도·비중상한 사용 (구: temperature=1.0 하드코딩)
+            _T   = float(st.session_state.get('fund_temperature', 1.0))
+            _cap = float(st.session_state.get('fund_max_weight',  1.0))
+            weights_arr = calculate_softmax_weights(scores_arr, temperature=_T)
+            # [P1] Weight Cap: 클리핑 후 재정규화 (cap<1.0 일 때만 적용)
+            if _cap < 1.0:
+                weights_arr = np.minimum(weights_arr, _cap)
+                _wsum = weights_arr.sum()
+                if _wsum > 0:
+                    weights_arr /= _wsum
 
             traces_list = [member_traces_snap[mn]['s_trace'] for mn in member_names_sorted]
             min_len = min(len(t) for t in traces_list)
@@ -855,24 +926,48 @@ def _make_trial_box_fig(df_h):
     return fig
 
 
-def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d"):
-    """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그를 반환.
-    n_bars        : 데이터 봉 수 (Trading Days — 시장 데이터 크기)
-    train_episodes: RL 학습 반복 횟수 (Episodes — 훈련 데이터 재사용 횟수)
-    v_epsilon     : Vanilla RL 전용 탐험율. None이면 epsilon과 동일하게 사용.
-    fee_rate      : 왕복 거래 수수료율 (CASH→BUY 진입 시 1회 부과).
-    interval      : yfinance interval ('15m'|'1h'|'1d'|'1wk'|'1mo')"""
+def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d",
+                use_vol=False, roll_period=None):
+    """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그 + 학습된 정책을 반환.
+
+    Parameters (신규)
+    ─────────────────
+    use_vol     : [P3] True이면 8상태 변동성 신호 활성화 (Rolling_Std 컬럼 필요).
+    roll_period : [P4] OOS 구간 재학습 주기 (봉 수). None이면 기존 동작.
+
+    Returns (9개 — 기존 7개 + s_theta, v_qtable)
+    ──────────────────────────────────────────────
+    df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable
+      s_theta  : STATIC RL 학습된 theta (n_states × 2). [P2] State Analysis용.
+      v_qtable : Vanilla RL 학습된 Q-table (2 × 2).     [P2] State Analysis용.
+    """
     df_full = fetch_stock_data(ticker, interval=interval)
     if df_full.empty or len(df_full) < 10:
-        return None, None, None, None, 0.0, [], []
+        return None, None, None, None, 0.0, [], [], None, None
     df = df_full.tail(n_bars).copy()
     real_ret_trace = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-    _v_eps = v_epsilon if v_epsilon is not None else epsilon
-    _v_train_epi = max(train_episodes * 2, 200)  # improve 4-3: Vanilla 2× 학습 (CASH 편향 해소)
-    v_trace, v_log = run_rl_simulation_with_log(df, lr, gamma, _v_eps, episodes=_v_train_epi,  use_static=False, seed=seed, fee_rate=fee_rate)
-    s_trace, s_log = run_rl_simulation_with_log(df, lr, gamma, epsilon,  episodes=train_episodes, use_static=True,  seed=seed, fee_rate=fee_rate)
+    _v_eps       = v_epsilon if v_epsilon is not None else epsilon
+    _v_train_epi = max(train_episodes * 2, 200)  # improve 4-3: Vanilla 2× 학습
+
+    # [P3] 변동성 신호: use_vol=True이면 df의 Rolling_Std 컬럼 자동 전달
+    # vol_threshold=None → run_rl_simulation_with_log 내부에서 훈련 구간 중위수 자동 산출
+    _vols_arr = df['Rolling_Std'].values if (use_vol and 'Rolling_Std' in df.columns) else None
+
+    # [P2] return_policy=True → theta, q_table 반환 (Explainable RL 시각화용)
+    v_trace, v_log, v_qtable = run_rl_simulation_with_log(
+        df, lr, gamma, _v_eps, episodes=_v_train_epi,
+        use_static=False, seed=seed, fee_rate=fee_rate,
+        return_policy=True
+    )
+    s_trace, s_log, s_theta = run_rl_simulation_with_log(
+        df, lr, gamma, epsilon, episodes=train_episodes,
+        use_static=True, seed=seed, fee_rate=fee_rate,
+        vols=_vols_arr, vol_threshold=None,
+        roll_period=roll_period,
+        return_policy=True
+    )
     s_mdd = calculate_mdd(s_trace)
-    return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log
+    return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable
 
 # --- 포트폴리오 리포트: 항상 렌더 (st.container() 기반) ---
 # st.container()는 st.empty()와 달리 복잡한 레이아웃(columns 등)을 안정적으로 표시
@@ -1357,7 +1452,7 @@ for m_config in sorted_modules:
                                 text=f"Running trial {run_i + 1} / {n_runs}  (seed={trial_seed})"
                             )
                             try:
-                                _, vt, s_tr, mkt, _, _, _ = get_rl_data(
+                                _, vt, s_tr, mkt, _, _, _, _, _ = get_rl_data(
                                     ticker, l_lr, l_gamma, l_epsilon, l_epi, l_train_epi, trial_seed,
                                     v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval
                                 )
@@ -1469,7 +1564,7 @@ for m_config in sorted_modules:
                         _tmp_v_trace, _tmp_s_trace = None, None
                         for _eseed in _eval_seeds:
                             try:
-                                _, _vt, _s_tr, _mkt_tr, _, _, _ = get_rl_data(
+                                _, _vt, _s_tr, _mkt_tr, _, _, _, _, _ = get_rl_data(
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
@@ -1776,11 +1871,23 @@ for m_config in sorted_modules:
                     eff_sim_mult      = l_sim_mult
 
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
+                # [P3] 변동성 신호, [P4] Rolling 재학습 — session_state에서 전달
+                _use_vol_now    = bool(st.session_state.get('use_vol_feature', False))
+                _roll_period_now = (int(st.session_state.get('roll_period_val', 20))
+                                    if st.session_state.get('roll_period_active', False) else None)
                 with st.spinner(f"Processing {stock_name}..."):
-                    df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log = get_rl_data(
+                    df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable = get_rl_data(
                         ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_train_epi, eff_seed,
-                        v_epsilon=eff_v_eps, fee_rate=fee_rate, interval=l_interval
+                        v_epsilon=eff_v_eps, fee_rate=fee_rate, interval=l_interval,
+                        use_vol=_use_vol_now, roll_period=_roll_period_now
                     )
+                # [P2] 학습된 정책 캐시 저장 (State Analysis Dashboard용)
+                if s_theta is not None or v_qtable is not None:
+                    st.session_state.policy_cache[hist_key] = {
+                        'theta':    s_theta,
+                        'q_table':  v_qtable,
+                        'n_states': s_theta.shape[0] if s_theta is not None else 4
+                    }
 
                 if df_stock is None:
                     st.warning(f"데이터를 불러올 수 없습니다: {stock_name}")
@@ -1945,6 +2052,87 @@ for m_config in sorted_modules:
                                 f"</table></div>",
                                 unsafe_allow_html=True
                             )
+
+                    # ── [P2] State Policy Analysis (Explainable RL) ──────────
+                    _pcache = st.session_state.policy_cache.get(hist_key)
+                    if _pcache is not None:
+                        with st.expander("State Policy Analysis (Explainable RL)", expanded=False):
+                            _theta_c   = _pcache.get('theta')
+                            _qtable_c  = _pcache.get('q_table')
+                            _ns        = _pcache.get('n_states', 4)
+
+                            _s4_labels = [
+                                "S0: 하락+EMA아래", "S1: 상승+EMA아래",
+                                "S2: 하락+EMA위",   "S3: 상승+EMA위"
+                            ]
+                            _s8_labels = _s4_labels + [
+                                "S4: 하락+EMA아래+고변동", "S5: 상승+EMA아래+고변동",
+                                "S6: 하락+EMA위+고변동",   "S7: 상승+EMA위+고변동"
+                            ]
+                            _state_labels = _s8_labels if _ns == 8 else _s4_labels
+
+                            pol_c1, pol_c2 = st.columns(2)
+
+                            # STATIC RL: 각 상태별 P(BUY|s)
+                            if _theta_c is not None:
+                                with pol_c1:
+                                    st.markdown("**STATIC RL — P(BUY|state)**")
+                                    _buy_probs = []
+                                    for _s in range(_ns):
+                                        _logits = _theta_c[_s]
+                                        _emax   = np.exp(np.clip(_logits - _logits.max(), -30, 30))
+                                        _buy_probs.append(float(_emax[1] / (_emax.sum() + 1e-10)))
+                                    _fig_pol = go.Figure(go.Bar(
+                                        x=_buy_probs,
+                                        y=_state_labels[:_ns],
+                                        orientation='h',
+                                        marker_color=[
+                                            f"rgba(74,144,217,{max(0.3, p)})" for p in _buy_probs
+                                        ],
+                                        text=[f"{p:.1%}" for p in _buy_probs],
+                                        textposition='outside'
+                                    ))
+                                    _fig_pol.update_layout(
+                                        height=200 + _ns * 22,
+                                        xaxis=dict(range=[0, 1.15], tickformat='.0%',
+                                                   showgrid=True, title="P(BUY)"),
+                                        yaxis=dict(autorange='reversed'),
+                                        plot_bgcolor='rgba(0,0,0,0)',
+                                        paper_bgcolor='rgba(0,0,0,0)',
+                                        margin=dict(t=10, b=20, l=5, r=30),
+                                        showlegend=False
+                                    )
+                                    st.plotly_chart(_fig_pol, use_container_width=True,
+                                                    key=f"pol_s_{m_name}_{stock_name}")
+
+                            # Vanilla RL: Q[s,BUY] - Q[s,CASH] Advantage
+                            if _qtable_c is not None:
+                                with pol_c2:
+                                    st.markdown("**Vanilla RL — Q Advantage (BUY-CASH)**")
+                                    _adv = [float(_qtable_c[s, 1] - _qtable_c[s, 0])
+                                            for s in range(2)]
+                                    _fig_q = go.Figure(go.Bar(
+                                        x=_adv,
+                                        y=["S0: 하락", "S1: 상승"],
+                                        orientation='h',
+                                        marker_color=[
+                                            "#4a90d9" if a >= 0 else "#e05050" for a in _adv
+                                        ],
+                                        text=[f"{a:+.4f}" for a in _adv],
+                                        textposition='outside'
+                                    ))
+                                    _fig_q.update_layout(
+                                        height=180,
+                                        xaxis=dict(title="Q(BUY) - Q(CASH)", showgrid=True,
+                                                   zeroline=True, zerolinecolor='rgba(180,180,180,0.5)'),
+                                        yaxis=dict(autorange='reversed'),
+                                        plot_bgcolor='rgba(0,0,0,0)',
+                                        paper_bgcolor='rgba(0,0,0,0)',
+                                        margin=dict(t=10, b=20, l=5, r=50),
+                                        showlegend=False
+                                    )
+                                    st.plotly_chart(_fig_q, use_container_width=True,
+                                                    key=f"pol_v_{m_name}_{stock_name}")
 
                 # ══════════════════════════════════════════
                 # 오른쪽: Trial History Statistical Analysis
