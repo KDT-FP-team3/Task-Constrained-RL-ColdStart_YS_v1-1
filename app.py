@@ -245,7 +245,7 @@ gauge_placeholder = st.sidebar.empty()
 _pbar_css_ph = st.sidebar.empty()  # 100% 완료 시 녹색 하이라이트 주입용
 _GREEN_PBAR_CSS = """<style>
 section[data-testid="stSidebar"] div[data-testid="stProgress"] div[role="progressbar"] > div {
-    background-color: #44dd44 !important;
+    background-color: #AAFF00 !important;
 }
 </style>"""
 # 스크립트 재실행 시 즉시 이전 값으로 렌더링 → 공백(사라짐) 방지
@@ -1005,7 +1005,7 @@ _gauge_loading_set = False  # 로딩 표시 중복 방지 플래그
 _member_trace_buf = {}   # member_name → {'traces': [], 'dates': index, 'stock_names': []}
 
 _pct0 = st.session_state.master_pbar_pct
-_pct0_txt = f"Analyzing Agents... ({int(_pct0 * 100)}%)" if _pct0 > 0 else "Analyzing Agents..."
+_pct0_txt = f"Analyzing Agents... ({int(_pct0 * 100)}%)"
 master_pbar = master_progress_placeholder.progress(_pct0, text=_pct0_txt)
 if _pct0 >= 1.0:
     _pbar_css_ph.markdown(_GREEN_PBAR_CSS, unsafe_allow_html=True)
