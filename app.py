@@ -410,7 +410,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     _fb_lbl_map    = {"15m": "Bars (15min)", "1h": "Bars (1h)", "1d": "Trading Days", "1wk": "Trading Weeks", "1mo": "Trading Months"}
     _fb_min_map    = {"15m": 20, "1h": 20, "1d": 10, "1wk": 10, "1mo": 6}
     _fb_max_map    = {"15m": 400, "1h": 500, "1d": 500, "1wk": 200, "1mo": 60}
-    _fb_def_map    = {"15m": 80, "1h": 120, "1d": 500, "1wk": 105, "1mo": 24}
+    _fb_def_map    = {"15m": 80, "1h": 120, "1d": 300 if _IS_CLOUD else 500, "1wk": 105, "1mo": 24}
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
@@ -439,7 +439,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_train_epi", label_visibility="collapsed")
     with _wg:
         global_train_episodes = st.slider(
-            "Train Episodes", 10, 500, 300,
+            "Train Episodes", 10, 500, 150 if _IS_CLOUD else 300,
             key="fb_train_epi",
             help="RL 학습 반복 횟수 (같은 훈련 데이터를 몇 번 반복 학습할지)"
         )
@@ -462,7 +462,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_auto", label_visibility="collapsed")
     with _wg:
         global_auto_runs = st.number_input("Auto Run Count", min_value=1,
-                                           value=10,
+                                           value=5 if _IS_CLOUD else 10,
                                            step=1, key="fb_auto")
 
     _ck, _wg = st.columns([1, 5])
@@ -471,7 +471,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_min = st.number_input(
             "Sim Min Steps", min_value=5, max_value=200,
-            value=30, step=5, key="fb_sim_min",
+            value=20 if _IS_CLOUD else 30, step=5, key="fb_sim_min",
             help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
         )
 
@@ -481,7 +481,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_mult = st.number_input(
             "Sim Step Mult.", min_value=1, max_value=30,
-            value=10, step=1, key="fb_sim_mult",
+            value=6 if _IS_CLOUD else 10, step=1, key="fb_sim_mult",
             help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
         )
 
