@@ -11,10 +11,12 @@ TARGET_INDICES = [0] # SPY
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0496, "gamma": 0.8863, "epsilon": 0.1190, "v_epsilon": 0.0993,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None   # [P3/P4] SPY: 안정 지수 — 4상태 고정, 재학습 불필요
     },
     "default": {
         "lr": 0.0496, "gamma": 0.8863, "epsilon": 0.1190, "v_epsilon": 0.0993,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None
     }
 }

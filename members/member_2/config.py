@@ -11,10 +11,12 @@ TARGET_INDICES = [1] # QQQ
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0650, "gamma": 0.9075, "epsilon": 0.1005, "v_epsilon": 0.1043,
-        "episodes": 500, "train_episodes": 300, "seed": 137
+        "episodes": 500, "train_episodes": 300, "seed": 137,
+        "use_vol": False, "roll_period": None   # [P3/P4] QQQ: 기술 지수 — 4상태 고정, 재학습 불필요
     },
     "default": {
         "lr": 0.0650, "gamma": 0.9075, "epsilon": 0.1005, "v_epsilon": 0.1043,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None
     }
 }

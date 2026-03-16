@@ -13,10 +13,12 @@ TARGET_INDICES = [3] # KOSDAQ (^KQ11)
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0168, "gamma": 0.9084, "epsilon": 0.0863, "v_epsilon": 0.1157,
-        "episodes": 500, "train_episodes": 300, "seed": 777
+        "episodes": 500, "train_episodes": 300, "seed": 777,
+        "use_vol": False, "roll_period": None   # [P3/P4] KOSDAQ: OOS 구조 한계 — 설정 변경 효과 미미
     },
     "default": {
         "lr": 0.0168, "gamma": 0.9084, "epsilon": 0.0863, "v_epsilon": 0.1157,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None
     }
 }

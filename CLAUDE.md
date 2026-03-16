@@ -9,13 +9,13 @@
 
 | 파일 | 줄 수 | 역할 | 수정 빈도 |
 |------|-------|------|----------|
-| `app.py` | 2281 | Streamlit UI 전체 + `get_rl_data()` 정의 | 높음 |
+| `app.py` | 2295 | Streamlit UI 전체 + `get_rl_data()` 정의 | 높음 |
 | `common/base_agent.py` | 374 | RL 훈련·평가 엔진 (STATIC + Vanilla) | 중간 |
 | `common/heuristic.py` | 405 | PGActorCriticOptimizer (파라미터 자동 탐색) | 낮음 |
 | `common/evaluator.py` | 57 | softmax 비중, MDD, CTPT 코드 계산 | 낮음 |
 | `common/data_loader.py` | 67 | yfinance fetch + EMA_10, Rolling_Std 계산 | 낮음 |
 | `common/stock_registry.py` | — | STOCK_REGISTRY {0:SPY,1:QQQ,2:^KS11,3:^KQ11,4:NVDA,5:TSLA,...} | 거의 없음 |
-| `members/member_N/config.py` | — | MEMBER_NAME, TARGET_INDICES, RL_PARAMS | 파라미터 탐색 후 |
+| `members/member_N/config.py` | — | MEMBER_NAME, TARGET_INDICES, RL_PARAMS (use_vol/roll_period 포함) | 파라미터 탐색 후 |
 
 ---
 
@@ -139,6 +139,7 @@ state = Σ(signal_i × 2^i)
 ### Rolling Window (P4) — 변경 제약
 - STATIC RL 전용 (`use_static=True`일 때만 활성화)
 - `roll_period=None` 기본 → 기존 결과와 직접 비교 시 OFF 유지
+- 멤버별 기본값은 config.py `RL_PARAMS["roll_period"]`로 관리 (None = 비활성)
 
 ---
 
@@ -155,18 +156,46 @@ state = Σ(signal_i × 2^i)
 
 ---
 
-## 멤버별 최적 파라미터 (improve 4-9 기준, 4상태 기본 모드)
+## 멤버별 최적 파라미터 (improve 4-9 기준 + improve 5-2 use_vol/roll_period 추가)
 
-| 멤버 | 종목 | lr | gamma | ε(S) | ε(V) | seed |
-|------|------|-----|-------|------|------|------|
-| M1 | SPY | 0.0496 | 0.8863 | 0.1190 | 0.0993 | 42 |
-| M2 | QQQ | 0.0650 | 0.9075 | 0.1005 | 0.1043 | 137 |
-| M3 | KOSPI | 0.0227 | 0.9569 | 0.1386 | 0.1762 | 2024 |
-| M4 | KOSDAQ | 0.0168 | 0.9084 | 0.0863 | 0.1157 | 777 |
-| M5 | NVDA | 0.0497 | 0.9183 | 0.0443 | 0.1055 | 314 |
-| M6 | TSLA | 0.0364 | 0.8873 | 0.1283 | 0.0842 | 99 |
+| 멤버 | 종목 | lr | gamma | ε(S) | ε(V) | seed | use_vol | roll_period |
+|------|------|-----|-------|------|------|------|---------|-------------|
+| M1 | SPY | 0.0496 | 0.8863 | 0.1190 | 0.0993 | 42 | False | None |
+| M2 | QQQ | 0.0650 | 0.9075 | 0.1005 | 0.1043 | 137 | False | None |
+| M3 | KOSPI | 0.0227 | 0.9569 | 0.1386 | 0.1762 | 2024 | False | None |
+| M4 | KOSDAQ | 0.0168 | 0.9084 | 0.0863 | 0.1157 | 777 | False | None |
+| M5 | NVDA | 0.0497 | 0.9183 | 0.0443 | 0.1055 | 314 | **True** | **15** |
+| M6 | TSLA | 0.0364 | 0.8873 | 0.1283 | 0.0842 | 99 | **True** | **20** |
 
 > KOSPI/KOSDAQ: OOS 구조적 한계로 α < Market 정상. 수정 대상 아님.
+> NVDA/TSLA: 고변동성 — 8상태(use_vol=True) + 주기 재학습 활성. 파라미터 재탐색 권장.
+
+---
+
+## config.py RL_PARAMS 전체 키 구조 (improve 5-2 기준)
+
+```python
+RL_PARAMS = {
+    stock_idx: {
+        "lr":            float,   # Actor-Critic 학습률
+        "gamma":         float,   # 할인율
+        "epsilon":       float,   # STATIC ε
+        "v_epsilon":     float,   # Vanilla ε
+        "episodes":      int,     # 전체 에피소드 수
+        "train_episodes":int,     # 학습 에피소드 수
+        "seed":          int,     # 재현성 시드
+        "use_vol":       bool,    # [P3] True → 8상태 변동성 신호 (기본 False)
+        "roll_period":   int|None # [P4] OOS 재학습 주기 봉 수 (기본 None)
+    },
+    "default": { ... }   # stock_idx 없을 때 fallback
+}
+```
+
+> **우선순위**: 전역 session_state(UI 오버라이드) > per-member config 기본값
+> - `use_vol_feature=True` (전역 ON) → 전체 강제 8상태
+> - `use_vol_feature=False` → 각 멤버 config.py 값 사용 (NVDA/TSLA True, 나머지 False)
+> - `roll_period_active=True` (전역 ON) → 전체 `roll_period_val` 적용
+> - `roll_period_active=False` → 각 멤버 config.py `roll_period` 사용
 
 ---
 
@@ -277,6 +306,7 @@ composite_gap = 0.6×(STATIC-Market) + 0.4×(STATIC-max(Vanilla, Market×0.3))
 | 4-8 | ENTROPY_COEFF 0.02→0.05, theta[2,1] 초기화 강화 |
 | 4-9 | Q_FLOOR_MARGIN 0.001→0.005, SPY/QQQ/TSLA 파라미터 재탐색 |
 | 5-1 | P0 상수화 / P1 Temperature+WeightCap UI / P2 Explainable RL / P3 8상태+_encode_state / P4 Rolling Window |
+| 5-2 | P3/P4 멤버별 분리 — config.py RL_PARAMS에 use_vol/roll_period 추가, 전역 session_state 오버라이드 구조, Eval/Simul 루프 동기화 |
 
 ---
 

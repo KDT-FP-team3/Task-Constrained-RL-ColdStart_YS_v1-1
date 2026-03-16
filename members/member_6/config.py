@@ -12,10 +12,12 @@ TARGET_INDICES = [5] # TSLA
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0364, "gamma": 0.8873, "epsilon": 0.1283, "v_epsilon": 0.0842,
-        "episodes": 500, "train_episodes": 300, "seed": 99
+        "episodes": 500, "train_episodes": 300, "seed": 99,
+        "use_vol": True, "roll_period": 20     # [P3/P4] TSLA: 고변동성 — 8상태 유리, 재학습 주기 완만
     },
     "default": {
         "lr": 0.0364, "gamma": 0.8873, "epsilon": 0.1283, "v_epsilon": 0.0842,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": True, "roll_period": 20
     }
 }

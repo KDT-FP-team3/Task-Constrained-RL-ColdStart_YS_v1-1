@@ -12,10 +12,12 @@ TARGET_INDICES = [4] # NVDA
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0497, "gamma": 0.9183, "epsilon": 0.0443, "v_epsilon": 0.1055,
-        "episodes": 500, "train_episodes": 300, "seed": 314
+        "episodes": 500, "train_episodes": 300, "seed": 314,
+        "use_vol": True, "roll_period": 15     # [P3/P4] NVDA: 고변동성 — 8상태+빈번 재학습 유리
     },
     "default": {
         "lr": 0.0497, "gamma": 0.9183, "epsilon": 0.0443, "v_epsilon": 0.1055,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": True, "roll_period": 15
     }
 }

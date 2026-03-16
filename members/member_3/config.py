@@ -13,10 +13,12 @@ TARGET_INDICES = [2] # KOSPI (^KS11)
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
-        "episodes": 500, "train_episodes": 300, "seed": 2024
+        "episodes": 500, "train_episodes": 300, "seed": 2024,
+        "use_vol": False, "roll_period": None   # [P3/P4] KOSPI: OOS 구조 한계 — 설정 변경 효과 미미
     },
     "default": {
         "lr": 0.0227, "gamma": 0.9569, "epsilon": 0.1386, "v_epsilon": 0.1762,
-        "episodes": 500, "train_episodes": 300, "seed": 42
+        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "use_vol": False, "roll_period": None
     }
 }

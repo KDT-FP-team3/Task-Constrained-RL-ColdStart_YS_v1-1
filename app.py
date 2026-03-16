@@ -1177,6 +1177,14 @@ for m_config in sorted_modules:
                 stock_idx = name_to_index.get(stock_name)
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                 hist_key = f"{m_name}_{stock_name}"
+                # [P3/P4] 멤버별 기본값(config.py) + 전역 session_state 오버라이드
+                # use_vol  : 전역 ON이면 강제 True / OFF이면 config 값 사용
+                # roll_period: 전역 roll_period_active ON이면 전역 값 / OFF이면 config 값 사용
+                _use_vol_now = (bool(st.session_state.get('use_vol_feature', False))
+                                or bool(p_settings.get('use_vol', False)))
+                _roll_period_now = (int(st.session_state.get('roll_period_val', 20))
+                                    if st.session_state.get('roll_period_active', False)
+                                    else p_settings.get('roll_period', None))
 
                 # ── Simulation pending: 슬라이더 렌더링 전에 키 사전 설정 ──
                 _sim_pend_key = f"sim_pending_{hist_key}"
@@ -1454,7 +1462,8 @@ for m_config in sorted_modules:
                             try:
                                 _, vt, s_tr, mkt, _, _, _, _, _ = get_rl_data(
                                     ticker, l_lr, l_gamma, l_epsilon, l_epi, l_train_epi, trial_seed,
-                                    v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval
+                                    v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval,
+                                    use_vol=_use_vol_now, roll_period=_roll_period_now
                                 )
                             except Exception as _e:
                                 vt, s_tr, mkt = None, None, None
@@ -1568,7 +1577,8 @@ for m_config in sorted_modules:
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
-                                    fee_rate=fee_rate, interval=l_interval
+                                    fee_rate=fee_rate, interval=l_interval,
+                                    use_vol=_use_vol_now, roll_period=_roll_period_now
                                 )
                             except Exception:
                                 _vt, _s_tr, _mkt_tr = None, None, None
@@ -1871,10 +1881,7 @@ for m_config in sorted_modules:
                     eff_sim_mult      = l_sim_mult
 
                 # ── 시뮬레이션 실행 (유효 파라미터 기준) ──
-                # [P3] 변동성 신호, [P4] Rolling 재학습 — session_state에서 전달
-                _use_vol_now    = bool(st.session_state.get('use_vol_feature', False))
-                _roll_period_now = (int(st.session_state.get('roll_period_val', 20))
-                                    if st.session_state.get('roll_period_active', False) else None)
+                # [P3/P4] _use_vol_now, _roll_period_now: p_settings 정의 직후 공통 계산 완료
                 with st.spinner(f"Processing {stock_name}..."):
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable = get_rl_data(
                         ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_train_epi, eff_seed,
