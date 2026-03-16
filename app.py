@@ -234,7 +234,14 @@ def update_load_bar(episodes_run, placeholder, is_loading=False):
         bg_size = f"{100 / load_pct:.1f}% 100%"
     else:
         bg_size = "100% 100%"
-    label = "⏳ Loading..." if is_loading else f"Real-time Load: {pct_val:.1f}%"
+    if is_loading:
+        label = "⏳ Loading..."
+    elif pct_val >= 100.0:
+        label = f"Last Run: 완료 ({pct_val:.0f}%)"  # 실행 중 아님 — 마지막 실행 완료 상태
+    elif pct_val > 0:
+        label = f"Last Run: {pct_val:.1f}%"
+    else:
+        label = "Idle (실행 대기)"
     with placeholder:
         st.markdown(
             f"<div style='margin-bottom:6px;font-size:12px;font-weight:600;"
