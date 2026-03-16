@@ -297,7 +297,17 @@ def _render_master_pbar_html(pct, placeholder=None):
     return html
 
 
-st.sidebar.markdown("### System Status")
+_ss_title_col, _ss_reset_col = st.sidebar.columns([3, 1])
+with _ss_title_col:
+    st.markdown("### System Status")
+with _ss_reset_col:
+    st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
+    if st.button("🗑 초기화", key="btn_reset_dashboard",
+                 help="포트폴리오 차트 및 누적 리턴 데이터를 초기화합니다."):
+        st.session_state.member_traces = {}
+        st.session_state.prev_final_contributions = []
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 # ── 실행 환경 배지 ──────────────────────────────
 _env_icon  = "☁️ Cloud" if _IS_CLOUD else "🖥️ Local"
 _gpu_icon  = f"⚡ GPU ({_CUDA_DEVICE})" if _HAS_CUDA else "🔲 CPU"
@@ -577,15 +587,6 @@ with st.container():
 
 # 차트+테이블 영역: sticky 컨테이너 밖, st.container()로 항상 안정 렌더
 summary_placeholder = st.container()
-
-# 대시보드 초기화 버튼 (우측 정렬)
-_dash_reset_col = st.columns([10, 1])[1]
-with _dash_reset_col:
-    if st.button("🗑 초기화", key="btn_reset_dashboard",
-                 help="포트폴리오 차트 및 누적 리턴 데이터를 초기화합니다."):
-        st.session_state.member_traces = {}
-        st.session_state.prev_final_contributions = []
-        st.rerun()
 
 # ==========================================
 # 2. 통합 대시보드 (Alpha 비교 + 팀 펀드 에쿼티)
