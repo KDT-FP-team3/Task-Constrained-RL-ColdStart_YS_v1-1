@@ -154,9 +154,9 @@ if 'member_traces' not in st.session_state:
     # key: member_name → {'s_trace': np.array, 'dates': index, 'stocks': list[str]}
 # [P1] Team Fund 배분 설정
 if 'fund_temperature' not in st.session_state:
-    st.session_state.fund_temperature = 1.0   # Softmax 온도 (높을수록 균등 배분)
+    st.session_state.fund_temperature = 2.5   # Softmax 온도 (높을수록 균등 배분)
 if 'fund_max_weight' not in st.session_state:
-    st.session_state.fund_max_weight = 0.40   # 단일 종목 최대 비중 (1.0 = 무제한)
+    st.session_state.fund_max_weight = 0.28   # 단일 종목 최대 비중 (1.0 = 무제한)
 # [P2] 학습된 정책 캐시 (State Analysis Dashboard용)
 if 'policy_cache' not in st.session_state:
     st.session_state.policy_cache = {}
@@ -547,13 +547,13 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _ck:
         st.checkbox("", value=False, key="fb_chk_gamma", label_visibility="collapsed")
     with _wg:
-        global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.98, key="fb_gamma")
+        global_gamma = st.slider("Discount Factor (γ)", 0.1, 0.99, 0.95, key="fb_gamma")
 
     _ck, _wg = st.columns([1, 5])
     with _ck:
         st.checkbox("", value=False, key="fb_chk_eps", label_visibility="collapsed")
     with _wg:
-        global_epsilon = st.slider("STATIC ε", 0.01, 0.5, 0.10, key="fb_eps",
+        global_epsilon = st.slider("STATIC ε", 0.01, 0.5, 0.08, key="fb_eps",
                                    help="STATIC RL 탐험율")
 
     _ck, _wg = st.columns([1, 5])
@@ -1013,9 +1013,9 @@ def _make_trial_box_fig(df_h):
         font=dict(color='#4a90d9', size=13, family="Arial Black"))
 
     fig.add_hline(y=avg_market, line_width=2.5, line_dash="dot", line_color="green")
-    fig.add_annotation(x='Vanilla RL', xref="x", y=avg_market,
-        text=f"<b>Market (Buy&Hold) {avg_market:.2f}%</b>",
-        showarrow=False, yshift=18, xanchor='left',
+    fig.add_annotation(x=0.5, xref="paper", y=avg_market,
+        text=f"<b>Market<br>(Buy&Hold)<br>{avg_market:.2f}%</b>",
+        showarrow=False, yshift=18, xanchor='center',
         font=dict(color="green", size=13, family="Arial Black"), bgcolor="rgba(0,0,0,0)")
 
     _box_vals = (list(df_h['Vanilla Final (%)']) + list(df_h['STATIC Final (%)'])

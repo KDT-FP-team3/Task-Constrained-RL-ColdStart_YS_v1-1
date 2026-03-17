@@ -690,7 +690,7 @@ def _train_ppo(df, lr, gamma, epsilon, episodes, fee_rate, seed,
                 # 클리핑 여부에 따른 Actor 기울기
                 clipped = np.clip(ratio, 1 - clip_eps, 1 + clip_eps)
                 if (adv >= 0 and ratio < 1 + clip_eps) or (adv < 0 and ratio > 1 - clip_eps):
-                    # 미클리핑: ∂(-L_CLIP)/∂logits = -adv·ratio·(e_a - π) / old_p
+                    # 미클리핑: ∂r_t/∂logit_i = ratio·(e_a-π)  →  ∂(-L_CLIP)/∂logits = -adv·ratio·(e_a-π)
                     score        = np.zeros(2)
                     score[a]     = 1.0
                     score       -= probs
