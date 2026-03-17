@@ -1381,6 +1381,15 @@ for m_config in sorted_modules:
                             key=f"active_{m_name}_{stock_name}",
                             help="비활성화된 에이전트는 연산 생략, 수익 0%로 표시. 단독 비교 시 사용."
                         )
+                    # ─ 행 2: RL Hyperparameters ─
+                    st.markdown(
+                        "<small><b>RL Hyperparameters &nbsp;"
+                        "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
+                        "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
+                        unsafe_allow_html=True
+                    )
+                    hc0, hc1, hc2, hc3, hc4, hc5, hc6 = st.columns(7)
+                    with hc0:
                         _algo_default = p_settings.get("algorithm", "STATIC")
                         l_algorithm = st.selectbox(
                             "RL Algorithm",
@@ -1391,14 +1400,6 @@ for m_config in sorted_modules:
                             key=f"algo_{m_name}_{stock_name}",
                             help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
                         )
-                    # ─ 행 2: RL Hyperparameters ─
-                    st.markdown(
-                        "<small><b>RL Hyperparameters &nbsp;"
-                        "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
-                        "<span style='color:#e05050;'>Vanilla RL</span>: ε(V)</b></small>",
-                        unsafe_allow_html=True
-                    )
-                    hc1, hc2, hc3, hc4, hc5, hc6 = st.columns(6)
                     with hc1:
                         l_lr = st.slider(
                             "Learning Rate (α)", 0.001, 0.1,
