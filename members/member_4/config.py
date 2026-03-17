@@ -6,11 +6,13 @@ RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
         "episodes": 300, "train_episodes": 150, "seed": 777,
-        "use_vol": False, "roll_period": None
+        "use_vol": False, "roll_period": None,
+        "algorithm": "STATIC"
     },
     "default": {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
         "episodes": 300, "train_episodes": 150, "seed": 42,
-        "use_vol": False, "roll_period": None
+        "use_vol": False, "roll_period": None,
+        "algorithm": "STATIC"
     },
 }

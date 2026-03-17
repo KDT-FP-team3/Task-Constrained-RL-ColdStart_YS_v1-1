@@ -13,6 +13,14 @@ ENTROPY_COEFF     = 0.05   # r_eff = r + ENTROPY_COEFF × H(π)  (Buy&Hold 고�
 Q_FLOOR_MARGIN    = 0.005  # Q[s,BUY] ≥ Q[s,CASH] + Q_FLOOR_MARGIN  (4-9 확정)
 EMA_SIGNAL_WEIGHT = 2      # state = is_bull×1 + is_above_ema×EMA_SIGNAL_WEIGHT (비트 위치 가중)
 
+# ── 신경망 RL 알고리즘 공통 상수 ─────────────────────────────────────────────
+NN_HIDDEN      = 32    # TinyMLP 히든 뉴런 수
+N_FEATURES     = 5     # extract_features() 출력 차원
+PPO_CLIP_EPS   = 0.2   # PPO 클리핑 ε
+PPO_GAE_LAMBDA = 0.95  # GAE λ (Generalized Advantage Estimation)
+SAC_ALPHA_LR   = 0.01  # SAC 자동 온도 α 학습률
+DDPG_TAU       = 0.005 # DDPG 타겟 네트워크 소프트 갱신 계수
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # [P3] 상태 인코딩 — 선형 조합 (Linear Combination) 원리 명시화
@@ -372,3 +380,564 @@ def run_rl_simulation(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
         vols=vols, vol_threshold=vol_threshold, roll_period=roll_period
     )
     return result
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 신경망 RL 알고리즘 — A2C / A3C / PPO / SAC / DDPG  (NumPy 전용)
+# ──────────────────────────────────────────────────────────────────────────────
+# 공통 구조:
+#   Actor:  TinyMLP[N_FEATURES → NN_HIDDEN → n_actions]
+#   Critic: TinyMLP[N_FEATURES → NN_HIDDEN → 1]  (또는 Q용 2-output)
+#   상태 표현: extract_features() → 5차원 연속 벡터
+#   평가:   _eval_neural() 공통 함수 (훈련 후 전체 기간 그리디 실행)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _make_df_vals(df):
+    """DataFrame에서 배열 딕셔너리 구성 (반복 호출 최소화)."""
+    n = len(df)
+    return {
+        'returns': df['Daily_Return'].values,
+        'prices':  df['Close'].values,
+        'emas':    df['EMA_10'].values,
+        'vols':    df['Rolling_Std'].values if 'Rolling_Std' in df.columns else np.zeros(n),
+    }
+
+
+def _softmax(logits):
+    """수치 안정 softmax."""
+    z = logits - np.max(logits)
+    e = np.exp(np.clip(z, -30, 30))
+    return e / (e.sum() + 1e-10)
+
+
+def _eval_neural(df, actor, algorithm, fee_rate, seed):
+    """신경망 RL 공통 평가 (그리디 정책, 전체 기간).
+
+    Returns
+    -------
+    cumulative_return : np.ndarray (n_days,)
+    action_log        : list[dict]
+    actor             : 학습된 Actor 네트워크
+    """
+    from common.nn_utils import extract_features
+
+    np.random.seed(seed)
+    n_days   = len(df)
+    df_vals  = _make_df_vals(df)
+    returns  = df_vals['returns']
+
+    cumulative_return = np.zeros(n_days)
+    current_capital   = 1.0
+    prev_action       = 0
+    action_log        = []
+
+    for t in range(1, n_days):
+        s = extract_features(df_vals, t)
+        logits, _, _ = actor.forward(s)
+
+        if algorithm == 'DDPG':
+            # 연속 포지션 → 0.5 임계값으로 이진 결정
+            position = 1.0 / (1.0 + np.exp(-float(logits[0])))
+            action   = 1 if position >= 0.5 else 0
+        else:
+            probs  = _softmax(logits)
+            action = int(np.argmax(probs))
+
+        _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+        reward  = (returns[t] if action == 1 else 0.0) - _fee
+        current_capital   *= (1 + reward)
+        cumulative_return[t] = (current_capital - 1) * 100
+        action_log.append({
+            "Day":             t,
+            "Action":          "BUY" if action == 1 else "CASH",
+            "Daily_Return(%)": round(reward * 100, 4),
+        })
+        prev_action = action
+
+    return cumulative_return, action_log, actor
+
+
+# ── A2C ──────────────────────────────────────────────────────────────────────
+
+def _train_a2c(df, lr, gamma, epsilon, episodes, fee_rate, seed):
+    """A2C — Advantage Actor-Critic (온라인 TD, 단일 에피소드).
+
+    [강화학습] Advantage Actor-Critic
+    ──────────────────────────────────
+    advantage  A_t = r_eff + γ·V(s') - V(s)    [TD 오차]
+    Critic 갱신: ∇_w L_c = -A_t  (MSE: ½A_t² → 기울기 = -A_t)
+    Actor  갱신: ∇_θ L_a = -A_t · ∇_θ log π(a|s)
+                          = -A_t · (e_a - π)    [score function]
+    엔트로피 정규화: r_eff = r + ENTROPY_COEFF · H(π)
+    """
+    from common.nn_utils import TinyMLP, extract_features
+
+    np.random.seed(seed)
+    n_days  = len(df)
+    n_train = max(int(n_days * TRAIN_RATIO), 20)
+    df_vals = _make_df_vals(df)
+    returns = df_vals['returns']
+
+    actor  = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed,     lr=lr)
+    critic = TinyMLP([N_FEATURES, NN_HIDDEN, 1], seed=seed + 1, lr=lr)
+
+    for _ in range(episodes):
+        prev_action = 1  # BUY 시작 (Vanilla RL과 동일 관행)
+        for t in range(1, n_train):
+            s      = extract_features(df_vals, t)
+            s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+
+            logits, pre_a, acts_a = actor.forward(s)
+            probs = _softmax(logits)
+
+            action = (np.random.randint(0, 2)
+                      if np.random.rand() < epsilon
+                      else np.random.choice([0, 1], p=probs))
+
+            _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            entropy = -np.sum(probs * np.log(probs + 1e-10))
+            reward  = (returns[t] if action == 1 else 0.0) - _fee + ENTROPY_COEFF * entropy
+            prev_action = action
+
+            v_s,    pre_c,  acts_c  = critic.forward(s)
+            v_next, _pre_n, _acts_n = critic.forward(s_next)
+            adv = reward + gamma * float(v_next[0]) - float(v_s[0])
+
+            # Critic: 손실 = ½·adv², ∂/∂v = -adv
+            critic.backward_and_update(pre_c, acts_c, np.array([-adv]), lr=lr)
+
+            # Actor: 손실 = -adv·log π(a)  →  기울기 w.r.t. logits = -adv·(e_a - π)
+            score        = np.zeros(2)
+            score[action] = 1.0
+            score        -= probs
+            actor.backward_and_update(pre_a, acts_a, -adv * score, lr=lr)
+
+    return actor, critic
+
+
+# ── A3C ──────────────────────────────────────────────────────────────────────
+
+def _train_a3c(df, lr, gamma, epsilon, episodes, fee_rate, seed, n_steps=5):
+    """A3C — Asynchronous Advantage Actor-Critic (단일 스레드, n-step 리턴).
+
+    [강화학습] n-step A3C (단일 스레드 근사)
+    ────────────────────────────────────────
+    n-step 리턴: R_t = r_t + γ·r_{t+1} + ... + γ^{n-1}·r_{t+n-1} + γ^n·V(s_{t+n})
+    advantage  : A_t = R_t - V(s_t)
+    동일한 Actor/Critic 갱신 수식 (A2C와 동일, n-step 리턴으로 분산 감소)
+    n_steps = 5 (기본)
+    """
+    from common.nn_utils import TinyMLP, extract_features
+
+    np.random.seed(seed)
+    n_days  = len(df)
+    n_train = max(int(n_days * TRAIN_RATIO), 20)
+    df_vals = _make_df_vals(df)
+    returns = df_vals['returns']
+
+    actor  = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed,     lr=lr)
+    critic = TinyMLP([N_FEATURES, NN_HIDDEN, 1], seed=seed + 1, lr=lr)
+
+    for _ in range(episodes):
+        prev_action = 1
+        t = 1
+        while t < n_train:
+            # n-step 전이 수집
+            transitions = []
+            for step in range(n_steps):
+                if t + step >= n_train:
+                    break
+                s = extract_features(df_vals, t + step)
+
+                logits, _, _ = actor.forward(s)
+                probs = _softmax(logits)
+                action = (np.random.randint(0, 2)
+                          if np.random.rand() < epsilon
+                          else np.random.choice([0, 1], p=probs))
+
+                _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+                entropy = -np.sum(probs * np.log(probs + 1e-10))
+                reward  = (returns[t + step] if action == 1 else 0.0) - _fee + ENTROPY_COEFF * entropy
+                prev_action = action
+                transitions.append((s, action, reward))
+
+            if not transitions:
+                break
+
+            # 부트스트랩: 마지막 상태 이후 V
+            t_end = t + len(transitions) - 1
+            if t_end + 1 < n_train:
+                s_final = extract_features(df_vals, t_end + 1)
+                v_final, _, _ = critic.forward(s_final)
+                R = gamma * float(v_final[0])
+            else:
+                R = 0.0
+
+            # 역방향으로 n-step 리턴 갱신
+            for s, action, reward in reversed(transitions):
+                R = reward + gamma * R
+                # 최신 네트워크로 재순전파 (stale 기울기 방지)
+                logits_f, pre_a, acts_a = actor.forward(s)
+                v_s_f,    pre_c, acts_c = critic.forward(s)
+                adv = R - float(v_s_f[0])
+
+                critic.backward_and_update(pre_c, acts_c, np.array([-adv]), lr=lr)
+
+                probs_f      = _softmax(logits_f)
+                score        = np.zeros(2)
+                score[action] = 1.0
+                score        -= probs_f
+                actor.backward_and_update(pre_a, acts_a, -adv * score, lr=lr)
+
+            t += len(transitions)
+
+    return actor, critic
+
+
+# ── PPO ──────────────────────────────────────────────────────────────────────
+
+def _train_ppo(df, lr, gamma, epsilon, episodes, fee_rate, seed,
+               clip_eps=PPO_CLIP_EPS, gae_lambda=PPO_GAE_LAMBDA, n_epochs=4):
+    """PPO — Proximal Policy Optimization (클리핑 대리 목적).
+
+    [강화학습] PPO (Clipped Surrogate Objective)
+    ──────────────────────────────────────────────
+    r_t(θ)  = π_θ(a_t|s_t) / π_θ_old(a_t|s_t)
+    L_CLIP  = E[min(r_t·Â_t, clip(r_t, 1-ε, 1+ε)·Â_t)]
+    GAE Â_t = Σ_{k≥0} (γλ)^k·δ_{t+k}  where δ_t = r_t + γV(s_{t+1}) - V(s_t)
+    n_epochs = 4 (미니배치 반복 갱신)
+    """
+    from common.nn_utils import TinyMLP, extract_features
+
+    np.random.seed(seed)
+    n_days      = len(df)
+    n_train     = max(int(n_days * TRAIN_RATIO), 20)
+    rollout_len = min(64, n_train - 1)
+    df_vals     = _make_df_vals(df)
+    returns     = df_vals['returns']
+
+    actor  = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed,     lr=lr)
+    critic = TinyMLP([N_FEATURES, NN_HIDDEN, 1], seed=seed + 1, lr=lr)
+
+    for ep in range(episodes):
+        # ── 롤아웃 수집 ──
+        states_r          = []
+        actions_r         = []
+        rewards_r         = []
+        old_probs_action  = []
+        values_r          = []
+
+        prev_action = 1
+        for t in range(1, min(rollout_len + 1, n_train)):
+            s = extract_features(df_vals, t)
+
+            logits, _, _ = actor.forward(s)
+            probs = _softmax(logits)
+            action = (np.random.randint(0, 2)
+                      if np.random.rand() < epsilon
+                      else np.random.choice([0, 1], p=probs))
+
+            _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            entropy = -np.sum(probs * np.log(probs + 1e-10))
+            reward  = (returns[t] if action == 1 else 0.0) - _fee + ENTROPY_COEFF * entropy
+            prev_action = action
+
+            v_s, _, _ = critic.forward(s)
+
+            states_r.append(s)
+            actions_r.append(action)
+            rewards_r.append(reward)
+            old_probs_action.append(float(probs[action]))
+            values_r.append(float(v_s[0]))
+
+        T = len(states_r)
+        if T == 0:
+            continue
+
+        # ── GAE 어드밴티지 ──
+        advantages = np.zeros(T)
+        last_adv   = 0.0
+        for t in reversed(range(T)):
+            if t + 1 < T:
+                v_next = values_r[t + 1]
+            else:
+                s_boot  = extract_features(df_vals, min(rollout_len + 1, n_train - 1))
+                vb, _, _ = critic.forward(s_boot)
+                v_next  = float(vb[0])
+            delta      = rewards_r[t] + gamma * v_next - values_r[t]
+            last_adv   = delta + gamma * gae_lambda * last_adv
+            advantages[t] = last_adv
+
+        returns_tgt = advantages + np.array(values_r)
+
+        # ── n_epochs 미니배치 갱신 ──
+        for _ in range(n_epochs):
+            idx = np.random.permutation(T)
+            for i in idx:
+                s     = states_r[i]
+                a     = actions_r[i]
+                adv   = float(advantages[i])
+                ret_t = float(returns_tgt[i])
+                old_p = float(old_probs_action[i])
+
+                logits, pre_a, acts_a = actor.forward(s)
+                probs = _softmax(logits)
+                new_p = float(probs[a])
+                ratio = new_p / (old_p + 1e-10)
+
+                # 클리핑 여부에 따른 Actor 기울기
+                clipped = np.clip(ratio, 1 - clip_eps, 1 + clip_eps)
+                if (adv >= 0 and ratio < 1 + clip_eps) or (adv < 0 and ratio > 1 - clip_eps):
+                    # 미클리핑: ∂(-L_CLIP)/∂logits = -adv·ratio·(e_a - π) / old_p
+                    score        = np.zeros(2)
+                    score[a]     = 1.0
+                    score       -= probs
+                    grad_actor   = -adv * ratio * score
+                else:
+                    grad_actor = np.zeros(2)   # 클리핑 → 기울기 0
+
+                actor.backward_and_update(pre_a, acts_a, grad_actor, lr=lr)
+
+                # Critic: MSE 손실
+                v_s, pre_c, acts_c = critic.forward(s)
+                critic_err = float(v_s[0]) - ret_t
+                critic.backward_and_update(pre_c, acts_c, np.array([critic_err]), lr=lr)
+
+    return actor, critic
+
+
+# ── SAC ──────────────────────────────────────────────────────────────────────
+
+def _train_sac(df, lr, gamma, epsilon, episodes, fee_rate, seed,
+               buffer_size=2000, batch_size=32, target_update_freq=10):
+    """SAC — Soft Actor-Critic (이산 행동, 자동 온도 α).
+
+    [강화학습] SAC-Discrete (Haarnoja et al., 2018)
+    ─────────────────────────────────────────────────
+    소프트 V:    V(s) = Σ_a π(a|s)·[Q(s,a) - α·log π(a|s)]
+    Q 타겟:      y    = r + γ·V(s')
+    Critic 갱신: Q(s,a) ← min-MSE with y  (단일 Q 사용)
+    Actor  갱신: max_π Σ_a π(a|s)·[Q(s,a) - α·log π(a|s)]
+                 ∂L_a/∂z_i = π_i·(v_soft - q_adj_i)   where q_adj = Q - α·log π
+    자동 α:      J(α) = -α·(log π(a|s) + H_target)
+    """
+    from common.nn_utils import TinyMLP, ReplayBuffer, extract_features
+
+    np.random.seed(seed)
+    n_days  = len(df)
+    n_train = max(int(n_days * TRAIN_RATIO), 20)
+    df_vals = _make_df_vals(df)
+    returns = df_vals['returns']
+
+    actor      = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed,     lr=lr)
+    critic     = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed + 1, lr=lr)
+    critic_tgt = critic.copy()
+
+    log_alpha = np.array([0.0])
+    H_target  = -np.log(0.5) * 0.5   # ≈ 0.35 — 목표 엔트로피
+    alpha     = float(np.exp(log_alpha[0]))
+
+    buffer = ReplayBuffer(buffer_size, N_FEATURES)
+
+    prev_action = 1
+    for t in range(1, n_train):
+        s      = extract_features(df_vals, t)
+        s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+
+        # ε-greedy 탐색
+        if len(buffer) < batch_size or np.random.rand() < epsilon:
+            action = np.random.randint(0, 2)
+        else:
+            logits, _, _ = actor.forward(s)
+            action = int(np.argmax(_softmax(logits)))
+
+        _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+        reward  = (returns[t] if action == 1 else 0.0) - _fee
+        prev_action = action
+        buffer.push(s, action, reward, s_next, int(t == n_train - 1))
+
+        if len(buffer) < batch_size:
+            continue
+
+        s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
+
+        for j in range(batch_size):
+            s_j  = s_b[j]
+            a_j  = int(a_b[j])
+            r_j  = float(r_b[j])
+            ns_j = ns_b[j]
+
+            # 소프트 V(s') — 타겟 Q + 현재 정책
+            logits_next, _, _ = actor.forward(ns_j)
+            probs_next        = _softmax(logits_next)
+            q_next, _, _      = critic_tgt.forward(ns_j)
+            v_soft_next = float(np.sum(
+                probs_next * (q_next - alpha * np.log(probs_next + 1e-10))
+            ))
+            y = r_j + gamma * (1.0 - float(d_b[j])) * v_soft_next
+
+            # Critic 갱신 (MSE)
+            q_all, pre_c, acts_c = critic.forward(s_j)
+            td_err       = float(q_all[a_j]) - y
+            grad_q       = np.zeros(2)
+            grad_q[a_j]  = td_err
+            critic.backward_and_update(pre_c, acts_c, grad_q, lr=lr)
+
+            # Actor 갱신: ∂(-L_a)/∂z_i = π_i·(v_soft - q_adj_i)
+            logits_cur, pre_a, acts_a = actor.forward(s_j)
+            probs_cur   = _softmax(logits_cur)
+            q_all_cur, _, _ = critic.forward(s_j)
+            q_adj       = q_all_cur - alpha * np.log(probs_cur + 1e-10)
+            v_soft_cur  = float(np.sum(probs_cur * q_adj))
+            grad_actor  = probs_cur * (v_soft_cur - q_adj)
+            actor.backward_and_update(pre_a, acts_a, grad_actor, lr=lr)
+
+            # 자동 α 갱신
+            log_pi_a  = float(np.log(probs_cur[a_j] + 1e-10))
+            alpha_grad = -(log_pi_a + H_target)
+            log_alpha[0] -= SAC_ALPHA_LR * alpha_grad
+            log_alpha[0]  = float(np.clip(log_alpha[0], -5, 2))
+            alpha         = float(np.exp(log_alpha[0]))
+
+        if t % target_update_freq == 0:
+            critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
+
+    return actor, critic
+
+
+# ── DDPG ─────────────────────────────────────────────────────────────────────
+
+def _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed,
+                buffer_size=2000, batch_size=32):
+    """DDPG — Deep Deterministic Policy Gradient (연속 포지션 [0,1]).
+
+    [강화학습] DDPG (Lillicrap et al., 2015)
+    ─────────────────────────────────────────
+    Actor:    μ(s) ∈ [0,1] (sigmoid 출력) — 연속 포지션 비율
+    Critic:   Q(s, a) where a = μ(s)  [입력 = s ‖ a, 차원 N_FEATURES+1]
+    Q 타겟:   y = r + γ·Q_tgt(s', μ_tgt(s'))
+    Critic 갱신: MSE(Q(s,a), y)
+    Actor  갱신: ∇_θ J = ∇_a Q(s,a)|_{a=μ(s)} · ∇_θ μ(s)
+                 (체인 규칙: critic 역전파로 ∂Q/∂a 획득)
+    탐색:    OU noise (θ=0.15, σ=0.2) × epsilon
+    타겟망:  θ_tgt ← τ·θ + (1-τ)·θ_tgt  (소프트 갱신)
+    """
+    from common.nn_utils import TinyMLP, ReplayBuffer, extract_features
+
+    np.random.seed(seed)
+    n_days  = len(df)
+    n_train = max(int(n_days * TRAIN_RATIO), 20)
+    df_vals = _make_df_vals(df)
+    returns = df_vals['returns']
+
+    actor      = TinyMLP([N_FEATURES,     NN_HIDDEN, 1],         seed=seed,     lr=lr)
+    actor_tgt  = actor.copy()
+    critic     = TinyMLP([N_FEATURES + 1, NN_HIDDEN, 1],         seed=seed + 1, lr=lr)
+    critic_tgt = critic.copy()
+
+    buffer     = ReplayBuffer(buffer_size, N_FEATURES)
+
+    ou_state = np.zeros(1)  # OU noise 상태
+    ou_theta = 0.15
+    ou_sigma = 0.2
+
+    prev_pos = 0.5
+    for t in range(1, n_train):
+        s      = extract_features(df_vals, t)
+        s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+
+        # OU noise 탐색
+        ou_state += -ou_theta * ou_state + ou_sigma * np.random.randn(1)
+        logit_a, _, _ = actor.forward(s)
+        mu      = 1.0 / (1.0 + np.exp(-float(logit_a[0])))
+        pos     = float(np.clip(mu + epsilon * float(ou_state[0]), 0.0, 1.0))
+
+        # 연속 포지션 보상: position × return - fee·|Δposition|
+        _fee   = fee_rate * abs(pos - prev_pos)
+        reward = returns[t] * pos - _fee
+        prev_pos = pos
+        buffer.push(s, pos, reward, s_next, int(t == n_train - 1))
+
+        if len(buffer) < batch_size:
+            continue
+
+        s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
+
+        for j in range(batch_size):
+            s_j  = s_b[j]
+            a_j  = float(a_b[j])
+            r_j  = float(r_b[j])
+            ns_j = ns_b[j]
+
+            # 타겟 Q
+            logit_next, _, _ = actor_tgt.forward(ns_j)
+            mu_next = 1.0 / (1.0 + np.exp(-float(logit_next[0])))
+            sa_next = np.append(ns_j, mu_next)
+            q_next, _, _ = critic_tgt.forward(sa_next)
+            y = r_j + gamma * (1.0 - float(d_b[j])) * float(q_next[0])
+
+            # Critic 갱신
+            sa      = np.append(s_j, a_j)
+            q_val, pre_c, acts_c = critic.forward(sa)
+            critic_err = float(q_val[0]) - y
+            critic.backward_and_update(pre_c, acts_c, np.array([critic_err]), lr=lr)
+
+            # Actor 갱신: ∇_θ J = (∂Q/∂a) · (∂sigmoid/∂logit) — 체인 규칙
+            logit_cur, pre_a, acts_a = actor.forward(s_j)
+            mu_cur  = 1.0 / (1.0 + np.exp(-float(logit_cur[0])))
+            sa_cur  = np.append(s_j, mu_cur)
+            _q_cur, pre_c2, acts_c2 = critic.forward(sa_cur)
+            # critic 입력에 대한 기울기 (가중치 갱신 없이)
+            grad_sa      = critic.get_grad_input(pre_c2, acts_c2, np.array([-1.0]))
+            dQ_dmu       = -float(grad_sa[-1])                    # ∂Q/∂μ
+            dmu_dlogit   = mu_cur * (1.0 - mu_cur)                # sigmoid 미분
+            grad_logit   = float(np.sign(dQ_dmu)) * abs(dmu_dlogit)  # 안정화
+            actor.backward_and_update(pre_a, acts_a, np.array([-dQ_dmu * dmu_dlogit]), lr=lr)
+
+        # 소프트 갱신 (매 스텝)
+        actor_tgt.soft_update_from(actor,   tau=DDPG_TAU)
+        critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
+
+    return actor, critic
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 공개 API: run_neural_rl
+# ══════════════════════════════════════════════════════════════════════════════
+
+def run_neural_rl(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
+                  algorithm="A2C", seed=42, fee_rate=0.0):
+    """신경망 RL 디스패처 — 알고리즘 선택 후 훈련+평가 실행.
+
+    Parameters
+    ----------
+    df        : fetch_stock_data() 반환 DataFrame (Close, EMA_10, Daily_Return, Rolling_Std)
+    lr        : 학습률
+    gamma     : 할인율
+    epsilon   : 탐색률 (ε-greedy / OU noise 스케일)
+    episodes  : 훈련 에피소드 수
+    algorithm : 'A2C' | 'A3C' | 'PPO' | 'SAC' | 'DDPG'
+    seed      : 난수 시드
+    fee_rate  : 매매 수수료율
+
+    Returns
+    -------
+    cumulative_return : np.ndarray (n_days,) — 누적 수익률 (%)
+    action_log        : list[dict]           — 일별 행동 로그
+    actor             : 학습된 Actor TinyMLP  — (Explainable RL / 시각화용)
+    """
+    if algorithm == "A2C":
+        actor, _ = _train_a2c(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    elif algorithm == "A3C":
+        actor, _ = _train_a3c(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    elif algorithm == "PPO":
+        actor, _ = _train_ppo(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    elif algorithm == "SAC":
+        actor, _ = _train_sac(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    elif algorithm == "DDPG":
+        actor, _ = _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm!r}. "
+                         f"Choose from 'A2C', 'A3C', 'PPO', 'SAC', 'DDPG'.")
+
+    return _eval_neural(df, actor, algorithm, fee_rate, seed)

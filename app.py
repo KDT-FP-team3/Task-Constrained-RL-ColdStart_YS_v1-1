@@ -10,7 +10,7 @@ import plotly.express as px
 
 from common.stock_registry import STOCK_REGISTRY, get_ticker_by_name, get_fee_info
 from common.data_loader import fetch_stock_data
-from common.base_agent import run_rl_simulation_with_log
+from common.base_agent import run_rl_simulation_with_log, run_neural_rl
 from common.evaluator import calculate_ctpt_and_color, calculate_mdd, calculate_softmax_weights
 from common.heuristic import PGActorCriticOptimizer
 
@@ -185,13 +185,17 @@ def _save_sim_params_to_config(m_config, stock_idx, new_params):
     rl[target_key]["gamma"]     = round(float(new_params["gamma"]),     6)
     rl[target_key]["epsilon"]   = round(float(new_params["epsilon"]),   6)
     rl[target_key]["v_epsilon"] = round(float(new_params["v_epsilon"]), 6)
+    if "algorithm" in new_params:
+        rl[target_key]["algorithm"] = str(new_params["algorithm"])
 
-    # "default" 키도 동기화 (lr/gamma/epsilon/v_epsilon)
+    # "default" 키도 동기화 (lr/gamma/epsilon/v_epsilon/algorithm)
     if target_key != "default" and "default" in rl:
         rl["default"]["lr"]        = rl[target_key]["lr"]
         rl["default"]["gamma"]     = rl[target_key]["gamma"]
         rl["default"]["epsilon"]   = rl[target_key]["epsilon"]
         rl["default"]["v_epsilon"] = rl[target_key]["v_epsilon"]
+        if "algorithm" in new_params:
+            rl["default"]["algorithm"] = rl[target_key]["algorithm"]
 
     # 종목명 주석용
     _tgt_name = STOCK_REGISTRY.get(m_config.TARGET_INDICES[0], {}).get("name", "")
@@ -219,7 +223,11 @@ def _save_sim_params_to_config(m_config, stock_idx, new_params):
         )
         lines.append(
             f'        "use_vol": {v.get("use_vol", False)}, '
-            f'"roll_period": {v.get("roll_period", None)}\n'
+            f'"roll_period": {v.get("roll_period", None)},\n'
+        )
+        _alg = v.get("algorithm", "STATIC")
+        lines.append(
+            f'        "algorithm": "{_alg}"\n'
         )
         lines.append('    },\n')
     lines.append('}\n')
@@ -838,7 +846,7 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
 # 3. 시뮬레이션 및 차트 생성
 # ==========================================
 def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
-                          opt_v_trace=None, opt_s_trace=None):
+                          opt_v_trace=None, opt_s_trace=None, algo_name="STATIC RL"):
     """누적 수익률 비교 차트. Ghost Line (Optimal) 파라미터 선택적 표시."""
     height     = 400
     title_size = 18
@@ -858,7 +866,7 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
     if opt_s_trace is not None and len(opt_s_trace) > 0:
         fig.add_trace(go.Scatter(
             x=df.index[:len(opt_s_trace)], y=opt_s_trace,
-            mode='lines', name='<b>STATIC RL (Optimal ✦)</b>',
+            mode='lines', name=f'<b>{algo_name} (Optimal ✦)</b>',
             line=dict(color='#4a90d9', width=1.2, dash='dash'),
             opacity=0.35
         ))
@@ -869,7 +877,7 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
         line=dict(color='#e05050', width=2, dash='dash')
     ))
     fig.add_trace(go.Scatter(
-        x=list(df.index), y=list(s_trace), mode='lines', name='<b>STATIC RL</b>',
+        x=list(df.index), y=list(s_trace), mode='lines', name=f'<b>{algo_name}</b>',
         line=dict(color='#4a90d9', width=3, dash='solid')
     ))
     fig.add_trace(go.Scatter(
@@ -1014,19 +1022,21 @@ def _make_trial_box_fig(df_h):
 
 
 def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsilon=None, fee_rate=0.0, interval="1d",
-                use_vol=False, roll_period=None):
+                use_vol=False, roll_period=None, algorithm="STATIC"):
     """시뮬레이션을 1회만 실행하여 원시 데이터 + 일별 행동 로그 + 학습된 정책을 반환.
 
     Parameters (신규)
     ─────────────────
     use_vol     : [P3] True이면 8상태 변동성 신호 활성화 (Rolling_Std 컬럼 필요).
     roll_period : [P4] OOS 구간 재학습 주기 (봉 수). None이면 기존 동작.
+    algorithm   : 'STATIC' | 'A2C' | 'A3C' | 'PPO' | 'SAC' | 'DDPG'
+                  STATIC → 기존 tabular Actor-Critic / 나머지 → 신경망 RL
 
     Returns (9개 — 기존 7개 + s_theta, v_qtable)
     ──────────────────────────────────────────────
     df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable
-      s_theta  : STATIC RL 학습된 theta (n_states × 2). [P2] State Analysis용.
-      v_qtable : Vanilla RL 학습된 Q-table (2 × 2).     [P2] State Analysis용.
+      s_theta  : STATIC RL theta 또는 TinyMLP actor (신경망 알고리즘 시 TinyMLP).
+      v_qtable : Vanilla RL Q-table (2×2). 항상 반환.
     """
     df_full = fetch_stock_data(ticker, interval=interval)
     if df_full.empty or len(df_full) < 10:
@@ -1036,23 +1046,32 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
     _v_eps       = v_epsilon if v_epsilon is not None else epsilon
     _v_train_epi = max(train_episodes * 2, 200)  # improve 4-3: Vanilla 2× 학습
 
-    # [P3] 변동성 신호: use_vol=True이면 df의 Rolling_Std 컬럼 자동 전달
-    # vol_threshold=None → run_rl_simulation_with_log 내부에서 훈련 구간 중위수 자동 산출
-    _vols_arr = df['Rolling_Std'].values if (use_vol and 'Rolling_Std' in df.columns) else None
-
-    # [P2] return_policy=True → theta, q_table 반환 (Explainable RL 시각화용)
+    # [P2] Vanilla RL은 항상 실행 (비교 기준선)
     v_trace, v_log, v_qtable = run_rl_simulation_with_log(
         df, lr, gamma, _v_eps, episodes=_v_train_epi,
         use_static=False, seed=seed, fee_rate=fee_rate,
         return_policy=True
     )
-    s_trace, s_log, s_theta = run_rl_simulation_with_log(
-        df, lr, gamma, epsilon, episodes=train_episodes,
-        use_static=True, seed=seed, fee_rate=fee_rate,
-        vols=_vols_arr, vol_threshold=None,
-        roll_period=roll_period,
-        return_policy=True
-    )
+
+    if algorithm == "STATIC":
+        # [P3] 변동성 신호: use_vol=True이면 df의 Rolling_Std 컬럼 자동 전달
+        _vols_arr = df['Rolling_Std'].values if (use_vol and 'Rolling_Std' in df.columns) else None
+        # [P2] return_policy=True → theta 반환 (Explainable RL 시각화용)
+        s_trace, s_log, s_theta = run_rl_simulation_with_log(
+            df, lr, gamma, epsilon, episodes=train_episodes,
+            use_static=True, seed=seed, fee_rate=fee_rate,
+            vols=_vols_arr, vol_threshold=None,
+            roll_period=roll_period,
+            return_policy=True
+        )
+    else:
+        # 신경망 RL 알고리즘 (A2C / A3C / PPO / SAC / DDPG)
+        s_trace, s_log, s_theta = run_neural_rl(
+            df, lr=lr, gamma=gamma, epsilon=epsilon,
+            episodes=train_episodes, algorithm=algorithm,
+            seed=seed, fee_rate=fee_rate
+        )
+
     s_mdd = calculate_mdd(s_trace)
     return df, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable
 
@@ -1362,6 +1381,16 @@ for m_config in sorted_modules:
                             key=f"active_{m_name}_{stock_name}",
                             help="비활성화된 에이전트는 연산 생략, 수익 0%로 표시. 단독 비교 시 사용."
                         )
+                        _algo_default = p_settings.get("algorithm", "STATIC")
+                        l_algorithm = st.selectbox(
+                            "RL Algorithm",
+                            options=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"],
+                            index=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"].index(
+                                _algo_default if _algo_default in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"] else "STATIC"
+                            ),
+                            key=f"algo_{m_name}_{stock_name}",
+                            help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
+                        )
                     # ─ 행 2: RL Hyperparameters ─
                     st.markdown(
                         "<small><b>RL Hyperparameters &nbsp;"
@@ -1562,7 +1591,8 @@ for m_config in sorted_modules:
                                 _, vt, s_tr, mkt, _, _, _, _, _ = get_rl_data(
                                     ticker, l_lr, l_gamma, l_epsilon, l_epi, l_train_epi, trial_seed,
                                     v_epsilon=l_v_epsilon, fee_rate=fee_rate, interval=l_interval,
-                                    use_vol=_use_vol_now, roll_period=_roll_period_now
+                                    use_vol=_use_vol_now, roll_period=_roll_period_now,
+                                    algorithm=l_algorithm
                                 )
                             except Exception as _e:
                                 vt, s_tr, mkt = None, None, None
@@ -1679,7 +1709,8 @@ for m_config in sorted_modules:
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
                                     fee_rate=fee_rate, interval=l_interval,
-                                    use_vol=_use_vol_now, roll_period=_roll_period_now
+                                    use_vol=_use_vol_now, roll_period=_roll_period_now,
+                                    algorithm=l_algorithm
                                 )
                             except Exception:
                                 _vt, _s_tr, _mkt_tr = None, None, None
@@ -1907,6 +1938,7 @@ for m_config in sorted_modules:
                                 _fig_rt = _make_cumulative_fig(
                                     stock_name, _best_df_stock,
                                     _best_v_trace, _best_s_trace, _best_mkt_trace,
+                                    algo_name=l_algorithm if l_algorithm != "STATIC" else "STATIC RL",
                                 )
                                 st.plotly_chart(_fig_rt, use_container_width=True,
                                                 key=f"rt_curve_{m_name}_{stock_name}_{_i}")
@@ -1937,6 +1969,7 @@ for m_config in sorted_modules:
                         "gap":       best["gap"],
                         "s_final":   best.get("s_final", 0.0),
                         "v_final":   best.get("v_final", 0.0),
+                        "algorithm": l_algorithm,
                     }
                     if st.session_state.get('sim_auto_save', False):
                         # Simul. All 모드: 대화상자 없이 자동 저장 및 Run Eval 트리거
@@ -1969,6 +2002,7 @@ for m_config in sorted_modules:
                     eff_seed      = fp["seed"]                                    if _fchk.get("seed")      else l_seed
                     eff_v_eps     = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")     else l_v_epsilon
                     eff_active_agents = fp.get("active_agents", ["Vanilla RL", "STATIC RL"]) if _fchk.get("active") else l_active_agents
+                    eff_algorithm = l_algorithm
                     eff_sim_min  = fp.get("sim_min",  l_sim_min)  if _fchk.get("sim_min")  else l_sim_min
                     eff_sim_mult = fp.get("sim_mult", l_sim_mult) if _fchk.get("sim_mult") else l_sim_mult
                     _fb_parts = []
@@ -1992,6 +2026,7 @@ for m_config in sorted_modules:
                     )
                     eff_v_eps         = l_v_epsilon
                     eff_active_agents = l_active_agents
+                    eff_algorithm     = l_algorithm
                     eff_sim_min       = l_sim_min
                     eff_sim_mult      = l_sim_mult
 
@@ -2001,14 +2036,19 @@ for m_config in sorted_modules:
                     df_stock, v_trace, s_trace, real_ret_trace, s_mdd, v_log, s_log, s_theta, v_qtable = get_rl_data(
                         ticker, eff_lr, eff_gamma, eff_eps, eff_epi, eff_train_epi, eff_seed,
                         v_epsilon=eff_v_eps, fee_rate=fee_rate, interval=l_interval,
-                        use_vol=_use_vol_now, roll_period=_roll_period_now
+                        use_vol=_use_vol_now, roll_period=_roll_period_now,
+                        algorithm=eff_algorithm
                     )
                 # [P2] 학습된 정책 캐시 저장 (State Analysis Dashboard용)
-                if s_theta is not None or v_qtable is not None:
+                # 신경망 알고리즘(A2C/PPO 등)은 s_theta = TinyMLP actor → theta 표시 불가
+                _is_neural = eff_algorithm not in ("STATIC",)
+                _theta_for_cache = None if _is_neural else s_theta
+                if _theta_for_cache is not None or v_qtable is not None:
                     st.session_state.policy_cache[hist_key] = {
-                        'theta':    s_theta,
-                        'q_table':  v_qtable,
-                        'n_states': s_theta.shape[0] if s_theta is not None else 4
+                        'theta':     _theta_for_cache,
+                        'q_table':   v_qtable,
+                        'n_states':  _theta_for_cache.shape[0] if _theta_for_cache is not None else 4,
+                        'algorithm': eff_algorithm,
                     }
 
                 if df_stock is None:
@@ -2057,7 +2097,8 @@ for m_config in sorted_modules:
                     # 누적 수익 차트 (Ghost Line 포함)
                     fig_cum = _make_cumulative_fig(
                         stock_name, df_stock, v_trace, s_trace, real_ret_trace,
-                        opt_v_trace=opt_v, opt_s_trace=opt_s
+                        opt_v_trace=opt_v, opt_s_trace=opt_s,
+                        algo_name=eff_algorithm if eff_algorithm != "STATIC" else "STATIC RL",
                     )
                     st.plotly_chart(fig_cum, use_container_width=True,
                                     key=f"chart_cum_{m_name}_{stock_name}")
@@ -2196,6 +2237,15 @@ for m_config in sorted_modules:
                             _state_labels = _s8_labels if _ns == 8 else _s4_labels
 
                             pol_c1, pol_c2 = st.columns(2)
+
+                            # 신경망 알고리즘: tabular State Analysis 미지원
+                            _algo_label = _pcache.get('algorithm', 'STATIC')
+                            if _algo_label not in ('STATIC',) and _theta_c is None:
+                                st.info(
+                                    f"**{_algo_label}** 알고리즘은 연속 특징 벡터(5차원) 기반 TinyMLP를 사용합니다. "
+                                    "이산 상태 P(BUY|state) 시각화는 STATIC 알고리즘에서만 지원됩니다.",
+                                    icon="ℹ️"
+                                )
 
                             # STATIC RL: 각 상태별 P(BUY|s)
                             if _theta_c is not None:
