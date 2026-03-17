@@ -207,15 +207,18 @@ class ReplayBuffer:
         self._rewards     = np.zeros(capacity, dtype=np.float32)
         self._next_states = np.zeros((capacity, n_features), dtype=np.float32)
         self._dones       = np.zeros(capacity, dtype=np.float32)
+        self._log_probs   = np.zeros(capacity, dtype=np.float32)   # 행동 정책 log μ(a|s) — ACER용
         self._ptr  = 0
         self._size = 0
 
-    def push(self, s, a, r, ns, done):
+    def push(self, s, a, r, ns, done, log_prob: float = 0.0):
+        """전이 저장. log_prob: 행동 정책 log μ(a|s) (ACER 전용, 기본 0.0)."""
         self._states[self._ptr]      = s
         self._actions[self._ptr]     = float(a)
         self._rewards[self._ptr]     = float(r)
         self._next_states[self._ptr] = ns
         self._dones[self._ptr]       = float(done)
+        self._log_probs[self._ptr]   = float(log_prob)
         self._ptr  = (self._ptr + 1) % self.capacity
         self._size = min(self._size + 1, self.capacity)
 
@@ -227,6 +230,18 @@ class ReplayBuffer:
             self._rewards[idx],
             self._next_states[idx],
             self._dones[idx],
+        )
+
+    def sample_with_logp(self, batch_size: int):
+        """log_prob 포함 6-tuple 반환 (ACER 전용)."""
+        idx = np.random.choice(self._size, size=min(batch_size, self._size), replace=False)
+        return (
+            self._states[idx],
+            self._actions[idx],
+            self._rewards[idx],
+            self._next_states[idx],
+            self._dones[idx],
+            self._log_probs[idx],
         )
 
     def __len__(self):

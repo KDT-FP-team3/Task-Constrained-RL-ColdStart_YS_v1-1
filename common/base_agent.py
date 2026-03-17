@@ -741,68 +741,69 @@ def _train_sac(df, lr, gamma, epsilon, episodes, fee_rate, seed,
 
     buffer = ReplayBuffer(buffer_size, N_FEATURES)
 
-    prev_action = 1
-    for t in range(1, n_train):
-        s      = extract_features(df_vals, t)
-        s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+    for _ep in range(episodes):
+        prev_action = 1
+        for t in range(1, n_train):
+            s      = extract_features(df_vals, t)
+            s_next = extract_features(df_vals, min(t + 1, n_train - 1))
 
-        # ε-greedy 탐색
-        if len(buffer) < batch_size or np.random.rand() < epsilon:
-            action = np.random.randint(0, 2)
-        else:
-            logits, _, _ = actor.forward(s)
-            action = int(np.argmax(_softmax(logits)))
+            # ε-greedy 탐색
+            if len(buffer) < batch_size or np.random.rand() < epsilon:
+                action = np.random.randint(0, 2)
+            else:
+                logits, _, _ = actor.forward(s)
+                action = int(np.argmax(_softmax(logits)))
 
-        _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
-        reward  = (returns[t] if action == 1 else 0.0) - _fee
-        prev_action = action
-        buffer.push(s, action, reward, s_next, int(t == n_train - 1))
+            _fee    = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            reward  = (returns[t] if action == 1 else 0.0) - _fee
+            prev_action = action
+            buffer.push(s, action, reward, s_next, int(t == n_train - 1))
 
-        if len(buffer) < batch_size:
-            continue
+            if len(buffer) < batch_size:
+                continue
 
-        s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
+            s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
 
-        for j in range(batch_size):
-            s_j  = s_b[j]
-            a_j  = int(a_b[j])
-            r_j  = float(r_b[j])
-            ns_j = ns_b[j]
+            for j in range(batch_size):
+                s_j  = s_b[j]
+                a_j  = int(a_b[j])
+                r_j  = float(r_b[j])
+                ns_j = ns_b[j]
 
-            # 소프트 V(s') — 타겟 Q + 현재 정책
-            logits_next, _, _ = actor.forward(ns_j)
-            probs_next        = _softmax(logits_next)
-            q_next, _, _      = critic_tgt.forward(ns_j)
-            v_soft_next = float(np.sum(
-                probs_next * (q_next - alpha * np.log(probs_next + 1e-10))
-            ))
-            y = r_j + gamma * (1.0 - float(d_b[j])) * v_soft_next
+                # 소프트 V(s') — 타겟 Q + 현재 정책
+                logits_next, _, _ = actor.forward(ns_j)
+                probs_next        = _softmax(logits_next)
+                q_next, _, _      = critic_tgt.forward(ns_j)
+                v_soft_next = float(np.sum(
+                    probs_next * (q_next - alpha * np.log(probs_next + 1e-10))
+                ))
+                y = r_j + gamma * (1.0 - float(d_b[j])) * v_soft_next
 
-            # Critic 갱신 (MSE)
-            q_all, pre_c, acts_c = critic.forward(s_j)
-            td_err       = float(q_all[a_j]) - y
-            grad_q       = np.zeros(2)
-            grad_q[a_j]  = td_err
-            critic.backward_and_update(pre_c, acts_c, grad_q, lr=lr)
+                # Critic 갱신 (MSE)
+                q_all, pre_c, acts_c = critic.forward(s_j)
+                td_err       = float(q_all[a_j]) - y
+                grad_q       = np.zeros(2)
+                grad_q[a_j]  = td_err
+                critic.backward_and_update(pre_c, acts_c, grad_q, lr=lr)
 
-            # Actor 갱신: ∂(-L_a)/∂z_i = π_i·(v_soft - q_adj_i)
-            logits_cur, pre_a, acts_a = actor.forward(s_j)
-            probs_cur   = _softmax(logits_cur)
-            q_all_cur, _, _ = critic.forward(s_j)
-            q_adj       = q_all_cur - alpha * np.log(probs_cur + 1e-10)
-            v_soft_cur  = float(np.sum(probs_cur * q_adj))
-            grad_actor  = probs_cur * (v_soft_cur - q_adj)
-            actor.backward_and_update(pre_a, acts_a, grad_actor, lr=lr)
+                # Actor 갱신: ∂(-L_a)/∂z_i = π_i·(v_soft - q_adj_i)
+                logits_cur, pre_a, acts_a = actor.forward(s_j)
+                probs_cur   = _softmax(logits_cur)
+                q_all_cur, _, _ = critic.forward(s_j)
+                q_adj       = q_all_cur - alpha * np.log(probs_cur + 1e-10)
+                v_soft_cur  = float(np.sum(probs_cur * q_adj))
+                grad_actor  = probs_cur * (v_soft_cur - q_adj)
+                actor.backward_and_update(pre_a, acts_a, grad_actor, lr=lr)
 
-            # 자동 α 갱신
-            log_pi_a  = float(np.log(probs_cur[a_j] + 1e-10))
-            alpha_grad = -(log_pi_a + H_target)
-            log_alpha[0] -= SAC_ALPHA_LR * alpha_grad
-            log_alpha[0]  = float(np.clip(log_alpha[0], -5, 2))
-            alpha         = float(np.exp(log_alpha[0]))
+                # 자동 α 갱신
+                log_pi_a  = float(np.log(probs_cur[a_j] + 1e-10))
+                alpha_grad = -(log_pi_a + H_target)
+                log_alpha[0] -= SAC_ALPHA_LR * alpha_grad
+                log_alpha[0]  = float(np.clip(log_alpha[0], -5, 2))
+                alpha         = float(np.exp(log_alpha[0]))
 
-        if t % target_update_freq == 0:
-            critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
+            if t % target_update_freq == 0:
+                critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
 
     return actor, critic
 
@@ -837,70 +838,210 @@ def _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed,
     critic     = TinyMLP([N_FEATURES + 1, NN_HIDDEN, 1],         seed=seed + 1, lr=lr)
     critic_tgt = critic.copy()
 
-    buffer     = ReplayBuffer(buffer_size, N_FEATURES)
-
-    ou_state = np.zeros(1)  # OU noise 상태
+    buffer   = ReplayBuffer(buffer_size, N_FEATURES)
     ou_theta = 0.15
     ou_sigma = 0.2
 
-    prev_pos = 0.5
-    for t in range(1, n_train):
-        s      = extract_features(df_vals, t)
-        s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+    for _ep in range(episodes):
+        ou_state = np.zeros(1)  # OU noise — 에피소드마다 초기화
+        prev_pos = 0.5
+        for t in range(1, n_train):
+            s      = extract_features(df_vals, t)
+            s_next = extract_features(df_vals, min(t + 1, n_train - 1))
 
-        # OU noise 탐색
-        ou_state += -ou_theta * ou_state + ou_sigma * np.random.randn(1)
-        logit_a, _, _ = actor.forward(s)
-        mu      = 1.0 / (1.0 + np.exp(-float(logit_a[0])))
-        pos     = float(np.clip(mu + epsilon * float(ou_state[0]), 0.0, 1.0))
+            # OU noise 탐색
+            ou_state += -ou_theta * ou_state + ou_sigma * np.random.randn(1)
+            logit_a, _, _ = actor.forward(s)
+            mu      = 1.0 / (1.0 + np.exp(-float(logit_a[0])))
+            pos     = float(np.clip(mu + epsilon * float(ou_state[0]), 0.0, 1.0))
 
-        # 연속 포지션 보상: position × return - fee·|Δposition|
-        _fee   = fee_rate * abs(pos - prev_pos)
-        reward = returns[t] * pos - _fee
-        prev_pos = pos
-        buffer.push(s, pos, reward, s_next, int(t == n_train - 1))
+            # 연속 포지션 보상: position × return - fee·|Δposition|
+            _fee   = fee_rate * abs(pos - prev_pos)
+            reward = returns[t] * pos - _fee
+            prev_pos = pos
+            buffer.push(s, pos, reward, s_next, int(t == n_train - 1))
 
-        if len(buffer) < batch_size:
-            continue
+            if len(buffer) < batch_size:
+                continue
 
-        s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
+            s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
 
-        for j in range(batch_size):
-            s_j  = s_b[j]
-            a_j  = float(a_b[j])
-            r_j  = float(r_b[j])
-            ns_j = ns_b[j]
+            for j in range(batch_size):
+                s_j  = s_b[j]
+                a_j  = float(a_b[j])
+                r_j  = float(r_b[j])
+                ns_j = ns_b[j]
 
-            # 타겟 Q
-            logit_next, _, _ = actor_tgt.forward(ns_j)
-            mu_next = 1.0 / (1.0 + np.exp(-float(logit_next[0])))
-            sa_next = np.append(ns_j, mu_next)
-            q_next, _, _ = critic_tgt.forward(sa_next)
-            y = r_j + gamma * (1.0 - float(d_b[j])) * float(q_next[0])
+                # 타겟 Q
+                logit_next, _, _ = actor_tgt.forward(ns_j)
+                mu_next = 1.0 / (1.0 + np.exp(-float(logit_next[0])))
+                sa_next = np.append(ns_j, mu_next)
+                q_next, _, _ = critic_tgt.forward(sa_next)
+                y = r_j + gamma * (1.0 - float(d_b[j])) * float(q_next[0])
 
-            # Critic 갱신
-            sa      = np.append(s_j, a_j)
-            q_val, pre_c, acts_c = critic.forward(sa)
-            critic_err = float(q_val[0]) - y
-            critic.backward_and_update(pre_c, acts_c, np.array([critic_err]), lr=lr)
+                # Critic 갱신
+                sa      = np.append(s_j, a_j)
+                q_val, pre_c, acts_c = critic.forward(sa)
+                critic_err = float(q_val[0]) - y
+                critic.backward_and_update(pre_c, acts_c, np.array([critic_err]), lr=lr)
 
-            # Actor 갱신: ∇_θ J = (∂Q/∂a) · (∂sigmoid/∂logit) — 체인 규칙
-            logit_cur, pre_a, acts_a = actor.forward(s_j)
-            mu_cur  = 1.0 / (1.0 + np.exp(-float(logit_cur[0])))
-            sa_cur  = np.append(s_j, mu_cur)
-            _q_cur, pre_c2, acts_c2 = critic.forward(sa_cur)
-            # critic 입력에 대한 기울기 (가중치 갱신 없이)
-            grad_sa      = critic.get_grad_input(pre_c2, acts_c2, np.array([-1.0]))
-            dQ_dmu       = -float(grad_sa[-1])                    # ∂Q/∂μ
-            dmu_dlogit   = mu_cur * (1.0 - mu_cur)                # sigmoid 미분
-            grad_logit   = float(np.sign(dQ_dmu)) * abs(dmu_dlogit)  # 안정화
-            actor.backward_and_update(pre_a, acts_a, np.array([-dQ_dmu * dmu_dlogit]), lr=lr)
+                # Actor 갱신: ∇_θ J = (∂Q/∂a) · (∂sigmoid/∂logit) — 체인 규칙
+                logit_cur, pre_a, acts_a = actor.forward(s_j)
+                mu_cur  = 1.0 / (1.0 + np.exp(-float(logit_cur[0])))
+                sa_cur  = np.append(s_j, mu_cur)
+                _q_cur, pre_c2, acts_c2 = critic.forward(sa_cur)
+                # critic 입력에 대한 기울기 (가중치 갱신 없이)
+                grad_sa    = critic.get_grad_input(pre_c2, acts_c2, np.array([-1.0]))
+                dQ_dmu     = -float(grad_sa[-1])          # ∂Q/∂μ
+                dmu_dlogit = mu_cur * (1.0 - mu_cur)      # sigmoid 미분
+                actor.backward_and_update(pre_a, acts_a, np.array([-dQ_dmu * dmu_dlogit]), lr=lr)
 
-        # 소프트 갱신 (매 스텝)
-        actor_tgt.soft_update_from(actor,   tau=DDPG_TAU)
-        critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
+            # 소프트 갱신 (매 스텝)
+            actor_tgt.soft_update_from(actor,   tau=DDPG_TAU)
+            critic_tgt.soft_update_from(critic, tau=DDPG_TAU)
 
     return actor, critic
+
+
+# ── ACER ─────────────────────────────────────────────────────────────────────
+
+def _train_acer(df, lr, gamma, epsilon, episodes, fee_rate, seed,
+                buffer_size=2000, c_clip=10.0, retrace_lambda=0.95):
+    """ACER — Actor-Critic with Experience Replay (Wang et al., 2016).
+
+    [강화학습] Retrace(λ) + Truncated Importance Sampling
+    ──────────────────────────────────────────────────────
+    행동 정책 μ: ε-greedy (on-policy 롤아웃)
+    IS 비율    : ρ_t = π(a_t|s_t) / μ(a_t|s_t)
+    절단 IS    : c_t = min(c̄, ρ_t) · λ
+
+    Retrace(λ) 역방향 (t=T,...,0):
+      Q^ret_T = r_T + γ·V(s_{T+1})
+      Q^ret_t = r_t + γ·V(s_{t+1}) + γ·c_{t+1}·(Q^ret_{t+1} − Q(s_{t+1}, a_{t+1}))
+
+    Actor gradient (주항 + 보정항):
+      주항:   −min(c̄, ρ_t) · (Q^ret_t − V(s_t)) · (e_{a_t} − π_t)
+      보정항: −Σ_a max(0, 1 − c̄/ρ(a|s_t)) · π(a|s_t) · (Q(s_t,a) − V(s_t)) · (e_a − π_t)
+
+    2-action 특성 활용: μ(1−a|s) = 1 − μ(a|s) → 보정항을 한 번의 추가 계산으로 처리
+    Trust Region: 생략 (NumPy 구현 범위 내 단순화)
+    """
+    from common.nn_utils import TinyMLP, ReplayBuffer, extract_features
+
+    np.random.seed(seed)
+    n_days  = len(df)
+    n_train = max(int(n_days * TRAIN_RATIO), 20)
+    df_vals = _make_df_vals(df)
+    returns = df_vals['returns']
+
+    actor = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed,     lr=lr)   # π(a|s)
+    q_net = TinyMLP([N_FEATURES, NN_HIDDEN, 2], seed=seed + 1, lr=lr)   # Q(s,·)
+
+    buffer = ReplayBuffer(buffer_size, N_FEATURES)
+
+    def _get_V(s_vec):
+        """V(s) = Σ_a π(a|s)·Q(s,a)"""
+        q_all, _, _ = q_net.forward(s_vec)
+        lg, _, _    = actor.forward(s_vec)
+        return float(np.sum(_softmax(lg) * q_all))
+
+    for _ in range(episodes):
+        # ── On-policy 롤아웃 수집 ─────────────────────────────────────────────
+        traj = []          # (s, a, r, s_next, done, mu_a)
+        prev_action = 1
+
+        for t in range(1, n_train):
+            s      = extract_features(df_vals, t)
+            s_next = extract_features(df_vals, min(t + 1, n_train - 1))
+
+            logits, _, _ = actor.forward(s)
+            pi = _softmax(logits)
+
+            # ε-greedy 행동 정책 μ
+            # μ(a|s) = ε/2 + (1-ε)·π(a|s)  (2-action ε-greedy 정확한 확률)
+            if np.random.rand() < epsilon:
+                action = np.random.randint(0, 2)
+            else:
+                action = np.random.choice([0, 1], p=pi)
+            mu_a = epsilon * 0.5 + (1.0 - epsilon) * float(pi[action])
+
+            _fee = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            ent  = -np.sum(pi * np.log(pi + 1e-10))
+            r    = (returns[t] if action == 1 else 0.0) - _fee + ENTROPY_COEFF * ent
+            prev_action = action
+
+            done = int(t == n_train - 1)
+            traj.append((s, action, r, s_next, done, mu_a))
+            buffer.push(s, action, r, s_next, done, float(np.log(mu_a + 1e-10)))
+
+        if len(traj) < 2:
+            continue
+
+        # ── Retrace(λ) Q 타겟 역방향 계산 ────────────────────────────────────
+        n      = len(traj)
+        q_rets = np.zeros(n)
+        R      = _get_V(traj[-1][3]) if not traj[-1][4] else 0.0   # 부트스트랩
+
+        for i in reversed(range(n)):
+            s_i, a_i, r_i, s_next_i, done_i, mu_a_i = traj[i]
+            V_next = _get_V(s_next_i) if not done_i else 0.0
+
+            if i == n - 1:
+                q_rets[i] = r_i + gamma * V_next
+            else:
+                # c_{i+1} = λ·min(c̄, ρ_{i+1}),  ρ_{i+1} = π(a_{i+1}|s_{i+1}) / μ(a_{i+1})
+                s_i1, a_i1, _, _, _, mu_a_i1 = traj[i + 1]
+                lg_i1, _, _  = actor.forward(s_i1)
+                pi_i1        = _softmax(lg_i1)
+                rho_i1       = float(pi_i1[a_i1]) / max(mu_a_i1, 1e-10)
+                c_i1         = retrace_lambda * min(c_clip, rho_i1)
+
+                q_all_i1, _, _ = q_net.forward(s_i1)
+                Q_i1_a         = float(q_all_i1[a_i1])
+
+                q_rets[i] = r_i + gamma * V_next + gamma * c_i1 * (R - Q_i1_a)
+
+            R = q_rets[i]
+
+        # ── Actor & Q-network 업데이트 ────────────────────────────────────────
+        for i in range(n):
+            s_i, a_i, _, _, _, mu_a_i = traj[i]
+            q_ret = q_rets[i]
+
+            logits_i, pre_a, acts_a = actor.forward(s_i)
+            pi_i                    = _softmax(logits_i)
+            q_all_i, pre_q, acts_q  = q_net.forward(s_i)
+            V_i = float(np.sum(pi_i * q_all_i))
+
+            # Q-network 갱신 (MSE: 선택 행동만)
+            q_err       = np.zeros(2)
+            q_err[a_i]  = float(q_all_i[a_i]) - q_ret
+            q_net.backward_and_update(pre_q, acts_q, q_err, lr=lr)
+
+            # IS 비율 (선택 행동)
+            rho_i    = float(pi_i[a_i]) / max(mu_a_i, 1e-10)
+            rho_clip = min(c_clip, rho_i)
+
+            # 주항: −min(c̄, ρ)·(Q^ret − V)·(e_a − π)
+            score_a        = np.zeros(2)
+            score_a[a_i]   = 1.0
+            score_a       -= pi_i
+            grad_actor     = -rho_clip * (q_ret - V_i) * score_a
+
+            # 보정항: 비선택 행동 (2-action: μ(1−a|s) = 1 − μ(a|s))
+            a_other        = 1 - a_i
+            mu_other       = max(1.0 - mu_a_i, 1e-10)
+            rho_other      = float(pi_i[a_other]) / mu_other
+            coeff_other    = max(0.0, 1.0 - c_clip / max(rho_other, 1e-10))
+            score_other    = np.zeros(2)
+            score_other[a_other] = 1.0
+            score_other   -= pi_i
+            grad_actor    -= (coeff_other * float(pi_i[a_other])
+                              * (float(q_all_i[a_other]) - V_i) * score_other)
+
+            actor.backward_and_update(pre_a, acts_a, grad_actor, lr=lr)
+
+    return actor, q_net
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -918,7 +1059,7 @@ def run_neural_rl(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
     gamma     : 할인율
     epsilon   : 탐색률 (ε-greedy / OU noise 스케일)
     episodes  : 훈련 에피소드 수
-    algorithm : 'A2C' | 'A3C' | 'PPO' | 'SAC' | 'DDPG'
+    algorithm : 'A2C' | 'A3C' | 'PPO' | 'ACER' | 'SAC' | 'DDPG'
     seed      : 난수 시드
     fee_rate  : 매매 수수료율
 
@@ -934,12 +1075,14 @@ def run_neural_rl(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
         actor, _ = _train_a3c(df, lr, gamma, epsilon, episodes, fee_rate, seed)
     elif algorithm == "PPO":
         actor, _ = _train_ppo(df, lr, gamma, epsilon, episodes, fee_rate, seed)
+    elif algorithm == "ACER":
+        actor, _ = _train_acer(df, lr, gamma, epsilon, episodes, fee_rate, seed)
     elif algorithm == "SAC":
         actor, _ = _train_sac(df, lr, gamma, epsilon, episodes, fee_rate, seed)
     elif algorithm == "DDPG":
         actor, _ = _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed)
     else:
         raise ValueError(f"Unknown algorithm: {algorithm!r}. "
-                         f"Choose from 'A2C', 'A3C', 'PPO', 'SAC', 'DDPG'.")
+                         f"Choose from 'A2C', 'A3C', 'PPO', 'ACER', 'SAC', 'DDPG'.")
 
     return _eval_neural(df, actor, algorithm, fee_rate, seed)

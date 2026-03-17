@@ -523,7 +523,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_algorithm = st.selectbox(
             "RL Algorithm",
-            options=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"],
+            options=["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"],
             index=0,
             key="fb_algorithm",
             help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
@@ -1049,7 +1049,7 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
     ─────────────────
     use_vol     : [P3] True이면 8상태 변동성 신호 활성화 (Rolling_Std 컬럼 필요).
     roll_period : [P4] OOS 구간 재학습 주기 (봉 수). None이면 기존 동작.
-    algorithm   : 'STATIC' | 'A2C' | 'A3C' | 'PPO' | 'SAC' | 'DDPG'
+    algorithm   : 'STATIC' | 'A2C' | 'A3C' | 'PPO' | 'ACER' | 'SAC' | 'DDPG'
                   STATIC → 기존 tabular Actor-Critic / 나머지 → 신경망 RL
 
     Returns (9개 — 기존 7개 + s_theta, v_qtable)
@@ -1085,7 +1085,7 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
             return_policy=True
         )
     else:
-        # 신경망 RL 알고리즘 (A2C / A3C / PPO / SAC / DDPG)
+        # 신경망 RL 알고리즘 (A2C / A3C / PPO / ACER / SAC / DDPG)
         s_trace, s_log, s_theta = run_neural_rl(
             df, lr=lr, gamma=gamma, epsilon=epsilon,
             episodes=train_episodes, algorithm=algorithm,
@@ -1215,7 +1215,7 @@ if apply_all_clicked and st.session_state.fallback_params:
                 st.session_state[f"v_eps_{_mn}_{_sn}"]         = _fp["v_epsilon"]
             if _chks.get("algo"):
                 _new_algo = _fp.get("algorithm", "STATIC")
-                if _new_algo in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"]:
+                if _new_algo in ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
                     st.session_state[f"algo_{_mn}_{_sn}"]      = _new_algo
             if _chks.get("sim_min"):
                 st.session_state[f"sim_min_{_mn}_{_sn}"]       = _fp["sim_min"]
@@ -1333,7 +1333,7 @@ for m_config in sorted_modules:
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
                     if "algorithm" in _pend:
                         _pend_algo = _pend["algorithm"]
-                        if _pend_algo in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"]:
+                        if _pend_algo in ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
                             st.session_state[f"algo_{m_name}_{stock_name}"] = _pend_algo
 
                 # ── Simulation 완료 후 저장 확인 키 (버튼 행에서 처리) ──
@@ -1426,11 +1426,12 @@ for m_config in sorted_modules:
                     hc0, hc1, hc2, hc3, hc4, hc5, hc6 = st.columns(7)
                     with hc0:
                         _algo_default = p_settings.get("algorithm", "STATIC")
+                        _ALGO_OPTS = ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]
                         l_algorithm = st.selectbox(
                             "RL Algorithm",
-                            options=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"],
-                            index=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"].index(
-                                _algo_default if _algo_default in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"] else "STATIC"
+                            options=_ALGO_OPTS,
+                            index=_ALGO_OPTS.index(
+                                _algo_default if _algo_default in _ALGO_OPTS else "STATIC"
                             ),
                             key=f"algo_{m_name}_{stock_name}",
                             help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
