@@ -11,3 +11,10 @@ __pycache__/
 .streamlit/secrets.toml
 
 Logic.txt
+memo.txt
+
+# Claude 작업 지침 (로컬 전용)
+CLAUDE.md
+
+# 캡처 이미지 (로컬 전용)
+Captures/

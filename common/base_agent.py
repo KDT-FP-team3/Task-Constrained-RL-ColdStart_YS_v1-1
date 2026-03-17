@@ -565,11 +565,13 @@ def _train_a3c(df, lr, gamma, epsilon, episodes, fee_rate, seed, n_steps=5):
                 break
 
             # 부트스트랩: 마지막 상태 이후 V
+            # R_init = V(s_{t+n}), 역방향 루프에서 R = r_{t+k} + γ·R 적용
+            # → 최종 R_t = r_t + γr_{t+1} + ... + γ^{n-1}r_{t+n-1} + γ^n·V(s_{t+n}) ✓
             t_end = t + len(transitions) - 1
             if t_end + 1 < n_train:
                 s_final = extract_features(df_vals, t_end + 1)
                 v_final, _, _ = critic.forward(s_final)
-                R = gamma * float(v_final[0])
+                R = float(v_final[0])   # γ 미적용: 루프 내 첫 R = r_{t+n-1} + γ·V(s_{t+n})
             else:
                 R = 0.0
 

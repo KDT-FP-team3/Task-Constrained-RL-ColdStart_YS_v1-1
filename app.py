@@ -235,6 +235,12 @@ def _save_sim_params_to_config(m_config, stock_idx, new_params):
     with open(config_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
+    # 저장 후 모듈 캐시 갱신: 같은 세션 내 p_settings가 최신 값을 반환하도록
+    try:
+        importlib.reload(m_config)
+    except Exception:
+        pass  # reload 실패 시 무시 (다음 서버 재시작 시 반영됨)
+
 
 if 'run_all_queue' not in st.session_state:
     st.session_state.run_all_queue = []   # [(m_name, stock_name), ...] 순차 처리 큐
@@ -511,6 +517,18 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
             help="체크 해제된 에이전트는 연산 없이 0% 수평선으로 표시"
         )
 
+    _ck, _wg = st.columns([1, 5])
+    with _ck:
+        st.checkbox("", value=False, key="fb_chk_algo", label_visibility="collapsed")
+    with _wg:
+        global_algorithm = st.selectbox(
+            "RL Algorithm",
+            options=["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"],
+            index=0,
+            key="fb_algorithm",
+            help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
+        )
+
     st.markdown(
         "<small><b>RL Hyperparameters &nbsp;"
         "<span style='color:#4a90d9;'>STATIC RL</span>: α / γ / ε(S) &nbsp;|&nbsp; "
@@ -557,6 +575,7 @@ if apply_all_clicked:
         "sim_min":   bool(st.session_state.get("fb_chk_sim_min",   False)),
         "sim_mult":  bool(st.session_state.get("fb_chk_sim_mult",  False)),
         "active":    bool(st.session_state.get("fb_chk_active",    False)),
+        "algo":      bool(st.session_state.get("fb_chk_algo",      False)),
         "lr":        bool(st.session_state.get("fb_chk_lr",        False)),
         "gamma":     bool(st.session_state.get("fb_chk_gamma",     False)),
         "eps":       bool(st.session_state.get("fb_chk_eps",       False)),
@@ -573,6 +592,7 @@ if apply_all_clicked:
         "sim_min":         int(global_sim_min),
         "sim_mult":        int(global_sim_mult),
         "active_agents":   global_active_agents,
+        "algorithm":       global_algorithm,
         "lr":              global_lr,
         "gamma":           global_gamma,
         "epsilon":         global_epsilon,
@@ -1126,7 +1146,7 @@ if sim_all_btn:
 
 # ── All 적용: 모든 멤버·종목 슬라이더 키 일괄 업데이트 ──
 _ALL_INTERVALS = ["15m", "1h", "1d", "1wk", "1mo"]
-_ALL_CHK_KEYS  = ["timeframe","episodes","train_epi","frame","seed","auto","active","lr","gamma","eps","v_eps"]
+_ALL_CHK_KEYS  = ["timeframe","episodes","train_epi","frame","seed","auto","active","algo","lr","gamma","eps","v_eps","sim_min","sim_mult"]
 if apply_all_clicked and st.session_state.fallback_params:
     _fp   = st.session_state.fallback_params
     _chks = _fp.get("checked", {k: True for k in _ALL_CHK_KEYS})
@@ -1300,6 +1320,10 @@ for m_config in sorted_modules:
                     st.session_state[f"gamma_{m_name}_{stock_name}"] = _pend["gamma"]
                     st.session_state[f"eps_{m_name}_{stock_name}"]   = _pend["epsilon"]
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
+                    if "algorithm" in _pend:
+                        _pend_algo = _pend["algorithm"]
+                        if _pend_algo in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"]:
+                            st.session_state[f"algo_{m_name}_{stock_name}"] = _pend_algo
 
                 # ── Simulation 완료 후 저장 확인 키 (버튼 행에서 처리) ──
                 _sim_confirm_key = f"sim_confirm_{hist_key}"
@@ -2003,7 +2027,7 @@ for m_config in sorted_modules:
                     eff_seed      = fp["seed"]                                    if _fchk.get("seed")      else l_seed
                     eff_v_eps     = fp.get("v_epsilon", fp["epsilon"])            if _fchk.get("v_eps")     else l_v_epsilon
                     eff_active_agents = fp.get("active_agents", ["Vanilla RL", "STATIC RL"]) if _fchk.get("active") else l_active_agents
-                    eff_algorithm = l_algorithm
+                    eff_algorithm = fp.get("algorithm", "STATIC") if _fchk.get("algo") else l_algorithm
                     eff_sim_min  = fp.get("sim_min",  l_sim_min)  if _fchk.get("sim_min")  else l_sim_min
                     eff_sim_mult = fp.get("sim_mult", l_sim_mult) if _fchk.get("sim_mult") else l_sim_mult
                     _fb_parts = []
@@ -2015,6 +2039,7 @@ for m_config in sorted_modules:
                     if _fchk.get("train_epi"): _fb_parts.append(f"Episodes={eff_train_epi}")
                     if _fchk.get("seed"):      _fb_parts.append(f"Seed={eff_seed}")
                     if _fchk.get("active"):    _fb_parts.append(f"Agents={', '.join(eff_active_agents) if eff_active_agents else '없음'}")
+                    if _fchk.get("algo"):      _fb_parts.append(f"Algo={eff_algorithm}")
                     if _fchk.get("sim_min"):   _fb_parts.append(f"MinSteps={eff_sim_min}")
                     if _fchk.get("sim_mult"):  _fb_parts.append(f"SimMult={eff_sim_mult}")
                     st.info(

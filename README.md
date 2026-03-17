@@ -8,138 +8,57 @@
 
 ### 프로젝트 개요
 
-본 프로젝트는 **Task-Constrained RL Cold-Start** 조건에서 EMA 기반 4-상태 Actor-Critic 에이전트(STATIC RL)와 2-상태 Q-Learning 에이전트(Vanilla RL)의 성과를 비교하는 멀티 에이전트 트레이딩 시뮬레이터다. 6명의 팀원이 각자 담당 종목에 에이전트를 배치하여 팀 펀드 수익률을 측정한다.
+본 프로젝트는 **Task-Constrained RL Cold-Start** 조건에서 복수의 강화학습 알고리즘을 비교하는 멀티 에이전트 트레이딩 시뮬레이터다. 6명의 팀원이 각자 담당 종목에 에이전트를 배치하여 개인 수익률과 팀 포트폴리오 수익률을 측정한다. 핵심 비교 대상은 EMA 기반 4-상태 **STATIC Actor-Critic** (Policy Gradient) 과 2-상태 **Vanilla Q-Learning** 이며, 추가로 심층 강화학습 5종 (**A2C / A3C / PPO / SAC / DDPG**, NumPy 전용 TinyMLP)을 지원한다. 하이퍼파라미터는 **PG Actor-Critic Optimizer**가 복합 Gap 목표를 극대화하는 방향으로 자동 탐색한다. 모든 평가는 **워크포워드 검증**(앞 70% 학습 / 뒤 30% OOS)으로 과적합을 방지한다.
 
-**핵심 연구 질문**
-
-사전 데이터 없이 Cold-Start 조건에서, EMA 기반 4-상태 Actor-Critic 에이전트는 2-상태 Q-Learning 에이전트 대비 얼마나 높은 누적 수익률을 달성하는가?
+**핵심 연구 질문**: 사전 데이터 없이 Cold-Start 조건에서, EMA 기반 4-상태 Actor-Critic 에이전트는 2-상태 Q-Learning 에이전트 대비 얼마나 높은 누적 수익률을 달성하는가?
 
 **Alpha Gap** = STATIC RL 최종 수익률 − Vanilla RL 최종 수익률
 
-- Gap ≥ 1%p : 목표 달성
-- Gap ≥ 5%p : 우수 달성
-- Gap ≥ 25%p : 최고 달성 🏆
+| Gap (STATIC vs Market) | 판정 |
+|------------------------|------|
+| ≥ 1%p | ✅ 목표 달성 |
+| ≥ 5%p | 우수 달성 |
+| ≥ 25%p | 최고 달성 🏆 |
 
 ---
 
-### 알고리즘 비교 (improve 4-9 기준)
+### 팀 구성 및 담당 종목 (improve 6-1 기준)
 
-| 항목            | STATIC RL                                                      | Vanilla RL                                                                  |
-| --------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| 알고리즘        | Actor-Critic (Policy Gradient Theorem)                         | Tabular Q-Learning                                                          |
-| 상태 수         | 4 (추세 × EMA 위치)                                            | 2 (추세만)                                                                  |
-| 정책 표현       | Softmax 확률 정책 π_θ(a\|s)                                    | argmax Q(s, a)                                                              |
-| Baseline        | TD Critic V(s) (분산 감소)                                     | 없음                                                                        |
-| 초기화          | theta[s,1] = fee 비례 BUY 선호                                 | Q[:,1] = max(fee×50, 0.05)                                                  |
-| 엔트로피 정규화 | r_eff = r + **0.05**·H(π) (Buy&Hold 고착 방지, 4-8: 0.02→0.05) | 없음                                                                        |
-| 탐험            | 상수 epsilon-greedy                                            | epsilon annealing (2ε→ε)                                                    |
-| 에피소드 시작   | prev_action=0                                                  | prev_action=1 (BUY 고정, CASH 편향 제거)                                    |
-| 훈련 후 보정    | 없음                                                           | **전체 상태** Q[s,BUY] ≥ Q[s,CASH]+**0.005** (4-9: margin 0.001→0.005 강화) |
-| 훈련 데이터     | 전체의 첫 70% (워크포워드)                                     | 전체의 첫 70% (워크포워드)                                                  |
-| 역할            | 평가 대상                                                      | 비교 기준선                                                                 |
+| 멤버 | 담당 종목 | Ticker | 시드 | 최적 파라미터 | Gap |
+|------|----------|--------|------|--------------|-----|
+| Member 1 | S&P 500 ETF | SPY | 42 | lr=0.0802, γ=0.8732, ε=0.1667, v_ε=0.1347 | +8.66%p |
+| Member 2 | Nasdaq 100 ETF | QQQ | 137 | lr=0.0722, γ=0.9663, ε=0.2116, v_ε=0.0620 | +35.62%p 🏆 |
+| Member 3 | KOSPI 지수 | ^KS11 | 2024 | lr=0.0050, γ=0.9087, ε=0.1465, v_ε=0.1947 | — ⚠️ |
+| Member 4 | KOSDAQ 지수 | ^KQ11 | 777 | lr=0.0380, γ=0.9217, ε=0.0760, v_ε=0.0616 | +21.36%p |
+| Member 5 | 미국배당다우존스 ETF | SCHD | 314 | lr=0.0624, γ=0.9449, ε=0.1708, v_ε=0.0879 | +0.57%p |
+| Member 6 | 로열 골드 | RGLD | 99 | lr=0.0269, γ=0.9380, ε=0.1509, v_ε=0.1268 | +17.81%p |
 
----
+추가 지원 종목: NVDA, TSLA, GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
 
-### 팀 구성 및 담당 종목
-
-| 멤버     | 담당 종목      | Ticker | 시드 | 최적 파라미터 (improve 4-9)               |
-| -------- | -------------- | ------ | ---- | ----------------------------------------- |
-| Member 1 | S&P 500 ETF    | SPY    | 42   | lr=0.0496, γ=0.8863, ε=0.1190, v_ε=0.0993 |
-| Member 2 | Nasdaq 100 ETF | QQQ    | 137  | lr=0.0650, γ=0.9075, ε=0.1005, v_ε=0.1043 |
-| Member 3 | KOSPI 지수     | ^KS11  | 2024 | lr=0.0227, γ=0.9569, ε=0.1386, v_ε=0.1762 |
-| Member 4 | KOSDAQ 지수    | ^KQ11  | 777  | lr=0.0168, γ=0.9084, ε=0.0863, v_ε=0.1157 |
-| Member 5 | NVIDIA         | NVDA   | 314  | lr=0.0497, γ=0.9183, ε=0.0443, v_ε=0.1055 |
-| Member 6 | Tesla          | TSLA   | 99   | lr=0.0364, γ=0.8873, ε=0.1283, v_ε=0.0842 |
-
-추가 지원 종목: GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
+> KOSPI/KOSDAQ: 워크포워드 구조적 OOS 한계 — 학습 구간 횡보/하락, OOS 급등. 어떤 파라미터로도 시장 수익률 초과 어려움 (정상 결과).
 
 ---
 
-### 최신 시뮬레이션 성과 요약 (improve 4-8 실행 결과 — improve 4-9 config 반영 전)
+### 알고리즘 비교 요약
 
-| 종목   | STATIC RL | Market   | Vanilla RL (σ)     | Alpha Gap | 비고                                                 |
-| ------ | --------- | -------- | ------------------ | --------- | ---------------------------------------------------- |
-| SPY    | +32.62%   | +32.70%  | -4.80% (σ=17.62%)  | —         | Vanilla 음수 — Q-floor margin 강화(4-9) 로 해결 예상 |
-| QQQ    | +74.63%   | +38.34%  | -16.90% (σ=0.00%)  | +47.03%p  | 🏆 STATIC 우수, Vanilla 고착                         |
-| KOSPI  | +47.21%   | +103.72% | +6.55% (σ=0.00%)   | —         | ⚠️ OOS 구조 한계 (학습↓ OOS↑)                        |
-| KOSDAQ | +2.45%    | +29.56%  | -24.70% (σ=0.00%)  | —         | ⚠️ OOS 구조 한계, σ=0.263 미수렴                     |
-| NVDA   | +195.85%  | +105.33% | -23.05% (σ=83.27%) | +120.01%p | 🏆 최대 수익                                         |
-| TSLA   | +138.94%  | +139.16% | +14.64% (σ=58.59%) | +38.74%p  | STATIC≈Market                                        |
-
-**improve 4-8 핵심 관찰 문제점:**
-
-- SPY/QQQ/NVDA/KOSDAQ Vanilla 음수 지속: Q-floor margin 0.001이 훈련 노이즈 대비 부족 → 4-9에서 0.005로 강화
-- KOSPI/KOSDAQ 구조적 OOS 한계: 어떤 파라미터도 OOS 급등 구간 초과 어려움 (정상적 결과)
-
-> **Team Fund (Softmax) = +196.23%**: Softmax 위험조정수익 `score = avg_return / (1+|avg_mdd|)` 기반 비중 배분.
-> NVDA score ≈ 160 >> TSLA score ≈ 90 >> 기타 → NVDA 비중 94.8% 집중 → Team Fund ≈ NVDA 수익.
-> `team_curve = Σ weight_i × s_trace_i` (app.py:575), 값은 수학적으로 정확.
-
-> KOSPI/KOSDAQ는 워크포워드 구조적 한계: 학습 구간(2024~2025 상반기) 횡보/하락, OOS(2025 하반기~2026) 급등. 어떤 파라미터로도 OOS 수익률 초과 어려움.
-
----
-
-### 팀 포트폴리오 대시보드 (Master Fund)
-
-> 6명 멤버 전체 평가 완료 후 Softmax 위험조정수익 가중 배분으로 집계한 Master Fund 대시보드.
-> **NVDA 비중 94.8%** 집중 → **Team Fund +196.23%** 달성.
-
-![Chainers Master Fund Dashboard](Captures/MFP_시뮬레이션_결과_일봉.jpg)
-
-- **Master Fund Contribution (Donut)**: Softmax 점수 `score = avg_return / (1 + |avg_mdd|)` 기반 자본 비중 (NVDA 27.1% → 실물 자본 2.96$)
-- **Profit Comparison (Bar)**: 멤버별 Vanilla RL vs STATIC RL 손익 비교 — NVDA STATIC +1.96$ vs Vanilla -0.23$
-- **Team Fund (흰 실선)**: `Σ weight_i × STATIC_trace_i` 가중 합산 누적 수익 곡선
-
----
-
-### 멤버별 평가 결과 스크린샷
-
-각 멤버의 **누적 수익 비교 차트 / Agent Decision Analysis / Trial History Statistical Analysis** 실행 결과입니다.
-
-#### Member 1 — S&P 500 ETF (SPY) | STATIC +32.62% / Market +32.70%
-
-> STATIC RL이 시장 수익률(Buy&Hold)과 거의 동일한 성과를 달성. 4-상태 EMA 기반 Actor-Critic 정책이 안정적 지수 환경에서 시장을 정밀 추종함.
-
-![Member 1 SPY 평가 결과](Captures/M1_시뮬레이션_결과_일봉.jpg)
-
-#### Member 2 — Nasdaq 100 ETF (QQQ) | STATIC +74.63% / Market +38.34% 🏆
-
-> STATIC RL이 시장 대비 **+36.29%p** 초과 달성. 기술주 지수의 EMA 추세 신호가 4-상태 Actor-Critic 정책 학습에 효과적으로 반영됨.
-
-![Member 2 QQQ 평가 결과](Captures/M2_시뮬레이션_결과_일봉.jpg)
-
-#### Member 3 — KOSPI 지수 (^KS11) | STATIC +47.21% / Market +103.72% ⚠️
-
-> 워크포워드 구조적 OOS 한계: 학습 구간(2024~2025 상반기) 횡보 → OOS(2025 하반기~) 급등. STATIC이 절대 수익 +47%를 달성하나 시장 초과는 불가.
-
-![Member 3 KOSPI 평가 결과](Captures/M3_시뮬레이션_결과_일봉.jpg)
-
-#### Member 4 — KOSDAQ 지수 (^KQ11) | STATIC +2.45% / Market +29.56% ⚠️
-
-> KOSPI와 동일한 구조적 OOS 문제. Vanilla는 -24.70%로 CASH 고착 상태. STATIC이 소규모 양수 수익을 유지하나 시장 초과는 어려움.
-
-![Member 4 KOSDAQ 평가 결과](Captures/M4_시뮬레이션_결과_일봉.jpg)
-
-#### Member 5 — NVIDIA (NVDA) | STATIC +195.85% / Market +105.33% 🏆
-
-> **팀 최고 성과**: STATIC RL이 시장 대비 **+90.52%p** 초과 달성. AI 반도체 급등 사이클에서 EMA 기반 추세 추종 정책이 최대 효과를 발휘.
-
-![Member 5 NVDA 평가 결과](Captures/M5_시뮬레이션_결과_일봉.jpg)
-
-#### Member 6 — Tesla (TSLA) | STATIC +138.94% / Market +139.16%
-
-> STATIC RL이 시장 수익률과 거의 동일하게 추종 (BUY:CASH = 499:0 — 사실상 Buy&Hold). 극도로 높은 변동성 환경에서 엔트로피 정규화로 CASH 액션 46회 발생.
-
-![Member 6 TSLA 평가 결과](Captures/M6_시뮬레이션_결과_일봉.jpg)
+| 항목 | STATIC RL | Vanilla RL | A2C/A3C | PPO | SAC | DDPG |
+|------|----------|-----------|---------|-----|-----|------|
+| 알고리즘 | Actor-Critic (Policy Gradient) | Tabular Q-Learning | Actor-Critic (신경망) | Clipped Surrogate | Soft Actor-Critic (이산) | Deterministic Policy Gradient |
+| 상태 표현 | 4개 이산 상태 (EMA×추세) | 2개 이산 상태 (추세) | 5차원 연속 벡터 | 5차원 연속 벡터 | 5차원 연속 벡터 | 5차원 연속 벡터 |
+| 정책 | Softmax π_θ(a\|s) | argmax Q(s, a) | Softmax π_θ(a\|s) | Softmax + Clip | Softmax + 자동 온도 | Sigmoid μ(s) ∈ [0,1] |
+| Baseline/Critic | TD V(s) | 없음 | TD V(s) | GAE λ=0.95 | Q-Soft | Q(s, μ(s)) |
+| 탐험 | 상수 ε-greedy | ε annealing 2ε→ε | 확률적 정책 | 확률적 정책 | 자동 온도 α | OU noise |
+| 행동 공간 | 이산 {CASH, BUY} | 이산 {CASH, BUY} | 이산 {CASH, BUY} | 이산 {CASH, BUY} | 이산 {CASH, BUY} | 연속 [0, 1] |
+| 역할 | 주 평가 대상 | 비교 기준선 | 신경망 비교 | 신경망 비교 | 신경망 비교 | 신경망 비교 |
 
 ---
 
 ### 거래 수수료
 
-| 시장           | 매수   | 매도   | 왕복 합계 |
-| -------------- | ------ | ------ | --------- |
-| 미국 주식·ETF  | 0.05%  | 0.05%  | 0.10%     |
-| 국내 주식·지수 | 0.015% | 0.215% | 0.23%     |
+| 시장 | 매수 | 매도 | 왕복 합계 |
+|------|------|------|----------|
+| 미국 주식·ETF | 0.05% | 0.05% | 0.10% |
+| 국내 주식·지수 | 0.015% | 0.215% | 0.23% |
 
 ---
 
@@ -147,6 +66,7 @@
 
 - **Run Evaluation**: 현재 파라미터로 RL 에이전트를 평가하고 Trial History를 축적한다.
 - **Simulation**: PG Actor-Critic Optimizer로 하이퍼파라미터를 자동 탐색하여 복합 Gap을 극대화한다.
+- **RL Algorithm 선택**: STATIC / A2C / A3C / PPO / SAC / DDPG 중 선택 (System Parameters 패널).
 - **Fallback Parameters**: 체크박스로 선택한 파라미터만 모든 종목에 일괄 적용하거나 이전 상태로 복원한다.
 - **Trial History Statistical Analysis**: 반복 평가 결과를 박스 플롯, 추이 차트, 통계 요약으로 표시한다.
 - **Ghost Line**: Simulation에서 발견된 최적 파라미터의 수익 곡선을 현재 차트에 점선으로 병렬 표시한다.
@@ -162,13 +82,15 @@ pip install streamlit yfinance numpy pandas plotly
 streamlit run app.py
 ```
 
+---
+
 ## 저작권
 
-본 저장소에 포함된 코드(`doit.ipynb`) 및 모든 출력 이미지 결과물은 저작권법에 의해 보호됩니다.
+본 저장소에 포함된 코드 및 모든 출력 이미지 결과물은 저작권법에 의해 보호됩니다.
 
 저작권자의 명시적 허가 없이 본 자료의 전부 또는 일부를 복제, 배포, 수정, 상업적으로 이용하는 행위를 금합니다.
 
-© 2026. All rights reserved.  
+© 2026. All rights reserved.
 Contact : sjowun@gmail.com
 
 ---
@@ -180,24 +102,26 @@ Contact : sjowun@gmail.com
 ### 목차
 
 1. [시스템 아키텍처](#1-시스템-아키텍처)
-2. [강화학습 알고리즘](#2-강화학습-알고리즘)
-3. [워크포워드 검증 — Train/Test 분리](#3-워크포워드-검증--traintest-분리)
-4. [하이퍼파라미터 탐색 — PG Actor-Critic Optimizer](#4-하이퍼파라미터-탐색--pg-actor-critic-optimizer)
-5. [하이퍼파라미터 상세](#5-하이퍼파라미터-상세)
-6. [랜덤 시드의 역할](#6-랜덤-시드의-역할)
-7. [데이터 파이프라인](#7-데이터-파이프라인)
-8. [포트폴리오 평가 및 성과 지표](#8-포트폴리오-평가-및-성과-지표)
-9. [UI 기능 상세](#9-ui-기능-상세)
-10. [파일 구조](#10-파일-구조)
-11. [Simulation 단계별 연산 흐름](#11-simulation-단계별-연산-흐름)
-12. [개선 이력](#12-개선-이력)
+2. [강화학습 알고리즘 — STATIC / Vanilla](#2-강화학습-알고리즘--static--vanilla)
+3. [강화학습 알고리즘 — 신경망 (A2C / A3C / PPO / SAC / DDPG)](#3-강화학습-알고리즘--신경망-a2c--a3c--ppo--sac--ddpg)
+4. [상태 공간 설계](#4-상태-공간-설계)
+5. [워크포워드 검증 — Train/Test 분리](#5-워크포워드-검증--traintest-분리)
+6. [하이퍼파라미터 탐색 — PG Actor-Critic Optimizer](#6-하이퍼파라미터-탐색--pg-actor-critic-optimizer)
+7. [웹 UI 파라미터 상세](#7-웹-ui-파라미터-상세)
+8. [랜덤 시드의 역할](#8-랜덤-시드의-역할)
+9. [데이터 파이프라인](#9-데이터-파이프라인)
+10. [포트폴리오 평가 및 성과 지표](#10-포트폴리오-평가-및-성과-지표)
+11. [UI 기능 상세](#11-ui-기능-상세)
+12. [파일 구조](#12-파일-구조)
+13. [Simulation 단계별 연산 흐름](#13-simulation-단계별-연산-흐름)
+14. [개선 이력](#14-개선-이력)
 
 ---
 
 ## 1. 시스템 아키텍처
 
 ```
-app.py  (Streamlit 웹 UI, ~1900줄)
+app.py  (Streamlit 웹 UI, ~2300줄)
  |
  +-- 사이드바
  |    +-- Eval. All / Simul. All 버튼
@@ -211,7 +135,7 @@ app.py  (Streamlit 웹 UI, ~1900줄)
  +-- 멤버별 탭 (6개)
       +-- 종목별 파라미터 패널
       |    +-- [1행] Timeframe / Trading Days / Train Episodes / Frame Speed / Base Seed / Auto Run Count / Active Agents
-      |    +-- [2행] LR, Gamma, STATIC ε, Vanilla ε, Sim Min Steps, Sim Step Mult.
+      |    +-- [2행] RL Algorithm / LR / Gamma / STATIC ε / Vanilla ε / Sim Min Steps / Sim Step Mult.
       +-- Run Evaluation / Simulation 버튼
       +-- 좌측 패널
       |    +-- 누적 수익 차트 (Ghost Line 포함)
@@ -223,22 +147,23 @@ app.py  (Streamlit 웹 UI, ~1900줄)
            +-- Trial-by-Trial Return 추이 차트
            +-- Return Distribution 박스 플롯
            +-- Statistics Summary (Mean±σ, Range)
-           +-- Trial 데이터 테이블 (헤더 줄바꿈, 전체 열 표시)
+           +-- Trial 데이터 테이블
 
 common/
- +-- base_agent.py      RL 훈련 및 평가 (Actor-Critic / Q-Learning)
+ +-- base_agent.py      RL 훈련 및 평가 (STATIC / Vanilla / Neural)
+ +-- nn_utils.py        TinyMLP, ReplayBuffer, extract_features
  +-- heuristic.py       하이퍼파라미터 탐색 (PGActorCriticOptimizer)
  +-- evaluator.py       성과 지표 계산 (MDD, Softmax 비중, CTPT 코드)
  +-- data_loader.py     yfinance 데이터 로드 (다봉 지원, 캐시 1시간)
- +-- stock_registry.py  종목 정보 및 수수료 테이블
+ +-- stock_registry.py  종목 정보 및 수수료 테이블 (12종목)
 
 members/member_N/
- +-- config.py          멤버별 담당 종목 + RL 하이퍼파라미터 (v_epsilon 포함)
+ +-- config.py          멤버별 담당 종목 + RL 하이퍼파라미터 (10 필드)
 ```
 
 ---
 
-## 2. 강화학습 알고리즘
+## 2. 강화학습 알고리즘 — STATIC / Vanilla
 
 ### 2.1 STATIC RL — Actor-Critic
 
@@ -246,64 +171,64 @@ members/member_N/
 
 Policy Gradient Theorem + REINFORCE with baseline을 온라인 TD 방식으로 구현한다.
 
-#### 마르코프 결정 과정 (MDP) 정의
+#### 마르코프 결정 과정 (MDP)
 
 ```
 상태 공간 S = {0, 1, 2, 3}  (4개 상태)
 행동 공간 A = {0(CASH), 1(BUY)}
 전이 확률 P(s'|s, a)  = 시장 가격 변동 (외생 확률 과정)
-보상 함수 R(s, a, s') = daily_return × 1[a=BUY] − fee + 0.05·H(π)
-할인 인수 γ           = 종목별 최적값 (0.88~0.96)
+보상 함수 R(s, a, s') = daily_return × 1[a=BUY] − fee + ENTROPY_COEFF · H(π)
+할인 인수 γ           = 종목별 최적값 (0.87~0.97)
 ```
 
-#### 벨만 최적 방정식 (Policy Gradient 기반)
+#### TD Critic — 벨만 방정식 근사
+
+TD(0) 방식으로 상태 가치함수 V(s)를 온라인 갱신한다.
 
 ```
-V*(s) = max_π E[Σ γ^t · r_t | s_0 = s, π]
+δ_t  = r_eff + γ · V(s_{t+1}) − V(s_t)     ← TD 오차 (Advantage 근사값)
 
-온라인 TD(0) 근사:
-  δ_t = r_eff + γ · V(s_{t+1}) − V(s_t)   ← TD 오차 (Advantage 근사)
-  r_eff = reward + 0.05 · H(π)             ← 엔트로피 정규화 (Buy&Hold 고착 방지, 4-8: 0.02→0.05)
-  V(s_t) += lr · δ_t                       ← Critic 업데이트
+여기서:
+  r_eff = reward + 0.05 · H(π)              ← 엔트로피 정규화 보상
+  H(π)  = −Σ π(a|s) · log π(a|s)           ← 정책 엔트로피 (불확실성 척도)
+
+  V(s_t) += lr · δ_t                        ← Critic 가치함수 갱신
 ```
 
-#### Policy Gradient Theorem
+**δ_t (TD 오차)의 의미**: 현재 상태의 실제 보상 + 다음 상태 가치 추정값이 현재 가치 추정값보다 얼마나 높은지. 양수면 현재 행동이 예상보다 좋았음 → Actor를 강화.
+
+**엔트로피 정규화 H(π)**: 정책이 CASH와 BUY를 비슷한 확률로 선택할수록 엔트로피가 높아진다. 0.05 계수를 보상에 더해 에이전트가 다양한 행동을 유지하도록 유도한다 (Buy&Hold 고착 방지).
+
+#### Actor — Policy Gradient Theorem
 
 ```
 ∇J(θ) = E_π[∇ log π_θ(a|s) · A(s, a)]
 
-Actor (Softmax 정책):
-  π_θ(a|s) = softmax(θ[s, :])
-  ∇ log π(a|s) = 1[a == action] − π(·|s)   (score function)
+  A(s, a) ≈ δ_t                            ← TD 오차를 Advantage 대용
+
+Softmax 정책:
+  π_θ(a|s) = exp(θ[s, a]) / Σ exp(θ[s, :])
+
+Score function (∇ log π):
+  ∇ log π(a|s) = 1[a == chosen] − π(·|s)   ← 선택된 행동 강화, 나머지 약화
 
 Actor 업데이트:
   θ[s, a] += lr · δ_t · ∇ log π(a|s)
 ```
 
-#### 초기화 및 훈련 설정
+**Policy Gradient 직관**: δ_t > 0 이면 현재 행동이 기대보다 좋았으므로 해당 행동의 확률을 높인다. δ_t < 0 이면 기대보다 나빴으므로 확률을 낮춘다.
+
+#### 초기화 (Cold-Start 수수료 장벽 완화)
 
 ```python
-# fee 비례 BUY 선호 초기화 (cold-start 수수료 장벽 완화)
 theta = np.zeros((4, 2))
 theta[1, 1] = max(0.05, fee_rate * 30)   # EMA아래+상승: 미세 BUY 선호
 theta[2, 1] = max(0.10, fee_rate * 50)   # EMA위+하락:  BUY 선호
 theta[3, 1] = max(0.20, fee_rate * 80)   # EMA위+상승:  BUY 선호 강화
-V = np.zeros(4)                          # Critic 가치함수
-
-# 탐험: 상수 epsilon-greedy
-if np.random.rand() < epsilon:
-    action = np.random.randint(0, 2)
-else:
-    action = np.random.choice([0, 1], p=softmax(theta[state]))
-
-# 엔트로피 정규화: Buy&Hold 고착 방지, 정책 다양성 유지 (4-8: 0.02→0.05)
-entropy = -sum(probs * log(probs + 1e-10))
-r_eff   = reward + 0.05 * entropy
-
-# 단일 학습률 (actor/critic 동일 lr)
-V[state]        += lr · δ_t
-theta[state, a] += lr · δ_t · grad_log_pi
+V = np.zeros(4)                          # Critic 가치함수 초기값 = 0
 ```
+
+수수료가 높을수록 BUY 선호 초기화값을 크게 설정하여 초반 CASH 고착을 방지한다.
 
 ---
 
@@ -311,310 +236,428 @@ theta[state, a] += lr · δ_t · grad_log_pi
 
 **파일:** `common/base_agent.py` — `_train_qlearning_vanilla()`
 
-2-상태 Tabular Q-Learning으로 구현된 비교 기준선 에이전트다.
-
-#### 벨만 방정식 (Q-Learning)
+#### 벨만 최적 방정식 (Q-Learning)
 
 ```
 Q*(s, a) = E[r + γ · max_{a'} Q*(s', a') | s, a]
 
-TD 업데이트:
+TD 업데이트 (off-policy):
   Q(s, a) += lr · [r + γ · max_{a'} Q(s', a') − Q(s, a)]
-             ← Bellman Residual 최소화
+
+여기서:
+  r + γ · max_{a'} Q(s', a')  = TD 목표값 (Bellman Target)
+  Q(s, a)                      = 현재 추정값
+  차이                          = Bellman Residual (최소화 대상)
 ```
+
+**max_{a'} Q(s', a')의 의미**: 다음 상태에서 최적 행동을 취했을 때의 가치. Q-Learning은 행동 선택(ε-greedy)과 업데이트(max) 정책이 다른 off-policy 알고리즘이다.
 
 #### Q-테이블 초기화 및 CASH 편향 해소
 
 ```python
 q_table = np.zeros((2, 2))
-q_table[:, 1] = max(fee_rate * 50, 0.05)  # fee 비례 BUY 선호 (수수료가 높을수록 강화)
+q_table[:, 1] = max(fee_rate * 50, 0.05)  # fee 비례 BUY 선호 초기화
+# fee_rate=0.001(미국) → Q[:,1]=0.05
+# fee_rate=0.0023(국내) → Q[:,1]=0.115
 ```
 
-> fee_rate=0.001(미국) → Q[:,1]=0.05, fee_rate=0.0023(국내) → Q[:,1]=0.115
-
-#### epsilon annealing
+#### epsilon annealing (탐험률 점진 감소)
 
 ```python
 for ep in range(train_episodes):
     _eps = epsilon * max(1.0, 2.0 - ep / (train_episodes - 1))
-    # 탐험: 2ε (ep=0) → ε (ep=마지막)  — 초반 강탐험, 후반 기본 탐험 유지
-    prev_action = 1   # BUY 시작 고정 (에피소드 첫 step 수수료 편향 제거)
+    # 에피소드 시작: 2ε (강한 탐험)  →  에피소드 종료: ε (기본 탐험 유지)
+
+prev_action = 1   # BUY 시작 고정 (에피소드 첫 step 수수료 편향 제거)
 ```
 
-#### 훈련 후 보정 — 전체 상태 상대 우위 하한 (improve 4-8/4-9)
+#### 훈련 후 보정 — Q-floor margin
 
 ```python
-# 전체 상태 BUY 상대 우위 보장 (improve 4-8: state=0 추가, 4-9: margin 0.001→0.005)
-# 문제: OOS 첫날 state=0(하락기)이면 Q[0,CASH]>Q[0,BUY] → 전 구간 CASH 고착 → 음수 수익
-# 해결: state=0/1 모두 BUY가 CASH보다 0.005 우세 보장 (훈련 노이즈 대비 더 강한 margin)
-q_table[0, 1] = max(float(q_table[0, 1]), float(q_table[0, 0]) + 0.005)  # bear state
-q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.005)  # bull state
+# 훈련 노이즈로 인한 CASH 고착 방지
+# 전체 상태(bear=0, bull=1)에서 BUY 상대 우위 보장
+q_table[0, 1] = max(float(q_table[0, 1]), float(q_table[0, 0]) + 0.005)
+q_table[1, 1] = max(float(q_table[1, 1]), float(q_table[1, 0]) + 0.005)
 ```
-
-> **improve 3-2-6**: `Q[1,1] = max(Q[1,1], 0.002)` — 절대 하한 → Q[1,CASH]≥0.002 시 무력
-> **improve 4-7**: `Q[1,1] = max(Q[1,1], Q[1,0]+0.001)` — bull-state 상대 우위 → state=0 여전히 CASH 고착
-> **improve 4-8**: `Q[0,1]`, `Q[1,1]` 모두 상대 우위 (margin=0.001) → state=0도 포함
-> **improve 4-9**: margin 0.001→0.005 강화 → 훈련 노이즈 대비 충분한 BUY 우위 보장
 
 ---
 
-### 2.3 상태 공간 설계
+## 3. 강화학습 알고리즘 — 신경망 (A2C / A3C / PPO / SAC / DDPG)
+
+모든 신경망 알고리즘은 **NumPy 전용 TinyMLP** [5→32→n_out] 구조를 사용한다.
+PyTorch/TensorFlow 의존성 없음.
+
+### 3.1 특징 벡터 (공통, 5차원)
 
 ```
-STATIC RL — 4개 상태 (MDP):
+s_t = [ret, ema_ratio, vol, momentum, trend]
+
+  ret       = Daily_Return[t]                        # 당일 수익률
+  ema_ratio = Close[t] / EMA_10[t] - 1               # EMA 괴리율
+  vol       = Rolling_Std[t]                         # 변동성
+  momentum  = Σ Daily_Return[t-5:t]                  # 5일 모멘텀
+  trend     = sign(Close[t] - Close[t-5])            # 5일 추세 방향
+```
+
+### 3.2 TinyMLP 구조
+
+**파일:** `common/nn_utils.py`
+
+```
+입력(5) → [Dense(32) + ReLU] → 출력(n_out, 선형)
+
+초기화: He 초기화  W ~ N(0, sqrt(2/fan_in))
+최적화: Adam  (β₁=0.9, β₂=0.999, ε=1e-8)
+역전파: backward_and_update(x, grad_out, lr)
+```
+
+**He 초기화의 의미**: ReLU 활성화 함수에서 층을 통과할수록 분산이 유지되도록 설계된 초기화. fan_in이 클수록 초기 가중치를 작게 설정하여 기울기 폭발/소실 방지.
+
+**Adam 최적화기**: 1차 모멘텀(이동평균 기울기)과 2차 모멘텀(기울기 제곱 이동평균)을 동시에 추적하여 파라미터별 학습률을 자동 조정한다. 희소한 보상 환경에서 SGD보다 안정적으로 수렴한다.
+
+---
+
+### 3.3 A2C — Advantage Actor-Critic
+
+**파일:** `common/base_agent.py` — `_train_a2c()`
+
+온라인 1-step TD Advantage로 Actor와 Critic을 동시에 학습하는 가장 단순한 신경망 Actor-Critic.
+
+#### 수식
+
+```
+1단계: Critic (가치함수 V 학습)
+  δ_t  = r_t + γ · V(s_{t+1}) − V(s_t)         ← 1-step TD 오차
+  ∂L_critic/∂W_c = −δ_t                          ← MSE 손실의 기울기
+
+2단계: Actor (정책 π_θ 학습)
+  π_θ(a|s)  = softmax(Actor(s_t))
+  A_t       = δ_t                                ← Advantage = TD 오차
+  ∂L_actor  = −A_t · (1[a=chosen] − π_θ(·|s))   ← policy gradient
+```
+
+**Advantage A_t의 의미**: 선택된 행동이 평균(V(s))보다 얼마나 좋은지를 나타낸다. A_t > 0이면 그 행동 확률을 높이고, A_t < 0이면 낮춘다. TD 오차를 Advantage로 사용함으로써 Monte Carlo 방식보다 분산이 낮다.
+
+---
+
+### 3.4 A3C — Asynchronous Advantage Actor-Critic (n-step)
+
+**파일:** `common/base_agent.py` — `_train_a3c()`
+
+A2C의 n-step 리턴 버전. 단일 스레드로 근사 구현 (비동기 워커 생략).
+
+#### 수식
+
+```
+n-step Return (n=5):
+  R_t = r_t + γ·r_{t+1} + γ²·r_{t+2} + ... + γ^(n-1)·r_{t+n-1} + γ^n·V(s_{t+n})
+
+역방향 누적:
+  R ← V(s_{t+n})                 (부트스트랩 초기값, γ 미적용)
+  for k = n-1, n-2, ..., 0:
+    R ← r_{t+k} + γ · R         (역방향으로 γ 누적)
+
+A_t = R_t − V(s_t)              ← n-step Advantage
+```
+
+**n-step의 의미**: 1-step(A2C)은 즉각 보상만 반영하여 편향이 크다. n-step은 n개 미래 보상을 직접 합산하여 편향을 줄이되, Monte Carlo(전체 에피소드)보다 분산이 낮다. n=5는 편향-분산 균형점.
+
+---
+
+### 3.5 PPO — Proximal Policy Optimization
+
+**파일:** `common/base_agent.py` — `_train_ppo()`
+
+정책 업데이트 폭을 클리핑으로 제한하여 학습 안정성을 높인 알고리즘.
+
+#### 수식
+
+```
+1단계: GAE (Generalized Advantage Estimation, λ=0.95)
+  δ_t = r_t + γ·V(s_{t+1}) − V(s_t)             ← 1-step TD 오차
+
+  역방향 GAE 누적:
+  Â_t = δ_t + γλ·Â_{t+1}                         ← GAE Advantage
+
+2단계: Importance Sampling 비율
+  r_t(θ) = π_θ(a_t|s_t) / π_θ_old(a_t|s_t)      ← 구정책 대비 신정책 비율
+
+3단계: Clipped Surrogate Objective
+  L_CLIP = E[min(r_t · Â_t,  clip(r_t, 1-ε, 1+ε) · Â_t)]
+
+4단계: n_epochs=4 미니배치 업데이트 (rollout_len=64 스텝)
+```
+
+**GAE λ의 의미**: λ=0이면 1-step TD (고편향, 저분산), λ=1이면 Monte Carlo (저편향, 고분산). λ=0.95는 미래 δ들을 지수 감쇠 가중치로 합산하여 편향-분산 균형을 최적화한다.
+
+**Clip의 역할**: r_t(θ)가 1 ± ε 범위를 벗어나면 기울기를 0으로 만들어 정책이 한 번에 너무 많이 변하지 않도록 제한한다. 이를 통해 학습이 갑자기 발산하는 것을 방지한다.
+
+---
+
+### 3.6 SAC — Soft Actor-Critic (이산 행동)
+
+**파일:** `common/base_agent.py` — `_train_sac()`
+
+엔트로피 최대화 목표를 명시적으로 포함하고, 온도 파라미터 α를 자동 학습하는 오프-정책 알고리즘.
+
+#### 수식
+
+```
+1단계: Soft Q-Target
+  Q_tgt(s, a) = r + γ · [V_soft(s')]
+
+  V_soft(s') = Σ_{a'} π(a'|s') · [Q(s', a') − α · log π(a'|s')]
+             = E_π[Q(s',a') − α·H(π)]             ← 엔트로피 포함 가치
+
+2단계: Q-Network 업데이트
+  L_Q = (Q(s,a) − Q_tgt(s,a))²                   ← MSE
+
+3단계: Actor 업데이트 (엔트로피 최대화)
+  L_actor = Σ_a π(a|s) · [α·log π(a|s) − Q(s,a)]
+  = −E_π[Q(s,a) − α·log π(a|s)]                  ← Q 최대화 + 엔트로피 보상
+
+4단계: 자동 온도 α 업데이트
+  J(α) = −α · [log π(a|s) + H_target]
+  α 업데이트 방향: log_alpha -= lr · (log_pi + H_target)
+  H_target = log(n_actions) × 0.5                 ← 목표 엔트로피
+```
+
+**α (온도 파라미터)의 의미**: α가 크면 엔트로피(탐험)에 더 높은 보상을 부여 → 정책이 더 확산적(random)이 된다. α=0이면 일반 Actor-Critic. 자동 α는 실제 엔트로피가 목표보다 낮으면 α를 높이고, 높으면 낮춰 탐험/착취의 균형을 자동 조정한다.
+
+**타겟 Q 네트워크**: 학습 안정성을 위해 Q_tgt는 별도 네트워크로 유지하고, 매 에피소드마다 소프트 업데이트: `θ_tgt ← τ·θ + (1-τ)·θ_tgt` (τ=0.005).
+
+---
+
+### 3.7 DDPG — Deep Deterministic Policy Gradient
+
+**파일:** `common/base_agent.py` — `_train_ddpg()`
+
+결정론적 정책으로 **연속 포지션 [0, 1]** 을 직접 출력하는 오프-정책 알고리즘.
+
+#### 수식
+
+```
+Actor (결정론적 정책):
+  μ(s) = sigmoid(Actor(s)) ∈ [0, 1]            ← 보유 비율
+
+Critic (행동-가치 함수):
+  Q(s, a) = Critic([s, a])                      ← 6차원 입력 (5 상태 + 1 행동)
+
+Q-Target 업데이트:
+  Q_tgt(s,a) = r + γ · Q_tgt(s', μ_tgt(s'))
+
+Actor 업데이트 (Policy Gradient):
+  ∇_θ J = E[∂Q/∂a · ∂μ/∂θ]
+
+  연쇄 법칙:
+    ∂Q/∂a  = Critic 입력에 대한 기울기 (마지막 입력 성분)
+    ∂μ/∂θ  = sigmoid'(logit) · ∂Actor/∂θ
+
+타겟 네트워크 소프트 갱신 (매 스텝):
+  θ_actor_tgt  ← τ · θ_actor  + (1-τ) · θ_actor_tgt
+  θ_critic_tgt ← τ · θ_critic + (1-τ) · θ_critic_tgt
+  τ = 0.005 (DDPG_TAU)
+
+탐험: OU (Ornstein-Uhlenbeck) Noise
+  dX = θ_ou · (μ_ou − X) dt + σ_ou · dW
+  θ_ou=0.1, μ_ou=0, σ_ou=0.2
+  → 시간 상관된 노이즈 (랜덤 워크보다 더 실제적 탐험)
+```
+
+**결정론적 정책의 의미**: DDPG는 확률적 정책 대신 단일 행동값을 직접 출력한다. 연속 포지션 μ(s) ∈ [0,1]은 보유 비율(0=완전 현금, 1=완전 매수)을 의미하며, 평가 시 0.5 임계값으로 BUY/CASH 이진 결정을 한다.
+
+**경험 재생 버퍼 (ReplayBuffer)**: 과거 (s, a, r, s', done) 전이를 원형 버퍼에 저장하고 미니배치(batch_size=64)로 무작위 샘플링하여 학습한다. 이를 통해 연속된 경험들의 시간 상관성을 제거한다.
+
+---
+
+## 4. 상태 공간 설계
+
+```
+STATIC RL — 4개 이산 상태:
+
+  state = is_bull × 1 + is_above_ema × 2
 
   State 0: 하락 (ret ≤ 0) + EMA 아래 (price < EMA_10)   → 가장 보수적
-  State 1: 상승 (ret > 0)  + EMA 아래                    → 주의 단계
-  State 2: 하락             + EMA 위 (price ≥ EMA_10)    → 중립
-  State 3: 상승             + EMA 위                     → 가장 강한 매수 신호
+  State 1: 상승 (ret > 0) + EMA 아래                    → 주의 단계
+  State 2: 하락            + EMA 위 (price ≥ EMA_10)   → 중립
+  State 3: 상승            + EMA 위                    → 가장 강한 매수 신호
 
-Vanilla RL — 2개 상태:
+확장 — 8개 이산 상태 (use_vol=True):
+  state += is_high_vol × 4   (rolling_std > 훈련구간 중위수)
+  → {0..7}: 변동성 레짐이 높을 때 에이전트가 별도 정책 학습
 
+Vanilla RL — 2개 이산 상태:
   State 0: 하락 (ret ≤ 0)
   State 1: 상승 (ret > 0)
+
+신경망 RL — 연속 상태:
+  s_t = [ret, ema_ratio, vol, momentum, trend]   ← 5차원 벡터
 ```
 
-EMA_10 (10일/봉 지수이동평균)은 `data_loader.py`에서 계산된다.
-
-```python
-df['EMA_10'] = df['Close'].ewm(span=10, adjust=False).mean()
-```
+EMA_10 (10일 지수이동평균): `df['Close'].ewm(span=10, adjust=False).mean()`
 
 ---
 
-### 2.4 행동 및 보상 함수
+## 5. 워크포워드 검증 — Train/Test 분리
 
-| 행동 | 코드 | 의미                         |
-| ---- | ---- | ---------------------------- |
-| CASH | 0    | 현금 보유 (수익률 0%)        |
-| BUY  | 1    | 매수·보유 (당일 수익률 반영) |
+**파일:** `common/base_agent.py`
 
-> **SELL 액션 없음**: 행동 공간은 BUY(1)/CASH(0) 2개뿐이다.
-> BUY→CASH 전환이 암묵적 청산(매도)이며, 청산 시 수수료는 부과되지 않는다.
-> 수수료는 **CASH→BUY 진입 시에만** 1회 부과된다.
+### Trading Days vs Train Episodes
 
-```python
-# 학습 및 평가 단계 보상 (클리핑 없음)
-fee    = fee_rate if (action == BUY and prev_action == CASH) else 0
-reward = daily_return − fee   # 실제 수익률 그대로
-
-# 포트폴리오 누적 수익
-current_capital     *= (1 + reward)
-cumulative_return_% = (current_capital − 1) × 100
-```
-
----
-
-## 3. 워크포워드 검증 — Train/Test 분리
-
-**파일:** `common/base_agent.py` — `run_rl_simulation()`, `run_rl_simulation_with_log()`
-
-### Trading Days vs Train Episodes 구분
-
-두 파라미터는 용도가 다르며 독립적으로 설정한다.
-
-| 파라미터                | 의미                                              | 기본값            |
-| ----------------------- | ------------------------------------------------- | ----------------- |
-| Trading Days (`n_bars`) | yfinance에서 가져올 데이터 봉 수 (데이터 창 크기) | 500 (일봉 약 2년) |
-| Train Episodes          | 훈련 데이터를 반복 학습하는 횟수 (epoch 수)       | 300               |
+| 파라미터 | 의미 | 기본값 |
+|---------|------|--------|
+| Trading Days (`n_bars`) | yfinance 데이터 봉 수 (창 크기) | 500 (일봉 약 2년) |
+| Train Episodes | 훈련 데이터 반복 학습 횟수 | 300 |
 
 ```
-Trading Days = 500봉:  전체 데이터 창
-                  │
-      ┌───────────┴─────────────┐
-      │                         │
-  학습 구간 (70%)           평가 전체 구간 (100%)
-  n_train = max(int(500×0.7), 20) = 350봉   500봉
-                              │
-                    ┌─────────┴──────────┐
-                    │                    │
-                인샘플 (70%)       OOS 30% ✅
-                (0 ~ 350봉)      (350 ~ 500봉)
+Trading Days = 500봉 전체 창
+      │
+      ├── 학습 구간: 앞 70% = 350봉 (Train Episodes = 300회 반복)
+      │
+      └── 평가 전체: 500봉 (인샘플 70% + OOS 30%)
 
-Train Episodes = 300:  위 350봉 데이터를 300번 반복 학습
-```
-
-```python
 n_train = max(int(n_days * 0.7), 20)   # 최소 20봉 학습 보장
-
-# 학습: 첫 70% 데이터만 사용
-theta, _ = _train_actor_critic_static(
-    returns[:n_train], prices[:n_train], emas[:n_train],
-    lr, gamma, epsilon, train_episodes, n_train, fee_rate
-)
-
-# 평가: 전체 기간 (후반 30%가 진짜 OOS 검증)
-for t in range(1, n_days):
-    action = get_action(state)
-    reward = (returns[t] if action == 1 else 0.0) − fee   # 클리핑 없음
-    current_capital *= (1 + reward)
 ```
 
-| 기간      | 일봉 500일            |
-| --------- | --------------------- |
-| 학습 구간 | 350일 (~1년 5개월)    |
-| 평가 전체 | 500일 (~2년)          |
-| OOS 구간  | 마지막 150일 (~6개월) |
+| 기간 | 일봉 500일 |
+|------|-----------|
+| 학습 구간 | 350일 (~1년 5개월) |
+| 평가 전체 | 500일 (~2년) |
+| OOS 구간 | 마지막 150일 (~6개월) |
 
 ### 워크포워드 구조적 한계 (KOSPI/KOSDAQ)
 
-KOSPI·KOSDAQ는 학습 구간(2024~2025 상반기)이 횡보/하락이고, OOS 구간(2025 하반기~2026)에 급등이 집중된다. 이 경우 어떤 파라미터도 OOS 수익률을 추월하기 어렵다.
+KOSPI·KOSDAQ는 학습 구간(2024~2025 상반기)이 횡보/하락이고, OOS 구간(2025 하반기~2026)에 급등이 집중된다. 이 경우 에이전트는 조용한 시장을 학습했으므로 급등 OOS를 추월하기 어렵다. 이는 알고리즘 문제가 아닌 구조적 한계다.
 
 ---
 
-## 4. 하이퍼파라미터 탐색 — PG Actor-Critic Optimizer
+## 6. 하이퍼파라미터 탐색 — PG Actor-Critic Optimizer
 
 **파일:** `common/heuristic.py` — `PGActorCriticOptimizer`
 
-하이퍼파라미터 `(lr, gamma, epsilon_static, epsilon_vanilla)`를 자동 탐색하여
-복합 Gap 기대값을 극대화한다.
+`(lr, gamma, epsilon_static, epsilon_vanilla)` 4차원 파라미터를 자동 탐색하여 복합 Gap 기대값을 극대화한다.
 
 ### 복합 Gap 목표 함수
 
 ```python
 gap_vs_market  = STATIC_final − Market_final          # 시장 초과수익 (60% 가중)
-V_floor        = Market_final × 0.3                   # Vanilla 하한: 시장의 30%
-V_adj          = max(Vanilla_final, V_floor)          # 역유인 방지 (Vanilla 의도적 0% 방지)
+V_floor        = Market_final × 0.3                   # Vanilla 하한 (역유인 방지)
+V_adj          = max(Vanilla_final, V_floor)
 gap_vs_vanilla = STATIC_final − V_adj                 # Vanilla 대비 우위 (40% 가중)
 
 composite_gap  = 0.6 × gap_vs_market + 0.4 × gap_vs_vanilla
 ```
 
-> **역유인 방지 (improve 4-2)**: Vanilla가 0%일 때 gap이 최대 → 옵티마이저가 Vanilla를
-> 의도적으로 망가뜨리는 구조를 V_floor로 차단. Vanilla ≥ Market×30%를 하한으로 보정.
+**V_floor의 역할 (역유인 방지)**: Vanilla가 0%일 때 gap_vs_vanilla가 최대 → 옵티마이저가 Vanilla를 의도적으로 망가뜨리는 구조를 차단. Vanilla ≥ Market×30%를 하한으로 보정.
 
-### 이론 구조
+### 알고리즘 이론
 
 ```
 탐색 공간: {lr, gamma, epsilon_static, epsilon_vanilla} → 정규화 공간 [0,1]^4
 
-1. Policy (Actor, Gaussian):
-   x = clip(μ + σ × ε, 0, 1),   ε ~ N(0, 1)
-   → 다음 하이퍼파라미터 후보 제안
+1. 다음 후보 파라미터 샘플링 (Actor, Gaussian):
+   Δ = N(0, σ),  x_new = clip(μ + Δ, 0, 1)
 
-2. 기대값 (Expected Composite Gap):
-   복수 평가 시드(_n_eval = 3~4)로 gap 측정 후 평균
-   expected_gap = mean[composite_gap(seed_i) for seed_i in eval_seeds]
+2. 복수 평가 시드로 composite_gap 측정:
+   expected_gap = mean([composite_gap(seed_i) for seed_i in eval_seeds])
 
-3. Advantage (REINFORCE with baseline):
-   V      += value_alpha × (gap − V)          (Critic: EMA baseline 갱신)
-   A       = gap − V                          (raw advantage)
-   A_norm  = tanh(A / 10)                     ([−1,1] 정규화)
+3. Critic (EMA baseline):
+   V += value_alpha × (expected_gap − V)
 
-4. Actor 업데이트 (Policy Gradient):
-   pg_dir = clip(Δ / σ, L2≤1)                (방향 벡터)
-   μ      += lr_actor × A_norm × pg_dir
+4. Advantage 정규화:
+   A_norm = tanh((expected_gap − V) / 10)   → [−1, 1]
 
-5. σ 자동 스케줄링:
-   A > 0  →  σ × 0.96  (수렴: 좋은 방향 집중)
-   A ≤ 0  →  σ × 1.04  (탐험: 더 넓게 재탐색)
+5. Actor (Policy Gradient):
+   pg_dir = clip(Δ / σ, L2≤1)
+   μ = clip(μ + lr_actor × A_norm × pg_dir, 0, 1)
+
+6. σ 자동 스케줄링:
+   A_norm > 0 → σ × 0.96  (좋은 방향으로 수렴)
+   A_norm ≤ 0 → σ × 1.04  (더 넓게 재탐색)
 ```
 
 ### 탐색 페이즈
 
-| 단계            | 조건               | 설명                                      |
-| --------------- | ------------------ | ----------------------------------------- |
-| PG Exploring    | step < n_iters / 4 | 광역 탐험으로 파라미터 공간 초기 파악     |
-| PG Actor-Critic | σ_mean > 0.12      | Policy Gradient 업데이트로 유망 방향 탐색 |
-| PG Converging   | σ_mean ≤ 0.12      | 수렴 단계, 최적 파라미터 정밀 탐색        |
-
-### 시뮬레이션 수렴 과정 스크린샷
-
-> **좌측 차트 (Parameter Convergence)**: 4개 하이퍼파라미터(α/γ/ε_S/ε_V)가 정규화 공간 [0,1]에서 수렴하는 과정.
-> **우측 차트 (Alpha vs Market Target)**: 시뮬레이션 최적 Gap이 목표선(+1%p 초록, +5%p 노랑)으로 수렴하는 과정.
-
-**M1 SPY — Gap +9.1%, σ=0.162 (PG Actor-Critic)**
-
-![M1 SPY 시뮬레이션 수렴 과정](Captures/M1_시뮬레이션_과정_일봉.jpg)
-
-**M2 QQQ — Gap +47.0%, σ=0.150 (PG Actor-Critic) 🏆**
-
-![M2 QQQ 시뮬레이션 수렴 과정](Captures/M2_시뮬레이션_과정_일봉.jpg)
-
-**M3 KOSPI — Gap -27.5%, σ=0.086 (PG Converging, 구조적 OOS)**
-
-> α(LR) 파라미터가 극단적으로 낮은 값으로 수렴. Alpha가 목표선 아래를 유지 → 구조적 OOS 한계 확인.
-
-![M3 KOSPI 시뮬레이션 수렴 과정](Captures/M3_시뮬레이션_과정_일봉.jpg)
-
-**M5 NVDA — Gap +120.0%, σ=0.162 (PG Actor-Critic) 🏆**
-
-> Alpha vs Market 차트에서 100%p 이상의 Gap 수렴. 높은 lr + 낮은 ε_S 방향으로 파라미터 수렴.
-
-![M5 NVDA 시뮬레이션 수렴 과정](Captures/M5_시뮬레이션_과정_일봉.jpg)
-
-### 반복 횟수 계산
-
-```python
-n_iters = max(Sim_Min_Steps, Auto_Run_Count × Sim_Step_Mult)
-          # 기본: max(30, 6 × 10) = 60 iterations
-_n_eval = min(4, max(3, Auto_Run_Count // 2))
-          # 기본: min(4, max(3, 3)) = 3 eval seeds
-총 평가 = n_iters × _n_eval   # 기본: 180회 RL 평가
-```
-
-| UI 파라미터    | 기본값 | 역할                                                 |
-| -------------- | ------ | ---------------------------------------------------- |
-| Sim Min Steps  | 30     | n_iters 하한 (최소 탐색 step 수)                     |
-| Sim Step Mult. | 10     | Auto Run Count 배수 (n_iters = max(Min, Count×Mult)) |
-
-### Optimizer 초기값
-
-```python
-optimizer = PGActorCriticOptimizer(
-    bounds      = param_bounds,
-    lr_actor    = 0.12,     # Actor 정책 업데이트 속도
-    sigma_init  = 0.18,     # 초기 탐험 폭
-    sigma_min   = 0.02,     # 최소 σ (정밀 수렴 단계)
-    sigma_max   = 0.30,     # 최대 σ (재탐험 단계, improve 4-2에서 0.45→0.30)
-    value_alpha = 0.25,     # Critic EMA 업데이트 속도
-    seed        = base_seed,
-)
-```
+| 단계 | 조건 | 설명 |
+|------|------|------|
+| PG Exploring | step < n_iters/4 | 광역 탐험 |
+| PG Actor-Critic | σ_mean > 0.12 | Policy Gradient 업데이트 |
+| PG Converging | σ_mean ≤ 0.12 | 정밀 수렴 단계 |
 
 ---
 
-## 5. 하이퍼파라미터 상세
+## 7. 웹 UI 파라미터 상세
 
-### RL 학습 파라미터
+아래 모든 파라미터는 웹 UI에서 조절 가능하며, Fallback Parameters 패널에서 전체 종목에 일괄 적용할 수 있다.
 
-| 파라미터           | 탐색 범위    | 역할                                 |
-| ------------------ | ------------ | ------------------------------------ |
-| lr (α)             | 0.005 ~ 0.10 | Actor / Q-Table 업데이트 속도        |
-| gamma (γ)          | 0.85 ~ 0.99  | 미래 보상 할인율                     |
-| epsilon_static (ε) | 0.01 ~ 0.25  | STATIC RL 탐험율                     |
-| v_epsilon          | 0.01 ~ 0.25  | Vanilla RL 전용 탐험율 (독립 최적화) |
+### 7.1 RL Algorithm 선택 (System Parameters 2행 첫 번째)
 
-> **gamma 하한 0.85 이유**: gamma < 0.85는 지나치게 근시안적 정책을 유발한다.
-> gamma ≥ 0.85는 최소 6~7일 이상의 보유 수익을 고려하여 더 현실적인 정책을 학습한다.
+| 옵션 | 설명 |
+|------|------|
+| STATIC | EMA 기반 4-상태 Tabular Actor-Critic (기본) |
+| A2C | 신경망 Actor-Critic (1-step TD Advantage) |
+| A3C | 신경망 Actor-Critic (n-step Return, n=5) |
+| PPO | Clipped Surrogate + GAE (clip_eps=0.2, λ=0.95) |
+| SAC | Soft Actor-Critic + 자동 온도 α (이산 행동) |
+| DDPG | 결정론적 정책 + OU noise + ReplayBuffer (연속 행동) |
 
-> **epsilon 상한 0.25 이유**: epsilon > 0.25는 경계값(0.01, 0.25) 고착 현상 발생.
-> 탐험율이 너무 높으면 학습된 정책보다 랜덤에 가까워져 수렴이 느려진다.
+- STATIC 선택 시 State Analysis 탭 사용 가능 (θ 행렬 시각화)
+- 신경망 알고리즘 선택 시 State Analysis 탭 비활성화 (`s_theta=None`)
 
-### 시스템 파라미터
+### 7.2 RL 학습 파라미터
 
-| 파라미터       | 기본값            | 역할                               |
-| -------------- | ----------------- | ---------------------------------- |
-| Trading Days   | 500 (일봉 약 2년) | yfinance 데이터 봉 수              |
-| Train Episodes | 300               | 훈련 데이터 반복 학습 횟수 (epoch) |
-| seed           | 멤버별 상이       | 훈련 재현성 고정                   |
-| Auto Run Count | 6                 | Run Evaluation 자동 반복 횟수      |
-| Sim Min Steps  | 30                | 시뮬레이션 최소 탐색 step          |
-| Sim Step Mult. | 10                | 시뮬레이션 step 배수               |
-| Timeframe      | 일봉 (1d)         | 데이터 봉 단위                     |
-| fee_rate       | 종목별            | 매수 진입 시 1회 수수료            |
+| 파라미터 | 탐색 범위 | 증가 효과 | 감소 효과 |
+|---------|----------|---------|---------|
+| **LR (α)** | 0.005 ~ 0.10 | 빠른 학습, 진동 위험 | 안정적이지만 느린 수렴 |
+| **Gamma (γ)** | 0.85 ~ 0.99 | 장기 보상 중시, 수렴 느림 | 단기 편향, 빠른 수렴 |
+| **STATIC ε** | 0.01 ~ 0.25 | 더 많은 탐험, 낮은 착취 | 더 많은 착취, 초반 고착 위험 |
+| **Vanilla ε** | 0.01 ~ 0.25 | Vanilla 탐험 증가 | Vanilla 착취 증가 |
 
-### Fallback Parameters
+**LR**: 너무 크면 Q 값/θ가 진동하여 수렴 불가. 너무 작으면 수렴까지 에피소드 수 과다.
 
-사이드바의 Fallback Parameters 패널에서 체크박스로 선택한 파라미터만 전체 종목에 일괄 적용할 수 있다.
+**Gamma**: γ=0.99는 약 100스텝 미래 보상까지 고려. γ=0.85는 약 7스텝. 주식처럼 수익이 며칠에 걸쳐 실현되는 환경에서는 γ ≥ 0.85가 적합.
 
-| 대상 파라미터                                     | 적용 방식                              |
-| ------------------------------------------------- | -------------------------------------- |
-| LR / Gamma / ε(S) / ε(V) / Days / Episodes / Seed | 체크 시 글로벌 기본값으로 대체         |
-| Active Agents                                     | 체크 시 전체 종목 에이전트 구성 통일   |
-| Sim Min Steps / Sim Step Mult.                    | 체크 시 시뮬레이션 반복 횟수 일괄 변경 |
+**Epsilon**: 상한 0.25 초과 시 탐험이 너무 많아 학습된 정책보다 랜덤에 가까워져 수렴이 지연된다.
 
-### CTPT 성향 코드
+### 7.3 시스템 파라미터
+
+| 파라미터 | 기본값 | 역할 | 증가 효과 | 감소 효과 |
+|---------|--------|------|---------|---------|
+| **Trading Days** | 500 (일봉) | yfinance 데이터 봉 수 | 더 긴 역사 학습 | 빠른 실행, 최신 데이터만 |
+| **Train Episodes** | 300 | 훈련 데이터 반복 횟수 | 더 충분한 학습 (과적합 위험) | 빠른 실행, 과소 학습 위험 |
+| **Base Seed** | 멤버별 | 재현성 난수 시드 | — | — |
+| **Auto Run Count** | 6 | Run Evaluation 자동 반복 | 더 많은 Trial 축적 | 빠른 단일 실행 |
+| **Sim Min Steps** | 30 | Simulation n_iters 하한 | 더 많은 탐색 스텝 | 빠른 시뮬레이션 |
+| **Sim Step Mult.** | 10 | n_iters = max(Min, Count × Mult) | 탐색 밀도 증가 | 빠른 시뮬레이션 |
+| **Timeframe** | 1d (일봉) | 데이터 봉 단위 | — | — |
+| **Frame Speed** | 설정값 | 차트 애니메이션 속도 | 느린 시각화 | 빠른 시각화 |
+
+**Trading Days 증가**: 학습 구간이 길어지므로 에이전트가 더 다양한 시장 국면을 학습한다. 단, 오래된 데이터가 현재 시장 패턴과 다를 수 있다.
+
+**Train Episodes 증가**: 동일 데이터를 더 많이 반복 학습하여 정책 수렴도 향상. 과도하면 훈련 데이터에 과적합될 수 있다.
+
+**Sim Min Steps + Sim Step Mult**: 총 시뮬레이션 반복 횟수 = `max(Sim_Min, Auto_Run_Count × Sim_Step_Mult)`. 기본 `max(30, 6×10)=60회`, 각 회차마다 3~4 시드 평가 → 총 180~240회 RL 실행.
+
+### 7.4 Fallback Parameters (사이드바)
+
+| 파라미터 | 체크 시 동작 |
+|---------|------------|
+| RL Algorithm | 선택된 알고리즘을 모든 종목에 일괄 적용 |
+| LR / Gamma / ε(S) / ε(V) | 글로벌 기본값으로 전체 종목 대체 |
+| Trading Days / Train Episodes / Seed | 데이터/학습 설정 일괄 변경 |
+| Active Agents | STATIC/Vanilla 에이전트 구성 통일 |
+| Sim Min Steps / Sim Step Mult. | 시뮬레이션 반복 횟수 일괄 변경 |
+
+### 7.5 팀 포트폴리오 파라미터 (Dashboard)
+
+| 파라미터 | 기본값 | 역할 | 증가 효과 | 감소 효과 |
+|---------|--------|------|---------|---------|
+| **Fund Temperature** | 1.0 | Softmax 온도 (1.0~5.0) | 균등 배분에 가까워짐 | 최고 성과 멤버에 집중 |
+| **Max Weight** | 1.0 | 단일 멤버 최대 비중 (0.1~1.0) | 집중 허용 | 분산 강제 |
+
+**Fund Temperature**: Softmax 가중치 = `exp(score/T) / Σ exp(score_i/T)`. T가 작을수록 최고 score 멤버에 자본이 집중된다. T=1.0(기본)은 score 차이를 그대로 반영.
+
+### 7.6 CTPT 성향 코드
 
 RL 파라미터 조합으로 에이전트 투자 성향을 3자리 코드로 분류한다.
 
@@ -624,20 +667,20 @@ RL 파라미터 조합으로 에이전트 투자 성향을 3자리 코드로 분
 3번째 자리: epsilon ≥ 0.10 → V(Volatile), < 0.10 → R(Reserved)
 ```
 
-| 코드 | 성향          |
-| ---- | ------------- |
-| ALV  | 적응형 모험가 |
-| ALR  | 안정적 성장형 |
-| ASV  | 단기 모험형   |
-| ASR  | 단기 민첩형   |
-| PLV  | 유연한 장기형 |
-| PLR  | 신중한 장기형 |
-| PSV  | 탐색형        |
-| PSR  | 보수형        |
+| 코드 | 성향 |
+|------|------|
+| ALV | 적응형 모험가 |
+| ALR | 안정적 성장형 |
+| ASV | 단기 모험형 |
+| ASR | 단기 민첩형 |
+| PLV | 유연한 장기형 |
+| PLR | 신중한 장기형 |
+| PSV | 탐색형 |
+| PSR | 보수형 |
 
 ---
 
-## 6. 랜덤 시드의 역할
+## 8. 랜덤 시드의 역할
 
 ### 훈련 시드 (Base Seed)
 
@@ -647,16 +690,16 @@ np.random.seed(seed)  # 훈련 시작 전 고정
 
 epsilon-greedy 탐험 경로를 고정하여 동일 시드에서 항상 동일한 훈련 궤적이 재현된다.
 
-| 종목   | 시드 | 선택 근거                                 |
-| ------ | ---- | ----------------------------------------- |
-| SPY    | 42   | 안정 지수에 적합한 수렴성                 |
-| QQQ    | 137  | 기술주 고분산 환경에서 안정 수렴 확인     |
-| KOSPI  | 2024 | 국내 시장 리듬과 친화적인 연도 기반 시드  |
-| KOSDAQ | 777  | 고변동성 시장, 탐험 다양성 확보           |
-| NVDA   | 314  | 수학적 다양성(π 근사), 반도체 고변동 환경 |
-| TSLA   | 99   | 넓은 탐험 범위, 최고 변동성 대응          |
+| 종목 | 시드 | 선택 근거 |
+|------|------|---------|
+| SPY | 42 | 안정 지수에 적합한 수렴성 |
+| QQQ | 137 | 기술주 고분산 환경에서 안정 수렴 확인 |
+| KOSPI | 2024 | 국내 시장 리듬 친화적 연도 기반 시드 |
+| KOSDAQ | 777 | 고변동성 시장, 탐험 다양성 확보 |
+| SCHD | 314 | 배당 ETF 방어적 성향 |
+| RGLD | 99 | 넓은 탐험 범위 |
 
-### 복수 평가 시드
+### 복수 평가 시드 (Simulation)
 
 ```python
 _n_eval     = min(4, max(3, Auto_Run_Count // 2))   # 기본 3개 시드
@@ -664,39 +707,36 @@ _eval_seeds = [base_seed + j * 37 for j in range(_n_eval)]
 expected_gap = mean([composite_gap(seed_i) for seed_i in _eval_seeds])
 ```
 
-Simulation 탐색 시 동일 파라미터를 여러 시드로 평가하여 특정 시드의 우연에 의존하지 않는
-일반화된 기대값을 산출한다.
+특정 시드의 우연에 의존하지 않는 일반화된 기대값을 산출한다.
 
 ### Trial 시드
 
 ```python
-# ×37 소수 간격 (시드 독립성 강화, improve 4-1)
-trial_seed = base_seed + (len(trials) + run_i) × 37
+trial_seed = base_seed + (n_accumulated + run_i) * 37
 ```
 
-> 소수(prime) 간격 이유: np.random의 LCG 특성상 +1 간격 시드들은 내부 상태가 유사하여
-> 학습 궤적도 거의 동일해진다. ×37 간격은 Trial마다 실질적으로 다른 탐험 경로를 보장한다.
+소수(prime) ×37 간격: np.random LCG 특성상 +1 간격 시드들은 내부 상태가 유사하여 학습 궤적이 거의 동일해진다. ×37 간격은 Trial마다 실질적으로 다른 탐험 경로를 보장한다.
 
 ---
 
-## 7. 데이터 파이프라인
+## 9. 데이터 파이프라인
 
 **파일:** `common/data_loader.py`
 
 ### 지원 봉 단위
 
 | 봉 단위 | interval | 최대 기간 | 기본 Trading Days |
-| ------- | -------- | --------- | ----------------- |
-| 15분봉  | 15m      | 60일      | 80                |
-| 1시간봉 | 1h       | 730일     | 120               |
-| 일봉    | 1d       | 2년       | **500**           |
-| 주봉    | 1wk      | 10년      | 105               |
-| 월봉    | 1mo      | 10년      | 24                |
+|--------|---------|---------|-----------------|
+| 15분봉 | 15m | 60일 | 80 |
+| 1시간봉 | 1h | 730일 | 120 |
+| 일봉 | 1d | 2년 | **500** |
+| 주봉 | 1wk | 10년 | 105 |
+| 월봉 | 1mo | 10년 | 24 |
 
 ### 전처리 흐름
 
 ```
-yf.download()  →  (실패 시) yf.Ticker().history()
+yf.download() → (실패 시) yf.Ticker().history()
     │
     ↓
 MultiIndex 컬럼 정리 + 중복 제거
@@ -705,10 +745,9 @@ MultiIndex 컬럼 정리 + 중복 제거
 인덱스 처리: 인트라데이(15m/1h) → datetime  │  일봉 이상 → .date
     │
     ↓
-EMA_10  = Close.ewm(span=10, adjust=False).mean()
-    │
-    ↓
-Daily_Return = Close.pct_change()
+EMA_10          = Close.ewm(span=10, adjust=False).mean()
+Rolling_Std     = Close.pct_change().rolling(roll_period, min_periods=2).std()
+Daily_Return    = Close.pct_change()
     │
     ↓
 dropna() 최종 정리
@@ -718,342 +757,243 @@ dropna() 최종 정리
 
 ---
 
-## 8. 포트폴리오 평가 및 성과 지표
+## 10. 포트폴리오 평가 및 성과 지표
 
 ### 개별 종목 지표
 
-| 지표             | 계산 방법                                               |
-| ---------------- | ------------------------------------------------------- |
-| Final Return (%) | 누적 수익률 배열의 마지막 값                            |
-| Alpha Gap (%p)   | STATIC RL − Vanilla RL 최종 수익률 차이                 |
-| MDD (%)          | min((wealth_index − running_peak) / running_peak) × 100 |
-| Volatility       | 누적 수익률 배열의 표준편차                             |
+| 지표 | 계산 방법 |
+|------|---------|
+| Final Return (%) | 누적 수익률 배열의 마지막 값 |
+| Alpha Gap (%p) | STATIC RL − Vanilla RL 최종 수익률 차이 |
+| MDD (%) | min((wealth_index − running_peak) / running_peak) × 100 |
+| Volatility | 누적 수익률 배열의 표준편차 |
 
-### 팀 포트폴리오 비중 — Softmax 가중 배분 (Team Fund)
+### 팀 포트폴리오 — Softmax 가중 배분
 
-**파일:** `common/evaluator.py`, `app.py:564~576`
+**파일:** `common/evaluator.py`, `app.py`
 
 ```python
-# 위험 조정 점수 계산
+# 위험 조정 점수
 score_i  = avg_return_i / (1 + abs(avg_mdd_i))   # MDD 패널티 적용 수익률
-weight_i = softmax(scores, temperature=1.0)[i]    # 성과 비례 자본 배분
 
-# 팀 펀드 수익 곡선 = 각 멤버 STATIC 수익 곡선의 가중 합산
-team_curve = np.dot(weights_arr, aligned_traces)  # (n_members,) · (n_members, n_days)
-tf_final   = team_curve[-1]                       # 최종 누적 수익률 (%)
+# Softmax 가중치 (수치 안정: z -= z.max())
+weight_i = softmax(scores, temperature=T)[i]
+
+# 팀 펀드 수익 곡선
+team_curve = np.dot(weights_arr, aligned_traces)   # (n_members,) · (n_members, n_days)
 ```
 
-**Team Fund 해석:**
+### 행동 및 보상 함수
 
-- `score` 값이 가장 높은 멤버에게 자본이 집중적으로 배분됨 (temperature=1.0 → 고집중)
-- improve 4-8 기준: NVDA score ≈ 160 ≫ TSLA ≈ 90 ≫ QQQ ≈ 66 → NVDA 비중 94.8%
-- Team Fund = Σ weight_i × STATIC_trace_i ≈ NVDA STATIC curve ≈ +196.23%
-- **검증**: `calculate_softmax_weights()` → 수치 안정성 `z -= z.max()` 적용, 합계=1 보장
+| 행동 | 코드 | 의미 |
+|------|------|------|
+| CASH | 0 | 현금 보유 (수익률 0%) |
+| BUY | 1 | 매수·보유 (당일 수익률 반영) |
 
-온도 파라미터(`temperature=1.0`): 낮을수록 최고 성과 멤버에 집중, 높을수록 균등 배분.
+- SELL 액션 없음. BUY→CASH 전환이 암묵적 청산.
+- 수수료는 **CASH→BUY 진입 시에만** 1회 부과.
 
-### Ghost Line (최적 파라미터 투영)
+```python
+fee    = fee_rate if (action == BUY and prev_action == CASH) else 0
+reward = daily_return − fee   # 클리핑 없음, 실제 수익률 그대로
+current_capital *= (1 + reward)
+```
 
-Simulation에서 발견된 최적 파라미터로 산출한 수익 곡선을 점선(Ghost)으로 현재 차트에
-병렬 표시한다. 현재 파라미터와 최적 파라미터 간의 성과 차이를 직관적으로 비교할 수 있다.
+### Ghost Line
+
+Simulation에서 발견된 최적 파라미터 수익 곡선을 점선으로 현재 차트에 병렬 표시한다.
 
 ---
 
-## 9. UI 기능 상세
+## 11. UI 기능 상세
 
-### 9.1 사이드바
+### 11.1 사이드바
 
-| 기능          | 동작                                                          |
-| ------------- | ------------------------------------------------------------- |
-| Eval. All     | 전체 멤버·종목을 현재 파라미터로 순차 평가                    |
-| Simul. All    | 전체 멤버·종목의 최적 파라미터 자동 탐색 후 저장 및 평가 실행 |
-| All 적용      | 체크된 Fallback Parameters를 모든 종목에 일괄 적용            |
-| 되돌리기      | 체크된 파라미터를 이전 상태로 복원                            |
-| System Status | Cloud/Local 환경 + GPU/CPU 상태 표시 (☁️ / 🖥️, ⚡ / 🔲)       |
+| 기능 | 동작 |
+|------|------|
+| Eval. All | 전체 멤버·종목을 현재 파라미터로 순차 평가 |
+| Simul. All | 전체 멤버·종목 최적 파라미터 자동 탐색 후 저장 및 평가 |
+| All 적용 | 체크된 Fallback Parameters를 모든 종목에 일괄 적용 |
+| 되돌리기 | 체크된 파라미터를 이전 상태로 복원 |
+| System Status | Cloud/Local 환경 + GPU/CPU 상태 표시 |
 
-### 9.2 Run Evaluation
+### 11.2 Run Evaluation
 
 ```
-1. 현재 파라미터로 RL 에이전트 평가 실행
-2. Trial History에 결과 추가
-   trial_seed = base_seed + (n_accumulated + run_i) × 37
+1. 현재 파라미터로 RL 에이전트 평가
+2. Trial History에 결과 추가 (trial_seed = base_seed + n*37)
 3. Auto Run Count만큼 자동 반복
-4. 각 Trial의 최종 수익률, Alpha Gap, MDD를 통계 분석 패널에 표시
+4. 각 Trial의 수익률, Alpha Gap, MDD 통계 분석 패널에 표시
 ```
 
-### 9.3 Simulation
+### 11.3 Simulation
 
 ```
-1. PG Actor-Critic Optimizer가 n_iters 반복으로 하이퍼파라미터 탐색
+1. PGActorCriticOptimizer가 n_iters 반복 탐색
    n_iters = max(Sim Min Steps, Auto Run Count × Sim Step Mult.)
-2. 각 iteration마다 복수 시드(3~4)로 RL 평가
-   → 복합 Gap = 0.6 × (STATIC−Market) + 0.4 × (STATIC−max(Vanilla, Market×0.3))
+2. 각 iteration: 복수 시드(3~4)로 RL 평가
+   → composite_gap = 0.6×(STATIC-Market) + 0.4×(STATIC-max(Vanilla, Market×0.3))
 3. Policy Gradient로 탐색 정책 μ 업데이트, σ 자동 스케줄링
-4. 수렴 차트 실시간 표시
-   - 파라미터 정규화 추이 차트 (α/γ/ε_S/ε_V)
-   - Alpha vs Market 수렴 차트 (목표선 +1%p/+5%p 표시)
-5. 탐색 완료 후 저장 여부 선택
+4. 수렴 차트 실시간 표시 (파라미터 추이 + Alpha vs Market)
+5. 탐색 완료 후 저장 여부 선택 → config.py 자동 저장 + 모듈 리로드
 ```
 
-### 9.4 Agent Decision Analysis
+### 11.4 Agent Decision Analysis
 
 - 좌측: STATIC RL의 BUY/CASH 행동 빈도 막대 차트
 - 우측: 일별 행동 로그 테이블 (BUY: 파란색, CASH: 빨간색)
+- 신경망 알고리즘(A2C 등) 선택 시 State Analysis 탭 비활성화
 
-### 9.5 Trial History Statistical Analysis
+### 11.5 Trial History Statistical Analysis
 
-- **Trial-by-Trial Return Progression**: 반복 평가별 수익률 추이 및 Mean/Max/Min 기준선
-- **Return Distribution across Trials**: Vanilla RL과 STATIC RL의 박스 플롯 비교
-- **Statistics Summary**: Vanilla/STATIC의 Mean(σ), Range를 항목별 표시
-- **Trial 데이터 테이블**: 열 줄바꿈 헤더로 공간 최적화, 전체 열(Trial/Seed/Vanilla/STATIC/Market) 표시
+- **Trial-by-Trial Return Progression**: 반복 평가별 수익률 추이
+- **Return Distribution across Trials**: Vanilla RL vs STATIC RL 박스 플롯
+- **Statistics Summary**: Mean(σ), Range 항목별 표시
+- **Trial 데이터 테이블**: 열 줄바꿈 헤더, 전체 열(Trial/Seed/Vanilla/STATIC/Market) 표시
 
-### 9.6 팀 포트폴리오 대시보드
+### 11.6 팀 포트폴리오 대시보드
 
 - All Members STATIC RL Cumulative Returns + Team Fund 차트
 - 멤버별 성과 테이블: Member, Stocks, Persona(CTPT), Capital($), STATIC(%), Vanilla(%), Alpha Gap, MDD, Score, Weight%
-- Team Fund: Softmax 가중 배분 기준 팀 전체 수익 곡선
+- Master Fund Contribution (Donut): Softmax score 기반 자본 비중
+- Profit Comparison (Bar): 멤버별 Vanilla RL vs STATIC RL 손익
 
 ---
 
-## 10. 파일 구조
+## 12. 파일 구조
 
 ```
 Task-Constrained-RL-ColdStart_YS_v1-1/
 │
-├── app.py                          Streamlit 메인 앱 (~1900줄)
+├── app.py                          Streamlit 메인 앱 (~2300줄)
 │
 ├── common/
-│   ├── base_agent.py               Actor-Critic / Q-Learning 훈련·평가
+│   ├── base_agent.py               STATIC/Vanilla/Neural RL 훈련·평가
+│   ├── nn_utils.py                 TinyMLP (NumPy), ReplayBuffer, extract_features
 │   ├── heuristic.py                PGActorCriticOptimizer
 │   ├── evaluator.py                MDD, Softmax 비중, CTPT 코드
 │   ├── data_loader.py              yfinance 데이터 로드 (다봉, 캐시)
-│   └── stock_registry.py           종목 정보 + 수수료 테이블
+│   └── stock_registry.py           종목 정보(12종) + 수수료 테이블
 │
 ├── members/
-│   ├── member_1/config.py          Member 1 — SPY    (seed=42,  최적 lr=0.0496, 4-9 갱신)
-│   ├── member_2/config.py          Member 2 — QQQ    (seed=137, 최적 lr=0.0650, 4-9 갱신)
-│   ├── member_3/config.py          Member 3 — KOSPI  (seed=2024,최적 lr=0.0227, 구조적 OOS 유지)
-│   ├── member_4/config.py          Member 4 — KOSDAQ (seed=777, 최적 lr=0.0168, 구조적 OOS 유지)
-│   ├── member_5/config.py          Member 5 — NVDA   (seed=314, 최적 lr=0.0497, 최고 성과 유지)
-│   └── member_6/config.py          Member 6 — TSLA   (seed=99,  최적 lr=0.0364, 4-9 갱신)
+│   ├── member_1/config.py          Member 1 — SPY    (seed=42,  lr=0.0802, gap=8.66%)
+│   ├── member_2/config.py          Member 2 — QQQ    (seed=137, lr=0.0722, gap=35.62% 🏆)
+│   ├── member_3/config.py          Member 3 — KOSPI  (seed=2024,lr=0.0050, 구조적 OOS)
+│   ├── member_4/config.py          Member 4 — KOSDAQ (seed=777, lr=0.0380, gap=21.36%)
+│   ├── member_5/config.py          Member 5 — SCHD   (seed=314, lr=0.0624, gap=0.57%)
+│   └── member_6/config.py          Member 6 — RGLD   (seed=99,  lr=0.0269, gap=17.81%)
 │
 └── README.md
 ```
 
 ---
 
-## 11. Simulation 단계별 연산 흐름
-
-**파일:** `app.py` (sim_clicked 블록) + `common/heuristic.py` (PGActorCriticOptimizer)
-
-### STEP 1 — 탐색 공간 및 반복 횟수 결정
-
-```python
-n_iters = max(eff_sim_min, l_auto_runs * eff_sim_mult)
-          # eff_*: Fallback Parameters 체크 시 글로벌 기본값 적용
-
-param_bounds = {
-    "lr":        (0.005, 0.10),   # LR 하한 0.005 (극단적 저학습률 방지)
-    "gamma":     (0.85,  0.99),   # 하한 0.85: 단기 편향 방지
-    "epsilon":   (0.01,  0.25),   # 상한 0.25: 경계값 고착 방지
-    "v_epsilon": (0.01,  0.25),
-}
-```
-
-### STEP 2 — PGActorCriticOptimizer 초기화
-
-```python
-optimizer = PGActorCriticOptimizer(
-    bounds      = param_bounds,
-    lr_actor    = 0.12,
-    sigma_init  = 0.18,
-    sigma_min   = 0.02,
-    sigma_max   = 0.30,     # 0.45→0.30: 전역 진동 방지 (improve 4-2)
-    value_alpha = 0.25,
-    seed        = base_seed,
-)
-```
-
-### STEP 3 — 복수 평가 시드 준비
-
-```python
-_n_eval     = min(4, max(3, l_auto_runs // 2))   # 최소 3 보장
-_eval_seeds = [base_seed + j * 37 for j in range(_n_eval)]
-```
-
-### STEP 4 — 탐색 페이즈 판정
-
-```
-_explore_end = max(6, n_iters // 4)
-
-i < _explore_end  →  🔴 PG Exploring    (초기 광역 탐험)
-σ_mean > 0.12     →  🟡 PG Actor-Critic  (정책 업데이트 중)
-σ_mean ≤ 0.12     →  🟢 PG Converging    (수렴 단계)
-```
-
-### STEP 5 — Actor: 파라미터 후보 샘플링
-
-```python
-Δ     = rng.normal(0, σ)
-x_new = clip(μ + Δ, 0, 1)
-
-candidate["lr"]        = 0.005 + x_new[0] × (0.10 − 0.005)
-candidate["gamma"]     = 0.85  + x_new[1] × (0.99 − 0.85)
-candidate["epsilon"]   = 0.01  + x_new[2] × (0.25 − 0.01)
-candidate["v_epsilon"] = 0.01  + x_new[3] × (0.25 − 0.01)
-```
-
-### STEP 6 — 복수 시드로 RL 에이전트 평가
-
-```python
-for seed_i in _eval_seeds:
-    _, v_trace, s_trace, mkt_trace, ... = get_rl_data(...)
-    gap_vs_market  = s_trace[-1] − mkt_trace[-1]
-    V_floor        = mkt_trace[-1] × 0.3
-    V_adj          = max(v_trace[-1], V_floor)       # 역유인 방지
-    gap_vs_vanilla = s_trace[-1] − V_adj
-    composite_gap  = 0.6 × gap_vs_market + 0.4 × gap_vs_vanilla
-    gaps.append(composite_gap)
-```
-
-### STEP 7 ~ 12 — Critic → Actor → σ 스케줄링
-
-```
-[7]  expected_gap = mean(gaps)
-
-[8]  V += value_alpha × (expected_gap − V)            # Critic EMA
-
-[9]  A_norm = tanh((expected_gap − V) / 10)           # Advantage → [−1,1]
-
-[10] pg_dir = Δ / σ  (if L2>1: 정규화)
-     μ = clip(μ + lr_actor × A_norm × pg_dir, 0, 1)  # Actor
-
-[11] A_norm > 0 → σ × 0.96 (수렴)
-     A_norm ≤ 0 → σ × 1.04 (재탐험)
-
-[12] best 갱신, 수렴 차트 실시간 업데이트
-```
-
-### 전체 흐름 요약
+## 13. Simulation 단계별 연산 흐름
 
 ```
 [Simulation 클릭]
       │
-      ↓
 STEP 1: n_iters = max(Sim_Min, AutoRun×Mult), param_bounds 결정
-      │
+      │  lr:(0.005,0.10) / gamma:(0.85,0.99) / epsilon:(0.01,0.25) / v_epsilon:(0.01,0.25)
       ↓
-STEP 2: PGActorCriticOptimizer 초기화 (σ_max=0.30)
-      │
+STEP 2: PGActorCriticOptimizer 초기화
+      │  sigma_init=0.18, sigma_max=0.30, lr_actor=0.12, value_alpha=0.25
       ↓
-  ┌── for i in range(n_iters): ──────────────────────────────────┐
-  │                                                               │
-  │  STEP 4: 페이즈 판정 (Exploring / Actor-Critic / Converging) │
-  │  STEP 5: μ + Δ 샘플링 → candidate 파라미터 (4차원)           │
-  │  STEP 6: 복수 시드 RL 평가 (3~4 seeds)                       │
-  │    • STATIC AC 훈련(첫 70%, train_eps회) → 전체 평가          │
-  │    • Vanilla QL 훈련(첫 70%, train_eps회) → 전체 평가         │
-  │    • composite_gap = 0.6×(S-M) + 0.4×(S-max(V, M×0.3))     │
-  │  STEP 7~12: Critic/Advantage/Actor/σ 갱신                   │
-  └───────────────────────────────────────────────────────────────┘
+STEP 3: _n_eval = min(4, max(3, auto_runs//2)),  eval_seeds = [seed + j*37]
       │
-      ↓
-[n_iters 완료]
+  ┌── for i in range(n_iters): ──────────────────────────────────────┐
+  │  STEP 4: 페이즈 판정 (Exploring / Actor-Critic / Converging)      │
+  │  STEP 5: Δ ~ N(0,σ),  x_new = clip(μ+Δ, 0,1) → candidate 4개   │
+  │  STEP 6: 복수 시드 RL 평가 (3~4 seeds)                           │
+  │    • STATIC AC 훈련(첫 70%, 300회) → 전체 기간 평가              │
+  │    • Vanilla QL 훈련(첫 70%, 150회) → 전체 기간 평가              │
+  │    • composite_gap = 0.6×(S-M) + 0.4×(S-max(V, M×0.3))          │
+  │  STEP 7: expected_gap = mean(gaps)                                │
+  │  STEP 8: V += value_alpha × (expected_gap − V)    (Critic EMA)   │
+  │  STEP 9: A_norm = tanh((expected_gap − V) / 10)                  │
+  │  STEP 10: pg_dir = Δ/σ (L2≤1);  μ += lr_actor × A_norm × pg_dir │
+  │  STEP 11: A_norm > 0 → σ×0.96;  A_norm ≤ 0 → σ×1.04            │
+  │  STEP 12: best 갱신, 수렴 차트 실시간 업데이트                    │
+  └────────────────────────────────────────────────────────────────────┘
       │
-      ↓
-Simul. All 모드  →  best 파라미터 config.py 자동 저장 → Run Evaluation 실행
-수동 모드        →  [저장 및 반영] / [반영 취소] 버튼 표시
+Simul. All 모드 → best 파라미터 config.py 자동 저장 → 모듈 리로드 → Run Evaluation 실행
+수동 모드       → [저장 및 반영] / [반영 취소] 버튼 표시
 ```
 
 ---
 
-## 12. 개선 이력
+## 14. 개선 이력
 
-### improve 4-9 (현재) — Q-floor margin 강화 + config 최적값 갱신
+### improve 6-1 (현재) — 신경망 RL 알고리즘 추가 + 버그 수정
 
-**관찰 문제점 (improve 4-8 실행 결과):**
+| # | 변경 내용 |
+|---|---------|
+| N1 | `common/nn_utils.py` 신규: TinyMLP (He+Adam), ReplayBuffer, extract_features (5차원 특징) |
+| N2 | `common/base_agent.py` 신규: `_train_a2c()`, `_train_a3c()`, `_train_ppo()`, `_train_sac()`, `_train_ddpg()` |
+| N3 | `common/base_agent.py` 신규: `run_neural_rl()` 공개 API |
+| N4 | `app.py` RL Algorithm selectbox 추가 (System Parameters 2행, LR 왼쪽) |
+| N5 | `app.py` Fallback Parameters에 RL Algorithm 체크박스 추가 |
+| N6 | `get_rl_data()` algorithm 파라미터 추가, 신경망 분기 처리 |
+| N7 | M5 → SCHD (미국배당다우존스 ETF, index=10) 으로 변경 |
+| N8 | M6 → RGLD (로열 골드, index=11) 으로 변경 |
+| B1 | A3C bootstrap γ 오류 수정: `R = gamma * V(s_n)` → `R = V(s_n)` |
+| B2 | `_ALL_CHK_KEYS`에 `"algo"`, `"sim_min"`, `"sim_mult"` 누락 → 추가 |
+| B3 | `sim_pending` algo 세션 키 누락 → Simulation 후 Algorithm selectbox 복원 수정 |
+| B4 | `_save_sim_params_to_config()` 저장 후 `importlib.reload(m_config)` 추가 (캐시 갱신) |
+| C1 | M1 SPY config 갱신: lr=0.0802, γ=0.8732, ε=0.1667, v_ε=0.1347 (gap=8.66%) |
+| C2 | M5 SCHD config 초기 최적화: lr=0.0624, γ=0.9449, ε=0.1708, v_ε=0.0879 (gap=0.57%) |
+| C3 | M6 RGLD config 초기 최적화: lr=0.0269, γ=0.9380, ε=0.1509, v_ε=0.1268 (gap=17.81%) |
 
-- SPY/QQQ/NVDA/KOSDAQ Vanilla 여전히 음수: Q-floor margin=0.001이 훈련 노이즈(Q값 진동) 대비 부족
-- M1 SPY, M2 QQQ, M6 TSLA config: improve 4-8 코드(entropy=0.05, Q-floor 전체) 환경에서 재탐색한 최적값 미반영
+---
 
-| #   | 문제                   | 원인                                                                 | 수정 내용                                                      |
-| --- | ---------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------- |
-| V1  | Vanilla CASH 고착 지속 | Q-floor margin 0.001 < 훈련 노이즈, 일부 시드에서 BUY 우위 보장 실패 | margin 0.001→0.005 강화 (base_agent.py)                        |
-| C1  | M1 SPY config 미갱신   | improve 4-7 최적값(lr=0.0577), 4-8 코드 환경 불일치                  | lr=0.0496, γ=0.8863, ε=0.1190, v_ε=0.0993 (member_1/config.py) |
-| C2  | M2 QQQ config 미갱신   | improve 4-7 최적값(lr=0.0627), γ=0.8805 단기 할인율                  | lr=0.0650, γ=0.9075, ε=0.1005, v_ε=0.1043 (member_2/config.py) |
-| C3  | M6 TSLA config 미갱신  | improve 4-7 최적값(lr=0.0539), 4-8 코드 환경 불일치                  | lr=0.0364, γ=0.8873, ε=0.1283, v_ε=0.0842 (member_6/config.py) |
+### improve 4-9 — Q-floor margin 강화 + config 최적값 갱신
 
-**유지 결정:**
-
-- M3 KOSPI, M4 KOSDAQ: 구조적 OOS 한계 (학습↓ → OOS↑), 파라미터 변경 효과 없음
-- M5 NVDA: 기존 lr=0.0497, ε=0.0443으로 이미 STATIC +195.85%, Gap +120%p — 최적 유지
+| # | 문제 | 수정 내용 |
+|---|------|---------|
+| V1 | Vanilla CASH 고착 지속 (margin=0.001 < 훈련 노이즈) | margin 0.001→0.005 강화 |
+| C1 | M1 SPY config 미갱신 | lr=0.0496, γ=0.8863, ε=0.1190, v_ε=0.0993 |
+| C2 | M2 QQQ config 미갱신 | lr=0.0650, γ=0.9075, ε=0.1005, v_ε=0.1043 |
 
 ---
 
 ### improve 4-8 — Vanilla 전체 상태 Q-floor + STATIC entropy 강화
 
-**관찰 문제점 (improve 4-7 실행 결과):**
+| # | 문제 | 수정 내용 |
+|---|------|---------|
+| V1 | Vanilla bear-state(0) OOS 전 구간 CASH 고착 | Q[0,BUY] ≥ Q[0,CASH]+0.001 추가 |
+| V2 | STATIC 과결정론적 수렴 (entropy_coeff=0.02 부족) | entropy_coeff 0.02→0.05 |
 
-- SPY/QQQ/NVDA/KOSDAQ Vanilla 음수 고착: state=0(하락기)에서 Q[0,CASH]>Q[0,BUY] → OOS 전 구간 CASH
-- TSLA STATIC BUY:CASH=499:0 (완전 Buy&Hold, entropy_coeff=0.02가 너무 작아 정책 다양성 부족)
+---
 
-| #   | 문제                            | 원인                                                               | 수정 내용                                                 |
-| --- | ------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- |
-| V1  | Vanilla 하락-시작 OOS 음수 고착 | improve 4-7은 state=1(bull)만 보정, state=0(bear) 첫날 CASH 고착   | Q[0,BUY] ≥ Q[0,CASH]+0.001 상대 우위 추가 (base_agent.py) |
-| V2  | STATIC 과결정론적 수렴(AllBUY)  | entropy_coeff=0.02가 일일 수익률 대비 너무 작아 정책 다양성 미확보 | entropy_coeff 0.02→0.05 (base_agent.py TD 오차 계산)      |
+### improve 4-5~4-7 — fee 비례 초기화 + 환경 감지 + 안정화
 
-### improve 4-7 — Vanilla bull-state 상대 우위 하한
+| # | 변경 내용 |
+|---|---------|
+| 4-5 | STATIC/Vanilla fee 비례 BUY 선호 초기화 |
+| 4-5 | Cloud/Local 환경 자동 감지 (`_IS_CLOUD`) + System Status 배지 |
+| 4-6 | STATIC: 엔트로피 정규화 `r_eff = r + 0.02·H(π)` (→4-8에서 0.05로 강화) |
+| 4-6 | Vanilla: epsilon annealing 2ε→ε + prev_action=1 고정 |
+| 4-7 | Vanilla: Q[1,BUY] ≥ Q[1,CASH]+0.001 상대 우위 하한 |
 
-| #   | 문제                       | 원인                                                               | 수정 내용                                                  |
-| --- | -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
-| V1  | TSLA Vanilla 0% 고착       | Q[1,CASH]가 학습으로 높아져 절대 하한(0.002)을 초과, BUY 영구 패배 | Q[1,BUY] ≥ Q[1,CASH]+0.001 상대 우위 하한 (base_agent.py)  |
-| V2  | 6종목 config 최적값 미반영 | 시뮬레이션 발견 파라미터가 session_state에만 저장, 재시작 시 소실  | 각 멤버 config.py에 lr/gamma/epsilon/v_epsilon 최적값 저장 |
-
-### improve 4-5~4-6 — fee 비례 초기화 + 환경 감지 + 범용 개선
-
-| #     | 변경 내용                                                             |
-| ----- | --------------------------------------------------------------------- |
-| 4-5-A | STATIC/Vanilla Q init fee 비례 (수수료 높을수록 BUY 학습 난이도 보정) |
-| 4-5-B | `_IS_CLOUD` (HOME==/home/appuser) + `_HAS_CUDA` 환경 자동 감지        |
-| 4-5-C | Cloud 환경 시 슬라이더 기본값 자동 축소 (auto_runs=3, 부하 감소)      |
-| 4-5-D | 사이드바 System Status 배지 (☁️/🖥️, ⚡ GPU/🔲 CPU)                    |
-| 4-6-A | STATIC: 엔트로피 정규화 r_eff = r + 0.02·H(π)                         |
-| 4-6-B | Vanilla: epsilon annealing 2ε→ε (초반 강탐험, 후반 기본 탐험)         |
-| 4-6-C | Vanilla: prev_action=1 (BUY 시작 고정, CASH 편향 완전 제거)           |
+---
 
 ### improve 4-1~4-4 — 시뮬레이션 안정화
 
-| #   | 변경 내용                                                           |
-| --- | ------------------------------------------------------------------- |
-| 4-1 | Trial seed 간격 ×13 → ×37 소수 간격 (시드 독립성 강화)              |
-| 4-1 | Vanilla Q init q[:,1]=max(fee×50, 0.05) (fee 비례 BUY 선호)         |
-| 4-2 | 역유인 제거: V_floor = Market×0.3 (Vanilla=0% 의도 방지)            |
-| 4-2 | LR 탐색 하한 0.001→0.005 (극단적 저학습률 방지)                     |
-| 4-2 | sigma_max 0.45→0.30 (전역 진동 방지)                                |
-| 4-2 | \_n_eval 최소 3 보장                                                |
-| 4-3 | epsilon 탐색 상한 0.5→0.25 (경계값 고착 방지)                       |
-| 4-3 | \_eval_seeds 간격 ×37 소수 강화                                     |
-| 4-4 | Sim Min Steps / Sim Step Mult. UI 파라미터 추가 (n_iters 세밀 제어) |
-| 4-4 | Sim Min Steps / Sim Step Mult. Fallback Parameters 지원             |
+| # | 변경 내용 |
+|---|---------|
+| 4-1 | Trial seed 간격 ×13→×37 소수 간격 (시드 독립성) |
+| 4-2 | 역유인 제거: V_floor = Market×0.3 |
+| 4-2 | LR 탐색 하한 0.001→0.005, sigma_max 0.45→0.30 |
+| 4-3 | epsilon 탐색 상한 0.5→0.25 (경계값 고착 방지) |
+| 4-4 | Sim Min Steps / Sim Step Mult. UI 파라미터 추가 |
 
-### improve 3-2 — Trading Days / Train Episodes 분리 + RL 구조 단순화
+---
 
-| #   | 변경 내용                                                 |
-| --- | --------------------------------------------------------- |
-| E1  | `episodes` → Trading Days(n_bars)와 Train Episodes로 분리 |
-| E2  | 일봉 기본 Trading Days: 80 → 500 (약 2년)                 |
-| E3  | Train Episodes 슬라이더 추가 (기본값 300)                 |
-| E4  | theta 초기화 편향 제거 → fee 비례 선호로 재설계           |
-| E5  | 엔트로피 정규화 제거 후 재도입 (0.02·H(π) — improve 4-6)  |
-| E6  | lr_actor/lr_critic 분리 제거 (단일 lr)                    |
-| E7  | 보상 클리핑 제거 (실제 수익률 직접 반영)                  |
-| E8  | 워크포워드 검증: n_train = max(int(n_days×0.7), 20)       |
+### improve 2~3 — 알고리즘 전환 및 기초 구조
 
-### improve 2-7~2-9 — 알고리즘 전환 및 기초 구조
-
-- Actor-Critic으로 알고리즘 전환 (기존 단순 Q-Learning → Policy Gradient 기반)
+- Actor-Critic 알고리즘 전환 (단순 Q-Learning → Policy Gradient 기반)
 - BayesianOptimizer → PGActorCriticOptimizer 전환
 - 복합 Gap 목표 함수 도입 (0.6×Market + 0.4×Vanilla)
-- Run Eval bug: try/except/finally 큐 팝 보장
-- found 기준: gap ≥ 5%p → gap ≥ 1%p (목표), gap ≥ 25%p (🏆)
-- 테이블 우측 정렬, 열 헤더 줄바꿈 (전체 열 표시)
+- 워크포워드 검증: n_train = max(int(n_days×0.7), 20)
+- Trading Days / Train Episodes 독립 파라미터 분리
+- Trial History Statistical Analysis 패널 추가
