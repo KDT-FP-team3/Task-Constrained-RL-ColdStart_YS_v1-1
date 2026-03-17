@@ -704,12 +704,16 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
             _T   = float(st.session_state.get('fund_temperature', 1.0))
             _cap = float(st.session_state.get('fund_max_weight',  1.0))
             weights_arr = calculate_softmax_weights(scores_arr, temperature=_T)
-            # [P1] Weight Cap: 클리핑 후 재정규화 (cap<1.0 일 때만 적용)
+            # [P1] Weight Cap: 반복 수렴 클리핑 (단일 패스는 재정규화 후 캡 재초과 가능)
+            # 예) M3=59.6% → 40% 클립 후 재정규화 시 49.7%로 재초과 → 반복 필요
             if _cap < 1.0:
-                weights_arr = np.minimum(weights_arr, _cap)
-                _wsum = weights_arr.sum()
-                if _wsum > 0:
-                    weights_arr /= _wsum
+                for _ in range(20):
+                    weights_arr = np.minimum(weights_arr, _cap)
+                    _wsum = weights_arr.sum()
+                    if _wsum > 0:
+                        weights_arr /= _wsum
+                    if np.all(weights_arr <= _cap + 1e-9):
+                        break
 
             traces_list = [member_traces_snap[mn]['s_trace'] for mn in member_names_sorted]
             min_len = min(len(t) for t in traces_list)
