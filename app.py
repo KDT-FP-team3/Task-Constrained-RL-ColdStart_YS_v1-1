@@ -1169,6 +1169,9 @@ if apply_all_clicked and st.session_state.fallback_params:
             if _chks.get("gamma"):     _snap.append(f"gamma_{_mn}_{_sn}")
             if _chks.get("eps"):       _snap.append(f"eps_{_mn}_{_sn}")
             if _chks.get("v_eps"):     _snap.append(f"v_eps_{_mn}_{_sn}")
+            if _chks.get("algo"):      _snap.append(f"algo_{_mn}_{_sn}")
+            if _chks.get("sim_min"):   _snap.append(f"sim_min_{_mn}_{_sn}")
+            if _chks.get("sim_mult"):  _snap.append(f"sim_mult_{_mn}_{_sn}")
             for _k in _snap:
                 if _k in st.session_state:
                     _prev[_k] = st.session_state[_k]
@@ -1210,6 +1213,14 @@ if apply_all_clicked and st.session_state.fallback_params:
                 st.session_state[f"eps_{_mn}_{_sn}"]           = _fp["epsilon"]
             if _chks.get("v_eps"):
                 st.session_state[f"v_eps_{_mn}_{_sn}"]         = _fp["v_epsilon"]
+            if _chks.get("algo"):
+                _new_algo = _fp.get("algorithm", "STATIC")
+                if _new_algo in ["STATIC", "A2C", "A3C", "PPO", "SAC", "DDPG"]:
+                    st.session_state[f"algo_{_mn}_{_sn}"]      = _new_algo
+            if _chks.get("sim_min"):
+                st.session_state[f"sim_min_{_mn}_{_sn}"]       = _fp["sim_min"]
+            if _chks.get("sim_mult"):
+                st.session_state[f"sim_mult_{_mn}_{_sn}"]      = _fp["sim_mult"]
     st.rerun()
 
 # ── 되돌리기: 이전 상태 복원 ──
