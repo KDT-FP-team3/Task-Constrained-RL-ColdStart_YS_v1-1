@@ -1,16 +1,16 @@
 MEMBER_NAME = "Member 6"
-TARGET_INDICES = [8] # 삼성전자
+TARGET_INDICES = [11] # RGLD 로열 골드
 
-# [파라미터 — Simulation 저장: gap=-999.0000, s_final=0.00%, v_final=0.00%]
+# [파라미터 — 초기값 (미최적화): gap=0.0000, s_final=0.00%, v_final=0.00%]
 RL_PARAMS = {
     TARGET_INDICES[0]: {
-        "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
+        "lr": 0.05, "gamma": 0.92, "epsilon": 0.12, "v_epsilon": 0.12,
         "episodes": 300, "train_episodes": 150, "seed": 42,
-        "use_vol": True, "roll_period": 20
+        "use_vol": False, "roll_period": None
     },
     "default": {
-        "lr": 0.017, "gamma": 0.92, "epsilon": 0.169364, "v_epsilon": 0.144686,
+        "lr": 0.05, "gamma": 0.92, "epsilon": 0.12, "v_epsilon": 0.12,
         "episodes": 300, "train_episodes": 150, "seed": 42,
-        "use_vol": True, "roll_period": 20
+        "use_vol": False, "roll_period": None
     },
 }
