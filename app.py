@@ -27,9 +27,9 @@ _IS_CLOUD = (
     or os.environ.get("IS_CLOUD", "") == "1"
 )
 
-# GPU 감지 (로컬 전용 — 클라우드는 항상 CPU)
+# GPU 감지 (표시 전용 — 실제 RL 연산은 NumPy 기반 CPU 전용)
 _HAS_CUDA = False
-_CUDA_DEVICE = "CPU"
+_CUDA_DEVICE = ""
 if not _IS_CLOUD:
     try:
         import torch
@@ -314,7 +314,7 @@ def _render_master_pbar_html(pct, placeholder=None):
 st.sidebar.markdown("### System Status")
 # ── 실행 환경 배지 ──────────────────────────────
 _env_icon  = "☁️ Cloud" if _IS_CLOUD else "🖥️ Local"
-_gpu_icon  = f"⚡ GPU ({_CUDA_DEVICE})" if _HAS_CUDA else "🔲 CPU"
+_gpu_icon  = f"🔲 CPU (GPU 감지: {_CUDA_DEVICE})" if _HAS_CUDA else "🔲 CPU"
 st.sidebar.caption(f"{_env_icon} &nbsp;|&nbsp; {_gpu_icon}")
 # ─────────────────────────────────────────────────
 master_progress_placeholder = st.sidebar.empty()
