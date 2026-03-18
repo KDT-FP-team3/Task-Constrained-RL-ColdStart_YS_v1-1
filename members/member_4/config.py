@@ -8,12 +8,12 @@ RL_PARAMS = {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
         "episodes": 300, "train_episodes": 150, "seed": 777,
         "use_vol": True, "roll_period": 30,
-        "algorithm": "STATIC"
+        "algorithm": "STATIC_H"
     },
     "default": {
         "lr": 0.038007, "gamma": 0.921727, "epsilon": 0.07596, "v_epsilon": 0.061587,
         "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": True, "roll_period": 30,
-        "algorithm": "STATIC"
+        "algorithm": "STATIC_H"
     },
 }

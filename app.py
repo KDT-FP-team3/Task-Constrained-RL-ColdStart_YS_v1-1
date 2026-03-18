@@ -1634,6 +1634,7 @@ for m_config in sorted_modules:
                 _auto_run_key = f"auto_run_{hist_key}"
                 if st.session_state.get(_auto_run_key, False):
                     st.session_state[_auto_run_key] = False
+                    st.session_state['interrupt_requested'] = False  # 시뮬 완료 자동 실행은 이전 인터럽트 무시
                     run_clicked = True
 
                 # ── Run Eval. All / Simul. All 큐 처리 ──
@@ -2069,6 +2070,7 @@ for m_config in sorted_modules:
                         st.session_state[f"sim_pending_{hist_key}"] = _best_params
                         st.session_state.stocks_reverted.add(hist_key)
                         st.session_state[f"auto_run_{hist_key}"] = True
+                        st.session_state['interrupt_requested'] = False  # Simul. All 자동 실행을 위해 인터럽트 초기화
                         # 큐가 비었으면 자동 저장 모드 해제
                         if not st.session_state.sim_all_queue:
                             st.session_state.sim_auto_save = False
@@ -2489,6 +2491,97 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                                 f'<div style="max-height:300px;overflow-y:auto;font-size:13px;width:100%;box-sizing:border-box;">{_tbl_html}</div>',
                                 unsafe_allow_html=True
                             )
+
+                    # ── [차트] Capital Comparison ($1 초기자본) — 대시보드와 동일 기준 ──
+                    _algo_lbl_cmp = {"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm)
+                    _cap_mkt = round(1.0 + market_final / 100.0, 4)
+                    _cap_van = round(1.0 + v_final      / 100.0, 4)
+                    _cap_stc = round(1.0 + s_final      / 100.0, 4)
+                    _alpha_mkt = _cap_stc - _cap_mkt   # vs Market
+                    _alpha_van = _cap_stc - _cap_van   # vs Vanilla
+                    _beats_mkt = _alpha_mkt > 0
+                    _beats_van = _alpha_van > 0
+                    # ─ 우세 배지 ─
+                    if _beats_mkt and _beats_van:
+                        _bdg_txt = f"&#9989; {_algo_lbl_cmp} &nbsp;|&nbsp; Market &amp; Vanilla 모두 초과"
+                        _bdg_bg  = "#15803d"
+                    elif _beats_mkt:
+                        _bdg_txt = f"&#9889; {_algo_lbl_cmp} &nbsp;|&nbsp; Market 초과 · Vanilla 미달"
+                        _bdg_bg  = "#b45309"
+                    elif _beats_van:
+                        _bdg_txt = f"&#9889; {_algo_lbl_cmp} &nbsp;|&nbsp; Vanilla 초과 · Market 미달"
+                        _bdg_bg  = "#b45309"
+                    else:
+                        _bdg_txt = f"&#10060; {_algo_lbl_cmp} &nbsp;|&nbsp; Market &amp; Vanilla 모두 미달"
+                        _bdg_bg  = "#9f1239"
+                    st.markdown(
+                        f'<div style="background:{_bdg_bg};color:#fff;border-radius:6px;'
+                        f'padding:5px 12px;font-size:12px;font-weight:700;text-align:center;'
+                        f'margin-bottom:4px;letter-spacing:0.03em;">{_bdg_txt}</div>',
+                        unsafe_allow_html=True
+                    )
+                    # ─ 그룹 바 차트 ─
+                    _cmp_x    = ["Market<br>(Buy&Hold)", "Vanilla RL", _algo_lbl_cmp]
+                    _cmp_caps = [_cap_mkt, _cap_van, _cap_stc]
+                    _cmp_rets = [market_final, v_final, s_final]
+                    _cmp_cols = [
+                        "rgba(72,187,120,0.85)",
+                        "rgba(224,80,80,0.80)",
+                        "rgba(74,144,217,0.85)",
+                    ]
+                    _fig_cmp = go.Figure()
+                    for _xl, _cv, _rv, _col in zip(_cmp_x, _cmp_caps, _cmp_rets, _cmp_cols):
+                        _fig_cmp.add_trace(go.Bar(
+                            x=[_xl], y=[_cv],
+                            marker_color=_col,
+                            text=[f"<b>${_cv:.4f}</b><br><span style='font-size:10px'>({_rv:+.1f}%)</span>"],
+                            textposition="outside",
+                            textfont=dict(size=11),
+                            width=0.5,
+                            showlegend=False,
+                        ))
+                    # Alpha 주석 — STATIC 바 위에 vs Market 차이 표시
+                    _ann_col = "#4ade80" if _beats_mkt else "#f87171"
+                    _ann_arr = "▲" if _beats_mkt else "▼"
+                    _fig_cmp.add_annotation(
+                        x=_algo_lbl_cmp, y=_cap_stc,
+                        text=(f"<b>{_ann_arr} vs Market<br>${_alpha_mkt:+.4f}</b>"),
+                        showarrow=False, yshift=52,
+                        font=dict(size=10, color=_ann_col),
+                        bgcolor="rgba(255,255,255,0.08)",
+                        bordercolor=_ann_col, borderwidth=1, borderpad=3,
+                    )
+                    # Market 기준 점선
+                    _fig_cmp.add_hline(
+                        y=_cap_mkt,
+                        line_dash="dot", line_color="rgba(72,187,120,0.5)", line_width=1.5,
+                        annotation_text=f"Market ${_cap_mkt:.4f}",
+                        annotation_position="top left",
+                        annotation_font=dict(size=9, color="rgba(72,187,120,0.9)"),
+                    )
+                    # $1 손익분기 기준선
+                    _fig_cmp.add_hline(
+                        y=1.0,
+                        line_dash="solid", line_color="rgba(150,150,150,0.3)", line_width=1,
+                    )
+                    _y_max = max(_cmp_caps) * 1.42 + 0.02
+                    _y_min = min(min(_cmp_caps) * 0.88, 0.92)
+                    _fig_cmp.update_layout(
+                        title=dict(
+                            text=f"<b>Capital 비교</b> &nbsp;·&nbsp; $1 초기 → $X &nbsp;({stock_name})",
+                            font=dict(size=12),
+                        ),
+                        yaxis=dict(
+                            title="Capital ($)", showgrid=True, zeroline=False,
+                            range=[_y_min, _y_max], tickformat=".3f",
+                        ),
+                        xaxis=dict(showgrid=False, tickfont=dict(size=12)),
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        height=295, margin=dict(t=42, b=10, l=62, r=15),
+                        bargap=0.45,
+                    )
+                    st.plotly_chart(_fig_cmp, use_container_width=True,
+                                    key=f"profit_cmp_{m_name}_{stock_name}")
 
                 total_episodes_run += l_epi
                 rendered_count += 1
