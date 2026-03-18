@@ -16,10 +16,15 @@ EMA_SIGNAL_WEIGHT = 2      # state = is_bull×1 + is_above_ema×EMA_SIGNAL_WEIGH
 # ── 신경망 RL 알고리즘 공통 상수 ─────────────────────────────────────────────
 NN_HIDDEN      = 32    # TinyMLP 히든 뉴런 수
 N_FEATURES     = 5     # extract_features() 출력 차원
-PPO_CLIP_EPS   = 0.2   # PPO 클리핑 ε
+PPO_CLIP_EPS   = 0.2   # PPO 클리핑 ε  (STATIC-H에서 재사용)
 PPO_GAE_LAMBDA = 0.95  # GAE λ (Generalized Advantage Estimation)
 SAC_ALPHA_LR   = 0.01  # SAC 자동 온도 α 학습률
 DDPG_TAU       = 0.005 # DDPG 타겟 네트워크 소프트 갱신 계수
+
+# ── STATIC-H 하이브리드 전용 상수 ─────────────────────────────────────────────
+HYBRID_ALPHA_MIN = 0.01   # 적응 온도 α_t 최솟값 (안정 구간 하한)
+HYBRID_ALPHA_MAX = 0.15   # 적응 온도 α_t 최댓값 (급변 구간 상한)
+HYBRID_FLIP_WIN  = 20     # 행동 전환율 계산 슬라이딩 윈도우 (봉)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -181,6 +186,114 @@ def _train_actor_critic_static(returns, prices, emas, lr, gamma, epsilon,
     return theta, V
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# STATIC-H: Tabular PPO Clipping + Adaptive Temperature (SAC-inspired)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _train_actor_critic_hybrid(returns, prices, emas, lr, gamma, epsilon,
+                                train_episodes, n_days, fee_rate,
+                                vols=None, vol_threshold=None):
+    """STATIC-H 하이브리드 RL 훈련 — Tabular PPO Clipping + Adaptive Temperature
+
+    STATIC Actor-Critic 기반에 두 가지 개선 적용:
+
+    1. PPO Clipping (Tabular):
+       π_old = softmax(θ[s])           — 업데이트 전 정책 (현재 step)
+       θ_try = θ + lr·δ·grad           — 후보 step 계산
+       r_t   = π_try(a|s) / π_old(a|s) — 정책 변화 비율
+       A_t > 0 이고 r_t > 1+ε → step_scale = (1+ε)/r_t  (과도한 BUY 쏠림 억제)
+       A_t < 0 이고 r_t < 1-ε → step_scale = (1-ε)/r_t  (과도한 CASH 쏠림 억제)
+       → PPO_CLIP_EPS=0.2 재사용 / lr이 높아도 단일 상태 π→1 수렴 방지
+
+    2. Adaptive Temperature α_t (SAC-inspired):
+       flip_rate = 최근 HYBRID_FLIP_WIN 봉에서 행동 전환 비율 (0~1)
+       α_t = clip(ENTROPY_COEFF × (1 + flip_rate), HYBRID_ALPHA_MIN, HYBRID_ALPHA_MAX)
+       r_eff = r + α_t × H(π)
+       → 행동이 잦게 바뀌는 불안정 구간: α_t ↑ (탐험 강화)
+       → 행동이 안정적인 구간:           α_t ↓ (활용 집중, ENTROPY_COEFF 하한)
+
+    Cold-Start 초기화·상태 인코딩·epsilon은 STATIC과 동일.
+    """
+    use_vol  = (vols is not None and vol_threshold is not None)
+    n_states = 8 if use_vol else 4
+    n_actions = 2
+
+    # ── Cold-Start 초기화: STATIC과 동일 ────────────────────────────────────
+    theta = np.zeros((n_states, n_actions))
+    theta[1, 1] = max(0.05, fee_rate * 30)
+    theta[2, 1] = max(0.1,  fee_rate * 50)
+    theta[3, 1] = max(0.2,  fee_rate * 80)
+    if use_vol:
+        theta[5, 1] = max(0.05, fee_rate * 30)
+        theta[6, 1] = max(0.1,  fee_rate * 50)
+        theta[7, 1] = max(0.2,  fee_rate * 80)
+    V = np.zeros(n_states)
+
+    def softmax_policy(logits):
+        exp_l = np.exp(np.clip(logits - np.max(logits), -30, 30))
+        return exp_l / (np.sum(exp_l) + 1e-10)
+
+    # ── 훈련 루프 ────────────────────────────────────────────────────────────
+    for _ in range(train_episodes):
+        _v0 = float(vols[0]) if use_vol else None
+        state = _make_state_static(returns[0], prices[0], emas[0], _v0, vol_threshold)
+        prev_action = 0
+        action_history = []
+
+        for t in range(1, n_days):
+            probs = softmax_policy(theta[state])
+
+            if np.random.rand() < epsilon:
+                action = np.random.randint(0, n_actions)
+            else:
+                action = np.random.choice([0, 1], p=probs)
+
+            # [Adaptive α_t] 최근 HYBRID_FLIP_WIN봉 행동 전환율 계산
+            action_history.append(action)
+            if len(action_history) > HYBRID_FLIP_WIN:
+                action_history = action_history[-HYBRID_FLIP_WIN:]
+            if len(action_history) > 1:
+                flips = sum(1 for i in range(1, len(action_history))
+                            if action_history[i] != action_history[i - 1])
+                flip_rate = flips / (len(action_history) - 1)
+            else:
+                flip_rate = 0.0
+            alpha_t = float(np.clip(
+                ENTROPY_COEFF * (1.0 + flip_rate), HYBRID_ALPHA_MIN, HYBRID_ALPHA_MAX
+            ))
+
+            _fee   = fee_rate if (action == 1 and prev_action == 0) else 0.0
+            reward = (returns[t] if action == 1 else 0.0) - _fee
+            prev_action = action
+
+            _vt = float(vols[t]) if use_vol else None
+            next_state = _make_state_static(returns[t], prices[t], emas[t], _vt, vol_threshold)
+
+            entropy  = -np.sum(probs * np.log(probs + 1e-10))
+            td_error = (reward + alpha_t * entropy) + gamma * V[next_state] - V[state]
+
+            V[state] += lr * td_error
+
+            # [PPO Clipping] 후보 step의 정책 비율 검사 후 step_scale 조정
+            grad      = np.array([(1.0 if a == action else 0.0) - probs[a]
+                                   for a in range(n_actions)])
+            theta_try = theta[state] + lr * td_error * grad
+            probs_try = softmax_policy(theta_try)
+            r_t       = probs_try[action] / (probs[action] + 1e-10)
+
+            step_scale = 1.0
+            if td_error > 0 and r_t > 1.0 + PPO_CLIP_EPS:
+                step_scale = (1.0 + PPO_CLIP_EPS) / (r_t + 1e-10)
+            elif td_error < 0 and r_t < 1.0 - PPO_CLIP_EPS:
+                step_scale = (1.0 - PPO_CLIP_EPS) / (r_t + 1e-10)
+
+            theta[state] += step_scale * lr * td_error * grad
+
+            state = next_state
+
+    return theta, V
+
+
 def _get_static_action(state, theta):
     """Actor logit에서 greedy 행동 선택 (평가용).
 
@@ -245,7 +358,8 @@ def _train_qlearning_vanilla(returns, prices, emas, lr, gamma, epsilon,
 def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=100,
                                 use_static=False, seed=2026, fee_rate=0.0,
                                 vols=None, vol_threshold=None,
-                                roll_period=None, return_policy=False):
+                                roll_period=None, return_policy=False,
+                                algorithm="STATIC"):
     """훈련 + 평가 실행 → 누적수익 + 일별 행동 로그 반환.
 
     Parameters (신규 추가)
@@ -287,7 +401,9 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
     # ── 학습 ──────────────────────────────────────────────────────────────────
     if use_static:
         _vols_train = _vols[:n_train] if _vols is not None else None
-        theta, _ = _train_actor_critic_static(
+        _train_fn = (_train_actor_critic_hybrid if algorithm == "STATIC_H"
+                     else _train_actor_critic_static)
+        theta, _ = _train_fn(
             returns[:n_train], prices[:n_train], emas[:n_train],
             lr, gamma, epsilon, episodes, n_train, fee_rate,
             vols=_vols_train, vol_threshold=_vol_thr
@@ -331,7 +447,7 @@ def run_rl_simulation_with_log(df, lr=0.01, gamma=0.98, epsilon=0.10, episodes=1
                 and t >= n_train and (t - n_train) % roll_period == 0):
             win_start  = max(0, t - n_train)
             _vols_win  = _vols[win_start:t] if _vols is not None else None
-            _new_theta, _ = _train_actor_critic_static(
+            _new_theta, _ = _train_fn(
                 returns[win_start:t], prices[win_start:t], emas[win_start:t],
                 lr, gamma, epsilon, episodes, t - win_start, fee_rate,
                 vols=_vols_win, vol_threshold=_vol_thr

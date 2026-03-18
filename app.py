@@ -1073,7 +1073,7 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
         return_policy=True
     )
 
-    if algorithm == "STATIC":
+    if algorithm in ("STATIC", "STATIC_H"):
         # [P3] 변동성 신호: use_vol=True이면 df의 Rolling_Std 컬럼 자동 전달
         _vols_arr = df['Rolling_Std'].values if (use_vol and 'Rolling_Std' in df.columns) else None
         # [P2] return_policy=True → theta 반환 (Explainable RL 시각화용)
@@ -1082,7 +1082,8 @@ def get_rl_data(ticker, lr, gamma, epsilon, n_bars, train_episodes, seed, v_epsi
             use_static=True, seed=seed, fee_rate=fee_rate,
             vols=_vols_arr, vol_threshold=None,
             roll_period=roll_period,
-            return_policy=True
+            return_policy=True,
+            algorithm=algorithm
         )
     else:
         # 신경망 RL 알고리즘 (A2C / A3C / PPO / ACER / SAC / DDPG)
@@ -1430,7 +1431,7 @@ for m_config in sorted_modules:
                     hc0, hc1, hc2, hc3, hc4, hc5, hc6 = st.columns(7)
                     with hc0:
                         _algo_default = p_settings.get("algorithm", "STATIC")
-                        _ALGO_OPTS = ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]
+                        _ALGO_OPTS = ["STATIC", "STATIC_H", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]
                         l_algorithm = st.selectbox(
                             "RL Algorithm",
                             options=_ALGO_OPTS,
@@ -1496,7 +1497,7 @@ for m_config in sorted_modules:
                             help="n_iters = max(Min Steps, Auto Run Count × Mult.). Mult=10, Count=6 → 60 step."
                         )
                     # ─ 행 3: STATIC 상태공간 / 재학습 설정 (STATIC 전용, 타 알고리즘 비활성) ─
-                    _is_static_algo = (l_algorithm == "STATIC")
+                    _is_static_algo = (l_algorithm in ("STATIC", "STATIC_H"))
                     wc0, wc1, wc2, _wc_rest = st.columns([1, 1, 1, 4])
                     with wc0:
                         l_use_vol_w = st.checkbox(
@@ -2179,7 +2180,7 @@ for m_config in sorted_modules:
                     fig_cum = _make_cumulative_fig(
                         stock_name, df_stock, v_trace, s_trace, real_ret_trace,
                         opt_v_trace=opt_v, opt_s_trace=opt_s,
-                        algo_name=eff_algorithm if eff_algorithm != "STATIC" else "STATIC RL",
+                        algo_name={"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm),
                     )
                     st.plotly_chart(fig_cum, use_container_width=True,
                                     key=f"chart_cum_{m_name}_{stock_name}")
@@ -2215,7 +2216,7 @@ for m_config in sorted_modules:
                     with mc1:
                         st.markdown(_metric_html("Vanilla RL", v_final, v_last_day, "#e05050"), unsafe_allow_html=True)
                     with mc2:
-                        _s_card_label = eff_algorithm if eff_algorithm != "STATIC" else "STATIC RL"
+                        _s_card_label = {"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm)
                         st.markdown(_metric_html(_s_card_label, s_final, s_last_day, "#4a90d9"), unsafe_allow_html=True)
                     with mc3:
                         st.markdown(_metric_html("Market (Buy&Hold)", market_final, m_last_day, "#2ecc71"), unsafe_allow_html=True)
@@ -2225,7 +2226,7 @@ for m_config in sorted_modules:
                         st.markdown("---")
                         st.markdown("#### Agent Decision Analysis")
 
-                        _s_algo_label = eff_algorithm if eff_algorithm != "STATIC" else "STATIC"
+                        _s_algo_label = {"STATIC": "STATIC", "STATIC_H": "HYBRID"}.get(eff_algorithm, eff_algorithm)
                         _s_col_act    = f"{_s_algo_label} Action"
                         _s_col_ret    = f"{_s_algo_label} Return(%)"
                         df_v = pd.DataFrame(v_log).rename(columns={"Action": "Vanilla Action", "Daily_Return(%)": "Vanilla Return(%)"})
