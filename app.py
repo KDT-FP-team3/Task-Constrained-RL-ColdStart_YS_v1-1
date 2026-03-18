@@ -1785,12 +1785,16 @@ for m_config in sorted_modules:
                         # ─ Actor: 다음 파라미터 후보 제안 (π_θ 샘플링) ─
                         candidate = optimizer.suggest_next()
 
-                        # ─ 복수 시드로 평가 → 평균 gap (STATIC vs Market) ─
-                        _gaps, _s_list, _v_list, _m_list = [], [], [], []
+                        # ─ 복수 시드로 평가 → 조정 gap (분산·MDD 패널티 반영) ─
+                        # Gap 목적함수 패널티 상수
+                        _LAMBDA_STD = 0.5   # 시드 분산 패널티: std 1%p → gap -0.5%p
+                        _LAMBDA_MDD = 0.3   # MDD 패널티: 임계 초과 1%p → gap -0.3%p
+                        _MDD_FLOOR  = 15.0  # MDD 패널티 면제 임계 (%)
+                        _gaps, _s_list, _v_list, _m_list, _mdd_list = [], [], [], [], []
                         _tmp_v_trace, _tmp_s_trace, _tmp_mkt_trace, _tmp_df_cand = None, None, None, None
                         for _eseed in _eval_seeds:
                             try:
-                                _df_tmp, _vt, _s_tr, _mkt_tr, _, _, _, _, _ = get_rl_data(
+                                _df_tmp, _vt, _s_tr, _mkt_tr, _s_mdd, _, _, _, _ = get_rl_data(
                                     ticker,
                                     candidate["lr"], candidate["gamma"], candidate["epsilon"],
                                     int(l_epi), l_train_epi, _eseed, v_epsilon=candidate["v_epsilon"],
@@ -1799,7 +1803,7 @@ for m_config in sorted_modules:
                                     algorithm=l_algorithm
                                 )
                             except Exception:
-                                _vt, _s_tr, _mkt_tr = None, None, None
+                                _vt, _s_tr, _mkt_tr, _s_mdd = None, None, None, None
                             if _vt is not None and _s_tr is not None and _mkt_tr is not None:
                                 # improve 4-2: 복합 Gap — 시장 대비(60%) + Vanilla 대비(40%)
                                 # V_floor = Market×0.3 → 역유인 제거 (Vanilla=0% 최대화 방지)
@@ -1811,6 +1815,7 @@ for m_config in sorted_modules:
                                 _s_list.append(float(_s_tr[-1]))
                                 _v_list.append(float(_vt[-1]))
                                 _m_list.append(float(_mkt_tr[-1]))
+                                _mdd_list.append(float(_s_mdd) if _s_mdd is not None else 0.0)
                                 if _tmp_v_trace is None:
                                     _tmp_v_trace = _vt
                                     _tmp_s_trace = _s_tr
@@ -1819,8 +1824,17 @@ for m_config in sorted_modules:
 
                         _iter_gap_val = None
                         if _gaps:
-                            _gap = float(np.mean(_gaps))
-                            _iter_gap_val = _gap
+                            _gap_mean = float(np.mean(_gaps))
+                            # ── 분산 패널티: 시드 간 gap 표준편차가 클수록 차감 ──
+                            _gap_std  = float(np.std(_gaps)) if len(_gaps) > 1 else 0.0
+                            _pen_std  = _LAMBDA_STD * _gap_std
+                            # ── MDD 패널티: 임계(15%)를 초과하는 MDD 절댓값에 비례 차감 ──
+                            _avg_mdd  = float(np.mean([abs(m) for m in _mdd_list])) if _mdd_list else 0.0
+                            _pen_mdd  = _LAMBDA_MDD * max(0.0, _avg_mdd - _MDD_FLOOR)
+                            # ── 조정 Gap (Optimizer 입력용) ──
+                            _gap_adj  = _gap_mean - _pen_std - _pen_mdd
+                            _gap      = _gap_adj           # best 선택·Optimizer 모두 조정값 사용
+                            _iter_gap_val = _gap_mean      # 수렴 차트는 원시 평균으로 표시
                             candidate["gap"]     = _gap
                             candidate["s_final"] = float(np.mean(_s_list))
                             candidate["v_final"] = float(np.mean(_v_list))
@@ -1881,7 +1895,9 @@ for m_config in sorted_modules:
                                     f"<div style='font-size:11px;color:rgba(180,180,180,0.7);"
                                     f"margin:2px 0 6px 0;'>"
                                     f"STATIC {best['s_final']:+.2f}%  &nbsp;·&nbsp;  "
-                                    f"Market {best['m_final']:+.2f}%</div>",
+                                    f"Market {best['m_final']:+.2f}%  &nbsp;·&nbsp;  "
+                                    f"<span style='color:rgba(248,180,80,0.8);'>"
+                                    f"σ-pen {_pen_std:.2f}  MDD-pen {_pen_mdd:.2f}</span></div>",
                                     unsafe_allow_html=True
                                 )
                                 _r1c1, _r1c2 = st.columns(2)
@@ -2208,8 +2224,7 @@ for m_config in sorted_modules:
                             opt_v_trace=opt_v, opt_s_trace=opt_s,
                             algo_name=_algo_anim,
                         )
-                        _chart_slot.plotly_chart(_fig_anim, use_container_width=True,
-                                                 key=f"chart_cum_{m_name}_{stock_name}")
+                        _chart_slot.plotly_chart(_fig_anim, use_container_width=True)
                         if _end < _n_pts:
                             time.sleep(_sleep)
 
