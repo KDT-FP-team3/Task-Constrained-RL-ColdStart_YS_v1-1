@@ -926,53 +926,6 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
     return fig
 
 
-def _make_trend_fig(df_h):
-    """Trial-by-Trial Return Progression & Stability"""
-    v_mean = df_h['Vanilla Final (%)'].mean()
-    v_max  = df_h['Vanilla Final (%)'].max()
-    v_min  = df_h['Vanilla Final (%)'].min()
-    s_mean = df_h['STATIC Final (%)'].mean()
-    s_max  = df_h['STATIC Final (%)'].max()
-    s_min  = df_h['STATIC Final (%)'].min()
-
-    _t_min = int(df_h['Trial'].min())
-    _t_max = int(df_h['Trial'].max())
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['Vanilla Final (%)'],
-        mode='lines+markers', name='<b>Vanilla Return</b>',
-        line=dict(color='#e05050', width=2),
-        marker=dict(size=10, symbol='circle', color='#e05050',
-                    line=dict(color='white', width=1.5))))
-    fig.add_trace(go.Scatter(x=df_h['Trial'], y=df_h['STATIC Final (%)'],
-        mode='lines+markers', name='<b>STATIC Return (Ours)</b>',
-        line=dict(color='#4a90d9', width=2),
-        marker=dict(size=10, symbol='square', color='#4a90d9',
-                    line=dict(color='white', width=1.5))))
-
-    for y, dash, color, label, pos in [
-        (v_mean, "solid",  "#e05050", "Vanilla Mean", "top right"),
-        (v_max,  "dot",    "#e05050", "Vanilla Max",  "top right"),
-        (v_min,  "dot",    "#e05050", "Vanilla Min",  "bottom right"),
-        (s_mean, "solid",  "#4a90d9", "STATIC Mean",  "top left"),
-        (s_max,  "dot",    "#4a90d9", "STATIC Max",   "top left"),
-        (s_min,  "dot",    "#4a90d9", "STATIC Min",   "bottom left"),
-    ]:
-        fig.add_hline(y=y, line_dash=dash, line_color=color, opacity=0.4,
-                      annotation_text=label, annotation_position=pos)
-
-    fig.update_layout(
-        title=dict(text="<b>Trial-by-Trial Return Progression & Stability</b>",
-                   font=dict(size=20, family="Arial Black")),
-        xaxis=dict(title="<b>Trial Number</b>", tickmode='linear', dtick=1,
-                   range=[_t_min - 0.5, _t_max + 0.5]),
-        yaxis=dict(title="<b>Final Return (%)</b>"),
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=320, margin=dict(t=45, b=25, l=40, r=80)
-    )
-    fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
-    return fig
-
 
 def _make_trial_box_fig(df_h):
     """Return Distribution across Trials"""
@@ -2337,110 +2290,6 @@ for m_config in sorted_modules:
                                 unsafe_allow_html=True
                             )
 
-                    # ── [P2] State Policy Analysis (Explainable RL) ──────────
-                    _pcache = st.session_state.policy_cache.get(hist_key)
-                    if _pcache is not None:
-                        with st.expander("State Policy Analysis (Explainable RL)", expanded=True):
-                            _theta_c   = _pcache.get('theta')
-                            _qtable_c  = _pcache.get('q_table')
-                            _ns        = _pcache.get('n_states', 4)
-
-                            _s4_labels = [
-                                "S0: 하락+EMA아래", "S1: 상승+EMA아래",
-                                "S2: 하락+EMA위",   "S3: 상승+EMA위"
-                            ]
-                            _s8_labels = _s4_labels + [
-                                "S4: 하락+EMA아래+고변동", "S5: 상승+EMA아래+고변동",
-                                "S6: 하락+EMA위+고변동",   "S7: 상승+EMA위+고변동"
-                            ]
-                            _state_labels = _s8_labels if _ns == 8 else _s4_labels
-
-                            pol_c1, pol_c2 = st.columns(2)
-
-                            # 신경망 알고리즘: tabular State Analysis 미지원
-                            _algo_label = _pcache.get('algorithm', 'STATIC')
-                            if _algo_label not in ('STATIC',) and _theta_c is None:
-                                st.info(
-                                    f"**{_algo_label}** 알고리즘은 연속 특징 벡터(5차원) 기반 TinyMLP를 사용합니다. "
-                                    "이산 상태 P(BUY|state) 시각화는 STATIC 알고리즘에서만 지원됩니다.",
-                                    icon="ℹ️"
-                                )
-
-                            # STATIC RL: 각 상태별 P(BUY|s)
-                            if _theta_c is not None:
-                                with pol_c1:
-                                    st.markdown("### STATIC RL — P(BUY|state)")
-                                    _buy_probs = []
-                                    for _s in range(_ns):
-                                        _logits = _theta_c[_s]
-                                        _emax   = np.exp(np.clip(_logits - _logits.max(), -30, 30))
-                                        _buy_probs.append(float(_emax[1] / (_emax.sum() + 1e-10)))
-                                    _fig_pol = go.Figure(go.Bar(
-                                        x=_buy_probs,
-                                        y=_state_labels[:_ns],
-                                        orientation='h',
-                                        marker_color=[
-                                            f"rgba(74,144,217,{max(0.3, p)})" for p in _buy_probs
-                                        ],
-                                        text=[f"{p:.1%}" for p in _buy_probs],
-                                        textposition='outside',
-                                        textfont=dict(size=14),
-                                    ))
-                                    _fig_pol.update_layout(
-                                        height=220 + _ns * 30,
-                                        xaxis=dict(
-                                            range=[0, 1.25], tickformat='.0%',
-                                            showgrid=True, title=dict(text="P(BUY)", font=dict(size=14)),
-                                            tickfont=dict(size=13),
-                                        ),
-                                        yaxis=dict(
-                                            autorange='reversed',
-                                            tickfont=dict(size=13),
-                                        ),
-                                        plot_bgcolor='rgba(0,0,0,0)',
-                                        paper_bgcolor='rgba(0,0,0,0)',
-                                        margin=dict(t=15, b=30, l=10, r=40),
-                                        showlegend=False,
-                                    )
-                                    st.plotly_chart(_fig_pol, use_container_width=True,
-                                                    key=f"pol_s_{m_name}_{stock_name}")
-
-                            # Vanilla RL: Q[s,BUY] - Q[s,CASH] Advantage
-                            if _qtable_c is not None:
-                                with pol_c2:
-                                    st.markdown("### Vanilla RL — Q Advantage (BUY-CASH)")
-                                    _adv = [float(_qtable_c[s, 1] - _qtable_c[s, 0])
-                                            for s in range(2)]
-                                    _fig_q = go.Figure(go.Bar(
-                                        x=_adv,
-                                        y=["S0: 하락", "S1: 상승"],
-                                        orientation='h',
-                                        marker_color=[
-                                            "#4a90d9" if a >= 0 else "#e05050" for a in _adv
-                                        ],
-                                        text=[f"{a:+.4f}" for a in _adv],
-                                        textposition='outside',
-                                        textfont=dict(size=14),
-                                    ))
-                                    _fig_q.update_layout(
-                                        height=220,
-                                        xaxis=dict(
-                                            title=dict(text="Q(BUY) - Q(CASH)", font=dict(size=14)),
-                                            tickfont=dict(size=13),
-                                            showgrid=True,
-                                            zeroline=True, zerolinecolor='rgba(180,180,180,0.5)',
-                                        ),
-                                        yaxis=dict(
-                                            autorange='reversed',
-                                            tickfont=dict(size=14),
-                                        ),
-                                        plot_bgcolor='rgba(0,0,0,0)',
-                                        paper_bgcolor='rgba(0,0,0,0)',
-                                        margin=dict(t=15, b=30, l=10, r=60),
-                                        showlegend=False,
-                                    )
-                                    st.plotly_chart(_fig_q, use_container_width=True,
-                                                    key=f"pol_v_{m_name}_{stock_name}")
 
                 # ══════════════════════════════════════════
                 # 오른쪽: Trial History Statistical Analysis
@@ -2473,10 +2322,6 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                             f"**Expected Alpha vs. Market Avg.**: "
                             f"STATIC **{s_mean - avg_mkt:.2f}%p** | Vanilla **{v_mean - avg_mkt:.2f}%p**"
                         )
-
-                        # Trial-by-Trial 추이 차트
-                        st.plotly_chart(_make_trend_fig(df_h), use_container_width=True,
-                                        key=f"trend_{m_name}_{stock_name}")
 
                         # 박스 플롯 + 통계 카드 2열
                         box_col, stat_col = st.columns([1.6, 1])
