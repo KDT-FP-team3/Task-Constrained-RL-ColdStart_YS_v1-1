@@ -2320,7 +2320,7 @@ for m_config in sorted_modules:
                     # ── [P2] State Policy Analysis (Explainable RL) ──────────
                     _pcache = st.session_state.policy_cache.get(hist_key)
                     if _pcache is not None:
-                        with st.expander("State Policy Analysis (Explainable RL)", expanded=False):
+                        with st.expander("State Policy Analysis (Explainable RL)", expanded=True):
                             _theta_c   = _pcache.get('theta')
                             _qtable_c  = _pcache.get('q_table')
                             _ns        = _pcache.get('n_states', 4)
@@ -2349,7 +2349,7 @@ for m_config in sorted_modules:
                             # STATIC RL: 각 상태별 P(BUY|s)
                             if _theta_c is not None:
                                 with pol_c1:
-                                    st.markdown("**STATIC RL — P(BUY|state)**")
+                                    st.markdown("### STATIC RL — P(BUY|state)")
                                     _buy_probs = []
                                     for _s in range(_ns):
                                         _logits = _theta_c[_s]
@@ -2363,17 +2363,24 @@ for m_config in sorted_modules:
                                             f"rgba(74,144,217,{max(0.3, p)})" for p in _buy_probs
                                         ],
                                         text=[f"{p:.1%}" for p in _buy_probs],
-                                        textposition='outside'
+                                        textposition='outside',
+                                        textfont=dict(size=14),
                                     ))
                                     _fig_pol.update_layout(
-                                        height=200 + _ns * 22,
-                                        xaxis=dict(range=[0, 1.15], tickformat='.0%',
-                                                   showgrid=True, title="P(BUY)"),
-                                        yaxis=dict(autorange='reversed'),
+                                        height=220 + _ns * 30,
+                                        xaxis=dict(
+                                            range=[0, 1.25], tickformat='.0%',
+                                            showgrid=True, title=dict(text="P(BUY)", font=dict(size=14)),
+                                            tickfont=dict(size=13),
+                                        ),
+                                        yaxis=dict(
+                                            autorange='reversed',
+                                            tickfont=dict(size=13),
+                                        ),
                                         plot_bgcolor='rgba(0,0,0,0)',
                                         paper_bgcolor='rgba(0,0,0,0)',
-                                        margin=dict(t=10, b=20, l=5, r=30),
-                                        showlegend=False
+                                        margin=dict(t=15, b=30, l=10, r=40),
+                                        showlegend=False,
                                     )
                                     st.plotly_chart(_fig_pol, use_container_width=True,
                                                     key=f"pol_s_{m_name}_{stock_name}")
@@ -2381,7 +2388,7 @@ for m_config in sorted_modules:
                             # Vanilla RL: Q[s,BUY] - Q[s,CASH] Advantage
                             if _qtable_c is not None:
                                 with pol_c2:
-                                    st.markdown("**Vanilla RL — Q Advantage (BUY-CASH)**")
+                                    st.markdown("### Vanilla RL — Q Advantage (BUY-CASH)")
                                     _adv = [float(_qtable_c[s, 1] - _qtable_c[s, 0])
                                             for s in range(2)]
                                     _fig_q = go.Figure(go.Bar(
@@ -2392,17 +2399,25 @@ for m_config in sorted_modules:
                                             "#4a90d9" if a >= 0 else "#e05050" for a in _adv
                                         ],
                                         text=[f"{a:+.4f}" for a in _adv],
-                                        textposition='outside'
+                                        textposition='outside',
+                                        textfont=dict(size=14),
                                     ))
                                     _fig_q.update_layout(
-                                        height=180,
-                                        xaxis=dict(title="Q(BUY) - Q(CASH)", showgrid=True,
-                                                   zeroline=True, zerolinecolor='rgba(180,180,180,0.5)'),
-                                        yaxis=dict(autorange='reversed'),
+                                        height=220,
+                                        xaxis=dict(
+                                            title=dict(text="Q(BUY) - Q(CASH)", font=dict(size=14)),
+                                            tickfont=dict(size=13),
+                                            showgrid=True,
+                                            zeroline=True, zerolinecolor='rgba(180,180,180,0.5)',
+                                        ),
+                                        yaxis=dict(
+                                            autorange='reversed',
+                                            tickfont=dict(size=14),
+                                        ),
                                         plot_bgcolor='rgba(0,0,0,0)',
                                         paper_bgcolor='rgba(0,0,0,0)',
-                                        margin=dict(t=10, b=20, l=5, r=50),
-                                        showlegend=False
+                                        margin=dict(t=15, b=30, l=10, r=60),
+                                        showlegend=False,
                                     )
                                     st.plotly_chart(_fig_q, use_container_width=True,
                                                     key=f"pol_v_{m_name}_{stock_name}")
