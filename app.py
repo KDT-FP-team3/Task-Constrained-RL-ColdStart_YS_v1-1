@@ -2581,7 +2581,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                     _fig_cmp.add_annotation(
                         x=_algo_lbl_cmp, y=_cap_stc,
                         text=(f"<b>{_ann_arr} vs Market<br>${_alpha_mkt:+.4f}</b>"),
-                        showarrow=False, yshift=65,
+                        showarrow=False, yshift=48,
                         font=dict(size=13, color=_ann_col),
                         bgcolor="rgba(255,255,255,0.10)",
                         bordercolor=_ann_col, borderwidth=1.5, borderpad=5,
@@ -2599,8 +2599,11 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         y=1.0,
                         line_dash="solid", line_color="rgba(150,150,150,0.3)", line_width=1,
                     )
-                    _y_max = max(_cmp_caps) * 1.48 + 0.03
-                    _y_min = min(min(_cmp_caps) * 0.88, 0.92)
+                    _bar_span = max(_cmp_caps) - min(_cmp_caps)
+                    # Y 하한: 최솟값 막대 아래 소폭 여백 (손익분기 $1 기준선 포함)
+                    _y_min = max(0.90, min(_cmp_caps) - max(0.03, _bar_span * 0.12))
+                    # Y 상한: 최댓값 막대 + 주석 공간 (yshift=48px 기준)
+                    _y_max = max(_cmp_caps) + max(0.12, _bar_span * 0.50)
                     _fig_cmp.update_layout(
                         title=dict(
                             text=f"<b>Capital 비교</b> &nbsp;·&nbsp; $1 초기 → $X &nbsp;({stock_name})",
