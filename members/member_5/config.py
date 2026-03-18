@@ -8,13 +8,13 @@ TARGET_INDICES = [10] # SCHD 미국배당다우존스 ETF
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0624, "gamma": 0.9449, "epsilon": 0.1708, "v_epsilon": 0.0879,
-        "episodes": 300, "train_episodes": 200, "seed": 314,
+        "episodes": 300, "train_episodes": 100, "seed": 314,
         "use_vol": True, "roll_period": None,
         "algorithm": "A2C"
     },
     "default": {
         "lr": 0.0624, "gamma": 0.9449, "epsilon": 0.1708, "v_epsilon": 0.0879,
-        "episodes": 300, "train_episodes": 200, "seed": 314,
+        "episodes": 300, "train_episodes": 100, "seed": 314,
         "use_vol": True, "roll_period": None,
         "algorithm": "A2C"
     },

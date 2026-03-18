@@ -8,13 +8,13 @@ TARGET_INDICES = [11] # RGLD 로열 골드
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.0269, "gamma": 0.9380, "epsilon": 0.20, "v_epsilon": 0.1268,
-        "episodes": 300, "train_episodes": 150, "seed": 99,
+        "episodes": 300, "train_episodes": 80, "seed": 99,
         "use_vol": False, "roll_period": None,
         "algorithm": "DDPG"
     },
     "default": {
         "lr": 0.0269, "gamma": 0.9380, "epsilon": 0.20, "v_epsilon": 0.1268,
-        "episodes": 300, "train_episodes": 150, "seed": 99,
+        "episodes": 300, "train_episodes": 80, "seed": 99,
         "use_vol": False, "roll_period": None,
         "algorithm": "DDPG"
     },

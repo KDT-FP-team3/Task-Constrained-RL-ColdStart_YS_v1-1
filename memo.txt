@@ -32,3 +32,24 @@ git push
 웹 앱은 업데이트된 config.py를 기본값으로 사용하므로, 시뮬레이션 없이도 최적 파라미터로 Run Evaluation 가능합니다.
 
 참고: GPU가 있어도 현재 코드는 CPU 기반 Q-Learning/Actor-Critic이라 GPU 가속은 없습니다. 빠른 테스트가 필요하면 Train Episodes를 100으로 낮추세요.
+
+
+
+#------------------
+변경 요약
+config.py 변경 (4개 멤버)
+멤버	변경 내용	이유
+M1 SPY	algorithm: STATIC→DDPG, ε: 0.08→0.15 (OU noise)	이진 BUY/CASH 한계 → 연속 포지션 [0,1]으로 부분 포지션 가능
+M3 KOSPI	use_vol: False→True (8-state)	BUY율 95% → 고변동성 구간 CASH 전환 기회 확보, MDD 개선 목표
+M5 SCHD	algorithm: STATIC→A2C	EMA/Bull 4-state 신호 무의미 → 신경망 5D 특징으로 대체
+M6 RGLD	algorithm: STATIC→DDPG, ε: 0.1509→0.20 (OU noise)	5시드 동일값(seed 무효) → OU noise 탐색으로 다양성 복원, 원자재 사이클에 부분 포지션 적합
+app.py 변경 (레이블 동적화)
+DDPG/A2C 사용 시 "STATIC RL"로 표시되던 6곳 수정:
+
+지표 카드: "STATIC RL" → eff_algorithm (예: "DDPG", "A2C")
+Action Frequency 차트 제목: "STATIC: Action Frequency" → "DDPG: Action Frequency"
+Action 테이블 컬럼 헤더: "STATIC Action/Return(%)" → 알고리즘명 동적 반영
+주의 사항
+epsilon 파라미터 의미가 바뀜: DDPG에서는 ε-greedy가 아닌 OU noise 스케일
+M5 SCHD의 use_vol=True는 A2C에서 무효(신경망은 tabular state 무관) — Vanilla RL 쪽에만 영향
+알고리즘 변경 후 Simulation 재실행으로 파라미터 재최적화 권장

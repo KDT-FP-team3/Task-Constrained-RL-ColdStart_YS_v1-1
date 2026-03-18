@@ -811,7 +811,7 @@ def _train_sac(df, lr, gamma, epsilon, episodes, fee_rate, seed,
 # ── DDPG ─────────────────────────────────────────────────────────────────────
 
 def _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed,
-                buffer_size=2000, batch_size=32):
+                buffer_size=2000, batch_size=32, update_freq=4):
     """DDPG — Deep Deterministic Policy Gradient (연속 포지션 [0,1]).
 
     [강화학습] DDPG (Lillicrap et al., 2015)
@@ -862,6 +862,8 @@ def _train_ddpg(df, lr, gamma, epsilon, episodes, fee_rate, seed,
             buffer.push(s, pos, reward, s_next, int(t == n_train - 1))
 
             if len(buffer) < batch_size:
+                continue
+            if t % update_freq != 0:   # update_freq 스텝마다 1회 갱신 (속도 최적화)
                 continue
 
             s_b, a_b, r_b, ns_b, d_b = buffer.sample(batch_size)
