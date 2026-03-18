@@ -3,7 +3,6 @@ import importlib
 import inspect
 import os
 import sys
-import time
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -2209,24 +2208,15 @@ for m_config in sorted_modules:
                 with col_left:
                     st.markdown(f"#### {stock_name} Performance")
 
-                    # 누적 수익 차트 — 파란 선(선택 로직)을 Trading Days 순으로 애니메이션
+                    # 누적 수익 차트 (Ghost Line 포함)
                     _algo_anim = {"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm)
-                    _chart_slot = st.empty()
-                    _n_pts    = len(s_trace)
-                    _n_frames = min(50, _n_pts)
-                    _step     = max(1, _n_pts // _n_frames)
-                    _sleep    = max(0.005, l_frame_speed / _n_frames)
-                    for _fi in range(_n_frames + 1):
-                        _end = min(_fi * _step + _step, _n_pts)
-                        _fig_anim = _make_cumulative_fig(
-                            stock_name, df_stock,
-                            v_trace, s_trace[:_end], real_ret_trace,
-                            opt_v_trace=opt_v, opt_s_trace=opt_s,
-                            algo_name=_algo_anim,
-                        )
-                        _chart_slot.plotly_chart(_fig_anim, use_container_width=True)
-                        if _end < _n_pts:
-                            time.sleep(_sleep)
+                    fig_cum = _make_cumulative_fig(
+                        stock_name, df_stock, v_trace, s_trace, real_ret_trace,
+                        opt_v_trace=opt_v, opt_s_trace=opt_s,
+                        algo_name=_algo_anim,
+                    )
+                    st.plotly_chart(fig_cum, use_container_width=True,
+                                    key=f"chart_cum_{m_name}_{stock_name}")
 
                     # Ghost 존재 시 최적 파라미터 캡션 표시
                     if ghost:
