@@ -5,13 +5,13 @@ TARGET_INDICES = [0] # S&P 500 ETF
 RL_PARAMS = {
     TARGET_INDICES[0]: {
         "lr": 0.07268, "gamma": 0.938065, "epsilon": 0.133828, "v_epsilon": 0.102277,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": True, "roll_period": None,
         "algorithm": "STATIC_H"
     },
     "default": {
         "lr": 0.07268, "gamma": 0.938065, "epsilon": 0.133828, "v_epsilon": 0.102277,
-        "episodes": 500, "train_episodes": 300, "seed": 42,
+        "episodes": 300, "train_episodes": 150, "seed": 42,
         "use_vol": True, "roll_period": None,
         "algorithm": "STATIC_H"
     },

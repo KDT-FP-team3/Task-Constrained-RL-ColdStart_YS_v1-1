@@ -381,15 +381,15 @@ if _sb_r2c3.button("🗑 초기화", key="btn_reset_dashboard",
 with st.sidebar.expander("Fund & Agent Settings", expanded=False):
     st.markdown("<div style='margin:0 0 2px 0'><small><b>[P1] Team Fund 배분 설정</b></small></div>", unsafe_allow_html=True)
     _fund_temp = st.slider(
-        "Softmax Temperature (T)", 1.0, 5.0,
-        float(st.session_state.fund_temperature), step=0.5,
+        "Softmax Temperature (T)", 0.01, 5.0,
+        float(st.session_state.fund_temperature), step=0.01,
         key="sb_fund_temp",
         help="낮을수록 성과 우수 종목 집중 / 높을수록 균등 배분 (T=5.0 ≈ 1/N)"
     )
     st.session_state.fund_temperature = _fund_temp
     _fund_cap = st.slider(
-        "Max Single Weight (%)", 10, 100,
-        int(st.session_state.fund_max_weight * 100), step=5,
+        "Max Single Weight (%)", 1, 100,
+        int(st.session_state.fund_max_weight * 100), step=1,
         key="sb_fund_cap",
         help="단일 종목 최대 비중 상한 (100% = 무제한, 30% = 분산 강제)"
     ) / 100.0
