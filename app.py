@@ -2172,7 +2172,8 @@ for m_config in sorted_modules:
                     with mc1:
                         st.markdown(_metric_html("Vanilla RL", v_final, v_last_day, "#e05050"), unsafe_allow_html=True)
                     with mc2:
-                        st.markdown(_metric_html("STATIC RL", s_final, s_last_day, "#4a90d9"), unsafe_allow_html=True)
+                        _s_card_label = eff_algorithm if eff_algorithm != "STATIC" else "STATIC RL"
+                        st.markdown(_metric_html(_s_card_label, s_final, s_last_day, "#4a90d9"), unsafe_allow_html=True)
                     with mc3:
                         st.markdown(_metric_html("Market (Buy&Hold)", market_final, m_last_day, "#2ecc71"), unsafe_allow_html=True)
 
@@ -2181,13 +2182,16 @@ for m_config in sorted_modules:
                         st.markdown("---")
                         st.markdown("#### Agent Decision Analysis")
 
+                        _s_algo_label = eff_algorithm if eff_algorithm != "STATIC" else "STATIC"
+                        _s_col_act    = f"{_s_algo_label} Action"
+                        _s_col_ret    = f"{_s_algo_label} Return(%)"
                         df_v = pd.DataFrame(v_log).rename(columns={"Action": "Vanilla Action", "Daily_Return(%)": "Vanilla Return(%)"})
-                        df_s = pd.DataFrame(s_log).rename(columns={"Action": "STATIC Action",  "Daily_Return(%)": "STATIC Return(%)"})
+                        df_s = pd.DataFrame(s_log).rename(columns={"Action": _s_col_act, "Daily_Return(%)": _s_col_ret})
                         df_log = df_v.merge(df_s, on="Day").set_index("Day")
 
                         bar_col, tbl_col = st.columns([1, 1.4])
                         with bar_col:
-                            action_counts = df_log["STATIC Action"].value_counts().reset_index()
+                            action_counts = df_log[_s_col_act].value_counts().reset_index()
                             action_counts.columns = ["Action", "Count"]
                             for _act in ["BUY", "CASH"]:
                                 if _act not in action_counts["Action"].values:
@@ -2208,7 +2212,7 @@ for m_config in sorted_modules:
                                     textfont=dict(size=14, color=_bar_colors.get(row["Action"], "#888"))
                                 ))
                             fig_bar.update_layout(
-                                title=dict(text="<b>STATIC: Action Frequency</b>", font=dict(size=13)),
+                                title=dict(text=f"<b>{_s_algo_label}: Action Frequency</b>", font=dict(size=13)),
                                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
                                 height=250, showlegend=False,
                                 margin=dict(t=45, b=25, l=30, r=10),
@@ -2224,8 +2228,8 @@ for m_config in sorted_modules:
                             for _day, _r in df_log.iterrows():
                                 _va = _r["Vanilla Action"]
                                 _vr = float(_r["Vanilla Return(%)"])
-                                _sa = _r["STATIC Action"]
-                                _sr = float(_r["STATIC Return(%)"])
+                                _sa = _r[_s_col_act]
+                                _sr = float(_r[_s_col_ret])
                                 _vc = "#4a90d9" if _va == "BUY" else "#e05050"
                                 _sc = "#4a90d9" if _sa == "BUY" else "#e05050"
                                 _vrc = "color:#e05050;" if _vr < 0 else ""
@@ -2248,8 +2252,8 @@ for m_config in sorted_modules:
                                 f"<th style='{_th}'>Day</th>"
                                 f"<th style='{_th}'>Vanilla<br>Action</th>"
                                 f"<th style='{_th}'>Vanilla<br>Return(%)</th>"
-                                f"<th style='{_th}'>STATIC<br>Action</th>"
-                                f"<th style='{_th}'>STATIC<br>Return(%)</th>"
+                                f"<th style='{_th}'>{_s_algo_label}<br>Action</th>"
+                                f"<th style='{_th}'>{_s_algo_label}<br>Return(%)</th>"
                                 f"</tr></thead>"
                                 f"<tbody>{_rows}</tbody>"
                                 f"</table></div>",
