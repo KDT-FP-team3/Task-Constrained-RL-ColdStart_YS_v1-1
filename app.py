@@ -523,10 +523,10 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_algorithm = st.selectbox(
             "RL Algorithm",
-            options=["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"],
+            options=["STATIC", "STATIC_H", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"],
             index=0,
             key="fb_algorithm",
-            help="STATIC=기존 tabular Actor-Critic / 나머지=NumPy 신경망 RL"
+            help="STATIC=기존 tabular Actor-Critic / STATIC_H=Hybrid(PPO Clip+Adaptive-α) / 나머지=NumPy 신경망 RL"
         )
 
     st.markdown(
@@ -869,9 +869,10 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
                           opt_v_trace=None, opt_s_trace=None, algo_name="STATIC RL"):
     """누적 수익률 비교 차트. Ghost Line (Optimal) 파라미터 선택적 표시."""
     height     = 400
-    title_size = 18
-    axis_size  = 14
-    legend_size = 12
+    title_size  = 22
+    axis_size   = 16
+    tick_size   = 14
+    legend_size = 14
 
     fig = go.Figure()
 
@@ -912,9 +913,10 @@ def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
 
     fig.update_layout(
         title=dict(text=f"<b>Cumulative Return Comparison ({stock_name})</b>", font=dict(size=title_size)),
-        xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=axis_size)), showgrid=True),
+        xaxis=dict(title=dict(text="<b>Trading Days</b>", font=dict(size=axis_size)), showgrid=True,
+                   tickfont=dict(size=tick_size)),
         yaxis=dict(title=dict(text="<b>Total Cumulative Return (%)</b>", font=dict(size=axis_size)),
-                   showgrid=True, range=[_y_min, _y_max]),
+                   showgrid=True, range=[_y_min, _y_max], tickfont=dict(size=tick_size)),
         legend=dict(font=dict(size=legend_size), x=0.01, y=0.99,
                     bgcolor='rgba(128,128,128,0.15)', bordercolor='rgba(128,128,128,0.3)', borderwidth=1),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
@@ -1338,7 +1340,7 @@ for m_config in sorted_modules:
                     st.session_state[f"v_eps_{m_name}_{stock_name}"] = _pend["v_epsilon"]
                     if "algorithm" in _pend:
                         _pend_algo = _pend["algorithm"]
-                        if _pend_algo in ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
+                        if _pend_algo in ["STATIC", "STATIC_H", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
                             st.session_state[f"algo_{m_name}_{stock_name}"] = _pend_algo
 
                 # ── Simulation 완료 후 저장 확인 키 (버튼 행에서 처리) ──
@@ -1915,25 +1917,28 @@ for m_config in sorted_modules:
                                     _fig_sim.update_layout(
                                         title=dict(
                                             text="<b>Parameter Convergence (Policy μ, Normalized [0-1])</b>",
-                                            font=dict(size=12),
+                                            font=dict(size=15),
                                             x=0.5, xanchor="center",
                                         ),
                                         height=420,
-                                        margin=dict(l=10, r=15, t=45, b=40),
+                                        margin=dict(l=10, r=15, t=50, b=45),
                                         xaxis=dict(
-                                            title="<b>Step</b>", showgrid=True,
+                                            title=dict(text="<b>Step</b>", font=dict(size=14)),
+                                            showgrid=True,
                                             range=[0.5, _steps + 0.5],
+                                            tickfont=dict(size=13),
                                         ),
                                         yaxis=dict(
-                                            title="<b>Normalized Value [0-1]</b>",
+                                            title=dict(text="<b>Normalized Value [0-1]</b>", font=dict(size=14)),
                                             showgrid=True,
                                             range=[-0.05, 1.05],
+                                            tickfont=dict(size=13),
                                         ),
                                         legend=dict(
                                             orientation="v",
                                             x=0.01, y=0.90,
                                             xanchor="left", yanchor="top",
-                                            font=dict(size=12, color="white"),
+                                            font=dict(size=13, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
                                             bordercolor="rgba(160,160,170,0.35)",
                                             borderwidth=1,
@@ -1976,33 +1981,39 @@ for m_config in sorted_modules:
                                         y=1.0, line_dash="dash", line_color="#50c878",
                                         annotation_text="Target +1%p (vs Market)",
                                         annotation_position="top right",
-                                        annotation_font_size=10,
+                                        annotation_font_size=12,
                                     )
                                     _fig_gap.add_hline(
                                         y=5.0, line_dash="dot", line_color="#ffd700",
                                         annotation_text="Best +5%p (vs Market)",
                                         annotation_position="top right",
-                                        annotation_font_size=10,
+                                        annotation_font_size=12,
                                     )
 
                                     _fig_gap.update_layout(
                                         title=dict(
                                             text="<b>STATIC Alpha vs Market → Target Convergence</b>",
-                                            font=dict(size=12),
+                                            font=dict(size=15),
                                             x=0.5, xanchor="center",
                                         ),
                                         height=420,
-                                        margin=dict(l=10, r=10, t=45, b=40),
+                                        margin=dict(l=10, r=10, t=50, b=45),
                                         xaxis=dict(
-                                            title="<b>Step</b>", showgrid=True,
+                                            title=dict(text="<b>Step</b>", font=dict(size=14)),
+                                            showgrid=True,
                                             range=[0.5, _steps + 0.5],
+                                            tickfont=dict(size=13),
                                         ),
-                                        yaxis=dict(title="<b>Alpha vs Market (%p)</b>", showgrid=True),
+                                        yaxis=dict(
+                                            title=dict(text="<b>Alpha vs Market (%p)</b>", font=dict(size=14)),
+                                            showgrid=True,
+                                            tickfont=dict(size=13),
+                                        ),
                                         legend=dict(
                                             orientation="v",
                                             x=0.01, y=0.90,
                                             xanchor="left", yanchor="top",
-                                            font=dict(size=11, color="white"),
+                                            font=dict(size=13, color="white"),
                                             bgcolor="rgba(15,15,28,0.80)",
                                             bordercolor="rgba(160,160,170,0.35)",
                                             borderwidth=1,
