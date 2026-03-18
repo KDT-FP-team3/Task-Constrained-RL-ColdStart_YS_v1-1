@@ -156,7 +156,7 @@ if 'member_traces' not in st.session_state:
 if 'fund_temperature' not in st.session_state:
     st.session_state.fund_temperature = 2.5   # Softmax 온도 (높을수록 균등 배분)
 if 'fund_max_weight' not in st.session_state:
-    st.session_state.fund_max_weight = 0.28   # 단일 종목 최대 비중 (1.0 = 무제한)
+    st.session_state.fund_max_weight = 0.25   # 단일 종목 최대 비중 (1.0 = 무제한)
 # [P2] 학습된 정책 캐시 (State Analysis Dashboard용)
 if 'policy_cache' not in st.session_state:
     st.session_state.policy_cache = {}
@@ -482,7 +482,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
         st.checkbox("", value=False, key="fb_chk_auto", label_visibility="collapsed")
     with _wg:
         global_auto_runs = st.number_input("Auto Run Count", min_value=1,
-                                           value=5 if _IS_CLOUD else 10,
+                                           value=5 if _IS_CLOUD else 8,
                                            step=1, key="fb_auto")
 
     _ck, _wg = st.columns([1, 5])
@@ -491,7 +491,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_min = st.number_input(
             "Sim Min Steps", min_value=5, max_value=200,
-            value=20 if _IS_CLOUD else 30, step=5, key="fb_sim_min",
+            value=20 if _IS_CLOUD else 60, step=5, key="fb_sim_min",
             help="시뮬레이션 최소 탐색 step 수 (n_iters 하한)"
         )
 
@@ -501,7 +501,7 @@ with st.sidebar.expander("Fallback Parameters", expanded=False):
     with _wg:
         global_sim_mult = st.number_input(
             "Sim Step Mult.", min_value=1, max_value=30,
-            value=6 if _IS_CLOUD else 10, step=1, key="fb_sim_mult",
+            value=6 if _IS_CLOUD else 13, step=1, key="fb_sim_mult",
             help="n_iters = max(Min Steps, Auto Run Count × Mult.)"
         )
 
@@ -987,18 +987,18 @@ def _make_trial_box_fig(df_h):
     fig.add_trace(go.Box(
         y=df_h['Vanilla Final (%)'],
         x=['Vanilla RL'] * _n,
-        name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=2),
-        fillcolor='rgba(224,80,80,0.20)', boxmean=True, width=0.4,
-        boxpoints='all', jitter=0.4, pointpos=0,
-        marker=dict(color='#e05050', size=9, opacity=0.9,
+        name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=3),
+        fillcolor='rgba(224,80,80,0.40)', boxmean=True, width=0.4,
+        boxpoints='all', jitter=0.5, pointpos=-1.8,
+        marker=dict(color='#e05050', size=10, opacity=1.0,
                     line=dict(color='white', width=1.5))))
     fig.add_trace(go.Box(
         y=df_h['STATIC Final (%)'],
         x=['STATIC RL (Ours)'] * _n,
-        name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=2),
-        fillcolor='rgba(74,144,217,0.20)', boxmean=True, width=0.4,
-        boxpoints='all', jitter=0.4, pointpos=0,
-        marker=dict(color='#4a90d9', size=9, opacity=0.9,
+        name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=3),
+        fillcolor='rgba(74,144,217,0.40)', boxmean=True, width=0.4,
+        boxpoints='all', jitter=0.5, pointpos=-1.8,
+        marker=dict(color='#4a90d9', size=10, opacity=1.0,
                     line=dict(color='white', width=1.5))))
 
     fig.add_annotation(x='Vanilla RL', y=v_mean, text=f"<b>Mean: {v_mean:.2f}%</b>",
@@ -1408,7 +1408,7 @@ for m_config in sorted_modules:
                     with sc4:
                         l_auto_runs = st.number_input(
                             "Auto Run Count", min_value=1,
-                            value=5, step=1,
+                            value=5 if _IS_CLOUD else 8, step=1,
                             key=f"autoruns_{m_name}_{stock_name}",
                             # [RL] Run Evaluation 자동 반복 횟수: 다양한 시드로 성과 분포 측정.
                             # trial_seed = base_seed + run_i × 37 (소수 간격으로 시드 독립성 확보).
@@ -1481,7 +1481,7 @@ for m_config in sorted_modules:
                     with hc5:
                         l_sim_min = st.number_input(
                             "Sim Min Steps", min_value=5, max_value=200,
-                            value=20, step=5,
+                            value=20 if _IS_CLOUD else 60, step=5,
                             key=f"sim_min_{m_name}_{stock_name}",
                             # [RL] PG Optimizer 최소 탐색 step 수.
                             # n_iters = max(Sim_Min, Auto_Run × Sim_Mult).
@@ -1491,7 +1491,7 @@ for m_config in sorted_modules:
                     with hc6:
                         l_sim_mult = st.number_input(
                             "Sim Step Mult.", min_value=1, max_value=30,
-                            value=6, step=1,
+                            value=6 if _IS_CLOUD else 13, step=1,
                             key=f"sim_mult_{m_name}_{stock_name}",
                             # [RL] Auto Run Count 배수로 총 탐색 step 결정.
                             # AutoRun=6, Mult=10 → n_iters=60 step.
