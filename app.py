@@ -944,7 +944,7 @@ def _make_trial_box_fig(df_h):
         x=['Vanilla RL'] * _n,
         name='<b>Vanilla RL</b>', line=dict(color='#e05050', width=3),
         fillcolor='rgba(224,80,80,0.40)', boxmean=True, width=0.4,
-        boxpoints='all', jitter=0.5, pointpos=-1.8,
+        boxpoints='all', jitter=0.5, pointpos=0,
         marker=dict(color='#e05050', size=10, opacity=1.0,
                     line=dict(color='white', width=1.5))))
     fig.add_trace(go.Box(
@@ -952,7 +952,7 @@ def _make_trial_box_fig(df_h):
         x=['STATIC RL (Ours)'] * _n,
         name='<b>STATIC RL (Ours)</b>', line=dict(color='#4a90d9', width=3),
         fillcolor='rgba(74,144,217,0.40)', boxmean=True, width=0.4,
-        boxpoints='all', jitter=0.5, pointpos=-1.8,
+        boxpoints='all', jitter=0.5, pointpos=0,
         marker=dict(color='#4a90d9', size=10, opacity=1.0,
                     line=dict(color='white', width=1.5))))
 
