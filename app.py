@@ -1314,14 +1314,18 @@ for m_config in sorted_modules:
                 stock_idx = name_to_index.get(stock_name)
                 p_settings = m_params.get(stock_idx, m_params.get("default", {}))
                 hist_key = f"{m_name}_{stock_name}"
-                # [P3/P4] 멤버별 기본값(config.py) + 전역 session_state 오버라이드
-                # use_vol  : 전역 ON이면 강제 True / OFF이면 config 값 사용
-                # roll_period: 전역 roll_period_active ON이면 전역 값 / OFF이면 config 값 사용
+                # [P3/P4] 멤버별 기본값(config.py) + per-stock 위젯 + 전역 session_state 오버라이드
+                # use_vol  : 전역 ON → 강제 True / per-stock 위젯 → 개별 설정 / OFF → config 값
+                # roll_period: 전역 roll_period_active ON → 전역 값 / per-stock 위젯 → 개별 설정
+                _per_use_vol = st.session_state.get(f"use_vol_{m_name}_{stock_name}",
+                                                     bool(p_settings.get('use_vol', False)))
+                _per_roll = st.session_state.get(f"roll_period_{m_name}_{stock_name}",
+                                                  p_settings.get('roll_period', None))
                 _use_vol_now = (bool(st.session_state.get('use_vol_feature', False))
-                                or bool(p_settings.get('use_vol', False)))
+                                or bool(_per_use_vol))
                 _roll_period_now = (int(st.session_state.get('roll_period_val', 20))
                                     if st.session_state.get('roll_period_active', False)
-                                    else p_settings.get('roll_period', None))
+                                    else _per_roll)
 
                 # ── Simulation pending: 슬라이더 렌더링 전에 키 사전 설정 ──
                 _sim_pend_key = f"sim_pending_{hist_key}"
@@ -1491,6 +1495,45 @@ for m_config in sorted_modules:
                             # n_iters × _n_eval = 총 RL 평가 횟수.
                             help="n_iters = max(Min Steps, Auto Run Count × Mult.). Mult=10, Count=6 → 60 step."
                         )
+                    # ─ 행 3: STATIC 상태공간 / 재학습 설정 (STATIC 전용, 타 알고리즘 비활성) ─
+                    _is_static_algo = (l_algorithm == "STATIC")
+                    wc0, wc1, wc2, _wc_rest = st.columns([1, 1, 1, 4])
+                    with wc0:
+                        l_use_vol_w = st.checkbox(
+                            "8-State (Vol)",
+                            value=bool(_per_use_vol),
+                            key=f"use_vol_{m_name}_{stock_name}",
+                            disabled=not _is_static_algo,
+                            help="ON: 4→8상태 (변동성 신호 추가). STATIC RL 전용. 신경망 알고리즘은 5차원 특징 자동 사용."
+                        )
+                    with wc1:
+                        _n_states_disp = (8 if l_use_vol_w else 4) if _is_static_algo else "—"
+                        _state_color = "#4a90d9" if _is_static_algo else "#888888"
+                        st.markdown(
+                            f"<div style='padding-top:2px'><small><b>States</b></small><br>"
+                            f"<span style='color:{_state_color};font-size:1.2em;font-weight:bold'>"
+                            f"{_n_states_disp}</span></div>",
+                            unsafe_allow_html=True
+                        )
+                    with wc2:
+                        _ROLL_OPTS = [None, 10, 20, 30, 60, 90]
+                        _roll_curr = _per_roll if _per_roll in _ROLL_OPTS else None
+                        l_roll_period_w = st.selectbox(
+                            "Roll Period (봉)",
+                            options=_ROLL_OPTS,
+                            index=_ROLL_OPTS.index(_roll_curr),
+                            format_func=lambda x: "None" if x is None else f"{x}봉",
+                            key=f"roll_period_{m_name}_{stock_name}",
+                            disabled=not _is_static_algo,
+                            help="OOS 구간 주기 재학습. None=비활성. 30=약30봉마다 재학습. STATIC RL 전용."
+                        )
+                    # per-stock 위젯 값으로 _use_vol_now / _roll_period_now 갱신 (STATIC 전용)
+                    if _is_static_algo:
+                        _use_vol_now = (bool(st.session_state.get('use_vol_feature', False))
+                                        or bool(l_use_vol_w))
+                        _roll_period_now = (int(st.session_state.get('roll_period_val', 20))
+                                            if st.session_state.get('roll_period_active', False)
+                                            else l_roll_period_w)
 
                 # ── Run Evaluation / Simulation 버튼 + 진행률 ──
                 _has_confirm = _sim_confirm_key in st.session_state
