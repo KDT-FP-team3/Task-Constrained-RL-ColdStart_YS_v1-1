@@ -2467,7 +2467,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         ),
                         xaxis=dict(showgrid=False, tickfont=dict(size=15)),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        height=460, margin=dict(t=30, b=60, l=72, r=20),
+                        height=490, margin=dict(t=30, b=90, l=72, r=20),
                         bargap=0.45,
                     )
                     st.plotly_chart(_fig_cmp, use_container_width=True,
