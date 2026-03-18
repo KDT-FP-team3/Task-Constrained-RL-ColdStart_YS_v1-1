@@ -246,9 +246,11 @@ class PGActorCriticOptimizer:
        Actor : μ += lr_actor · A_norm · pg_dir  [정책 평균 이동]
        Critic: V += value_alpha · (gap - V)     [TD(0) baseline 갱신]
 
-    4. σ 자동 스케줄링
+    4. σ 자동 스케줄링 + Cosine 상한
        A_norm > 0 → σ 축소 (좋은 방향으로 수렴)
        A_norm < 0 → σ 확대 (더 넓게 탐험)
+       σ_max_t = σ_min + 0.5·(σ_max−σ_min)·(1+cos(π·t/T))  [Cosine 천장]
+       → 반응형 σ가 Cosine 천장 이하로 clip → 후반 수렴 구조적 보장
 
     Parameters
     ----------
@@ -259,6 +261,7 @@ class PGActorCriticOptimizer:
     sigma_max : float  최대 σ (default 0.45)
     value_alpha : float  Critic EMA 속도 (default 0.25)
     seed : int  재현성 시드
+    T_max : int | None  총 반복 횟수 (n_iters). None이면 Cosine 비활성화.
     """
 
     def __init__(
@@ -270,6 +273,7 @@ class PGActorCriticOptimizer:
         sigma_max: float = 0.45,
         value_alpha: float = 0.25,
         seed: int = 2026,
+        T_max: int | None = None,
     ):
         self.bounds = bounds
         self.param_names = list(bounds.keys())
@@ -284,6 +288,11 @@ class PGActorCriticOptimizer:
         self.sigma_max   = float(sigma_max)
         self.lr_actor    = float(lr_actor)
         self.value_alpha = float(value_alpha)
+
+        # Cosine σ_max 스케줄링
+        self.T_max = int(T_max) if T_max is not None and T_max > 1 else None
+        self._step: int = 0          # update() 호출 횟수 (t)
+        self.sigma_max_t: float = float(sigma_max)  # 현재 Cosine 천장 (모니터링용)
 
         # Critic: 지수이동평균 가치추정 V (baseline)
         self.value_estimate: float = 0.0
@@ -324,7 +333,10 @@ class PGActorCriticOptimizer:
         1) Critic: V += value_alpha · (score - V)
         2) A = score - V
         3) Actor: μ += lr_actor · A · Δ/σ²
-        4) σ 자동 스케줄링
+        4) σ 반응형 스케줄링 (advantage 부호 기반)
+        5) σ_max Cosine 천장 적용 (T_max 설정 시)
+           σ_max_t = σ_min + 0.5·(σ_max−σ_min)·(1+cos(π·t/T))
+           σ = min(σ, σ_max_t)
         """
         # ── Critic 업데이트 ──
         if not self._critic_initialized:
@@ -348,13 +360,25 @@ class PGActorCriticOptimizer:
                 pg_dir = pg_dir / pg_norm
             self.mu = np.clip(self.mu + self.lr_actor * advantage * pg_dir, 0.0, 1.0)
 
-        # ── σ 자동 스케줄링 ──
+        # ── σ 반응형 스케줄링 ──
         if advantage > 0:
             # 성능 향상 → σ 축소 (수렴)
             self.sigma = np.maximum(self.sigma * 0.96, self.sigma_min)
         else:
             # 성능 저하 → σ 확대 (탐험)
             self.sigma = np.minimum(self.sigma * 1.04, self.sigma_max)
+
+        # ── σ_max Cosine 천장 (T_max 설정 시) ──
+        # t가 0→T_max-1 로 증가할수록 천장이 σ_max → σ_min 으로 감소
+        # 반응형 σ가 천장을 넘지 못하도록 clip → 후반 수렴 구조적 보장
+        if self.T_max is not None:
+            t = min(self._step, self.T_max - 1)
+            self.sigma_max_t = self.sigma_min + 0.5 * (self.sigma_max - self.sigma_min) * (
+                1.0 + np.cos(np.pi * t / (self.T_max - 1))
+            )
+            self.sigma = np.minimum(self.sigma, self.sigma_max_t)
+
+        self._step += 1
 
         # ── 베스트 / 히스토리 갱신 ──
         self._X.append(params)

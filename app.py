@@ -3,6 +3,7 @@ import importlib
 import inspect
 import os
 import sys
+import time
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -1738,6 +1739,7 @@ for m_config in sorted_modules:
                         sigma_max=0.30,
                         value_alpha=0.25,
                         seed=int(l_seed),
+                        T_max=n_iters,   # Cosine σ_max 스케줄링 총 스텝 수
                     )
 
                     best = {
@@ -1870,9 +1872,11 @@ for m_config in sorted_modules:
                             _left_col, _mid_col, _right_col = st.columns([1, 1.1, 1.1])
 
                             with _left_col:
+                                _sigma_ceil = optimizer.sigma_max_t
                                 st.progress(_prog,
                                     text=f"{phase_name}  {_i+1}/{n_iters}  |  "
-                                         f"Gap {best['gap']:+.1f}%{_goal_txt}  σ={_sigma_now:.3f}")
+                                         f"Gap {best['gap']:+.1f}%{_goal_txt}  "
+                                         f"σ={_sigma_now:.3f} ↑{_sigma_ceil:.3f}")
                                 st.markdown(
                                     f"<div style='font-size:11px;color:rgba(180,180,180,0.7);"
                                     f"margin:2px 0 6px 0;'>"
@@ -2189,14 +2193,25 @@ for m_config in sorted_modules:
                 with col_left:
                     st.markdown(f"#### {stock_name} Performance")
 
-                    # 누적 수익 차트 (Ghost Line 포함)
-                    fig_cum = _make_cumulative_fig(
-                        stock_name, df_stock, v_trace, s_trace, real_ret_trace,
-                        opt_v_trace=opt_v, opt_s_trace=opt_s,
-                        algo_name={"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm),
-                    )
-                    st.plotly_chart(fig_cum, use_container_width=True,
-                                    key=f"chart_cum_{m_name}_{stock_name}")
+                    # 누적 수익 차트 — 파란 선(선택 로직)을 Trading Days 순으로 애니메이션
+                    _algo_anim = {"STATIC": "STATIC RL", "STATIC_H": "HYBRID RL"}.get(eff_algorithm, eff_algorithm)
+                    _chart_slot = st.empty()
+                    _n_pts    = len(s_trace)
+                    _n_frames = min(50, _n_pts)
+                    _step     = max(1, _n_pts // _n_frames)
+                    _sleep    = max(0.005, l_frame_speed / _n_frames)
+                    for _fi in range(_n_frames + 1):
+                        _end = min(_fi * _step + _step, _n_pts)
+                        _fig_anim = _make_cumulative_fig(
+                            stock_name, df_stock,
+                            v_trace, s_trace[:_end], real_ret_trace,
+                            opt_v_trace=opt_v, opt_s_trace=opt_s,
+                            algo_name=_algo_anim,
+                        )
+                        _chart_slot.plotly_chart(_fig_anim, use_container_width=True,
+                                                 key=f"chart_cum_{m_name}_{stock_name}")
+                        if _end < _n_pts:
+                            time.sleep(_sleep)
 
                     # Ghost 존재 시 최적 파라미터 캡션 표시
                     if ghost:
@@ -2530,9 +2545,9 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         _bdg_txt = f"&#10060; {_algo_lbl_cmp} &nbsp;|&nbsp; Market &amp; Vanilla 모두 미달"
                         _bdg_bg  = "#9f1239"
                     st.markdown(
-                        f'<div style="background:{_bdg_bg};color:#fff;border-radius:6px;'
-                        f'padding:5px 12px;font-size:12px;font-weight:700;text-align:center;'
-                        f'margin-bottom:4px;letter-spacing:0.03em;">{_bdg_txt}</div>',
+                        f'<div style="background:{_bdg_bg};color:#fff;border-radius:7px;'
+                        f'padding:8px 14px;font-size:15px;font-weight:700;text-align:center;'
+                        f'margin-bottom:6px;letter-spacing:0.04em;">{_bdg_txt}</div>',
                         unsafe_allow_html=True
                     )
                     # ─ 그룹 바 차트 ─
@@ -2549,9 +2564,9 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         _fig_cmp.add_trace(go.Bar(
                             x=[_xl], y=[_cv],
                             marker_color=_col,
-                            text=[f"<b>${_cv:.4f}</b><br><span style='font-size:10px'>({_rv:+.1f}%)</span>"],
+                            text=[f"<b>${_cv:.4f}</b><br>({_rv:+.1f}%)"],
                             textposition="outside",
-                            textfont=dict(size=11),
+                            textfont=dict(size=15),
                             width=0.5,
                             showlegend=False,
                         ))
@@ -2561,38 +2576,41 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                     _fig_cmp.add_annotation(
                         x=_algo_lbl_cmp, y=_cap_stc,
                         text=(f"<b>{_ann_arr} vs Market<br>${_alpha_mkt:+.4f}</b>"),
-                        showarrow=False, yshift=52,
-                        font=dict(size=10, color=_ann_col),
-                        bgcolor="rgba(255,255,255,0.08)",
-                        bordercolor=_ann_col, borderwidth=1, borderpad=3,
+                        showarrow=False, yshift=65,
+                        font=dict(size=13, color=_ann_col),
+                        bgcolor="rgba(255,255,255,0.10)",
+                        bordercolor=_ann_col, borderwidth=1.5, borderpad=5,
                     )
                     # Market 기준 점선
                     _fig_cmp.add_hline(
                         y=_cap_mkt,
-                        line_dash="dot", line_color="rgba(72,187,120,0.5)", line_width=1.5,
+                        line_dash="dot", line_color="rgba(72,187,120,0.5)", line_width=2,
                         annotation_text=f"Market ${_cap_mkt:.4f}",
                         annotation_position="top left",
-                        annotation_font=dict(size=9, color="rgba(72,187,120,0.9)"),
+                        annotation_font=dict(size=13, color="rgba(72,187,120,0.95)"),
                     )
                     # $1 손익분기 기준선
                     _fig_cmp.add_hline(
                         y=1.0,
                         line_dash="solid", line_color="rgba(150,150,150,0.3)", line_width=1,
                     )
-                    _y_max = max(_cmp_caps) * 1.42 + 0.02
+                    _y_max = max(_cmp_caps) * 1.48 + 0.03
                     _y_min = min(min(_cmp_caps) * 0.88, 0.92)
                     _fig_cmp.update_layout(
                         title=dict(
                             text=f"<b>Capital 비교</b> &nbsp;·&nbsp; $1 초기 → $X &nbsp;({stock_name})",
-                            font=dict(size=12),
+                            font=dict(size=16),
+                            x=0.5, xanchor="center",
                         ),
                         yaxis=dict(
-                            title="Capital ($)", showgrid=True, zeroline=False,
+                            title=dict(text="Capital ($)", font=dict(size=14)),
+                            showgrid=True, zeroline=False,
                             range=[_y_min, _y_max], tickformat=".3f",
+                            tickfont=dict(size=13),
                         ),
-                        xaxis=dict(showgrid=False, tickfont=dict(size=12)),
+                        xaxis=dict(showgrid=False, tickfont=dict(size=15)),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        height=295, margin=dict(t=42, b=10, l=62, r=15),
+                        height=480, margin=dict(t=52, b=60, l=72, r=20),
                         bargap=0.45,
                     )
                     st.plotly_chart(_fig_cmp, use_container_width=True,
