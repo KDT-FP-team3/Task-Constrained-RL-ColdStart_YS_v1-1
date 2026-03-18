@@ -130,6 +130,8 @@ if 'prev_summary' not in st.session_state:
     st.session_state.prev_summary = {}
 if 'prev_final_contributions' not in st.session_state:
     st.session_state.prev_final_contributions = []
+if '_auto_run_initiated' not in st.session_state:
+    st.session_state._auto_run_initiated = False
 if 'prev_episodes_run' not in st.session_state:
     st.session_state.prev_episodes_run = 0
 if 'master_pbar_pct' not in st.session_state:
@@ -868,7 +870,7 @@ def draw_top_dashboard(final_contribs, container, member_traces_snap=None, is_up
 def _make_cumulative_fig(stock_name, df, v_trace, s_trace, real_ret_trace,
                           opt_v_trace=None, opt_s_trace=None, algo_name="STATIC RL"):
     """누적 수익률 비교 차트. Ghost Line (Optimal) 파라미터 선택적 표시."""
-    height     = 400
+    height     = 480
     title_size  = 22
     axis_size   = 16
     tick_size   = 14
@@ -989,7 +991,7 @@ def _make_trial_box_fig(df_h):
             title=dict(text="<b>Performance Metrics</b>", font=dict(size=18, family="Arial Black")),
         ),
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        height=510, margin=dict(t=100, b=50, l=50, r=50),
+        height=480, margin=dict(t=80, b=50, l=50, r=50),
         legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="center", x=0.5)
     )
     fig.add_hline(y=0, line_width=2, line_color="rgba(150,150,150,0.8)")
@@ -1094,7 +1096,9 @@ def _build_all_queue():
             _q.append((_mn, _sn))
     return _q
 
-if run_eval_all_btn:
+if run_eval_all_btn or (not st.session_state._auto_run_initiated and not st.session_state.run_all_queue):
+    if not st.session_state._auto_run_initiated:
+        st.session_state._auto_run_initiated = True
     st.session_state.run_all_queue = _build_all_queue()
 if sim_all_btn:
     st.session_state.sim_all_queue = _build_all_queue()
@@ -2426,7 +2430,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                     _fig_cmp.add_annotation(
                         x=_algo_lbl_cmp, y=_cap_stc,
                         text=(f"<b>{_ann_arr} vs Market<br>${_alpha_mkt:+.4f}</b>"),
-                        showarrow=False, yshift=48,
+                        showarrow=False, yshift=75,
                         font=dict(size=13, color=_ann_col),
                         bgcolor="rgba(255,255,255,0.10)",
                         bordercolor=_ann_col, borderwidth=1.5, borderpad=5,
@@ -2447,8 +2451,8 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                     _bar_span = max(_cmp_caps) - min(_cmp_caps)
                     # Y 하한: 최솟값 막대 아래 소폭 여백 (손익분기 $1 기준선 포함)
                     _y_min = max(0.90, min(_cmp_caps) - max(0.03, _bar_span * 0.12))
-                    # Y 상한: 최댓값 막대 + 주석 공간 (yshift=48px 기준)
-                    _y_max = max(_cmp_caps) + max(0.12, _bar_span * 0.50)
+                    # Y 상한: 최댓값 막대 + 막대 위 텍스트 + vs Market 주석 공간 (겹침 방지)
+                    _y_max = max(_cmp_caps) + max(0.18, _bar_span * 0.65)
                     _fig_cmp.update_layout(
                         title=dict(
                             text=f"<b>Capital 비교</b> &nbsp;·&nbsp; $1 초기 → $X &nbsp;({stock_name})",
@@ -2463,7 +2467,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         ),
                         xaxis=dict(showgrid=False, tickfont=dict(size=15)),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        height=480, margin=dict(t=52, b=60, l=72, r=20),
+                        height=460, margin=dict(t=30, b=60, l=72, r=20),
                         bargap=0.45,
                     )
                     st.plotly_chart(_fig_cmp, use_container_width=True,
