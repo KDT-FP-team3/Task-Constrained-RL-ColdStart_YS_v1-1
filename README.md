@@ -1580,3 +1580,15 @@ M6 RGLD처럼 Expected Alpha(+14.46%p)와 Final Alpha(+17.6%p) 간 차이가 있
 | ★☆☆      | 실거래 연결 (브로커 API)      | 전 종목       | 실전 운용             | 높음        |
 
 ---
+
+## 저작권
+
+본 저장소에 포함된 코드 및 모든 출력 이미지 결과물은 저작권법에 의해 보호됩니다.
+
+저작권자의 명시적 허가 없이 본 자료의 전부 또는 일부를 복제, 배포, 수정, 상업적으로 이용하는 행위를 금합니다.
+
+© 2026. All rights reserved.
+Contact : sjowun@gmail.com
+Project Master : Young-Sang Song
+
+---
