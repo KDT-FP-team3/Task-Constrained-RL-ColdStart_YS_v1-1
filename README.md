@@ -4,8 +4,6 @@
 
 ## KDT Team Project : 팀 Chainers 🫡
 
-### Project Master : Young-Sang Song
-
 ---
 
 ## 저작권
@@ -16,6 +14,7 @@
 
 © 2026. All rights reserved.
 Contact : sjowun@gmail.com
+Project Master : Young-Sang Song
 
 ---
 
