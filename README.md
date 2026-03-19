@@ -1,5 +1,7 @@
 # Chainers Master Fund — Task-Constrained RL Cold-Start
 
+실시간 데일리 주가 데이터로 강화학습 에이전트를 훈련 및 평가하고, 팀 포트폴리오 성과를 실시간으로 비교하면서 "강화 학습의 원리"를 습득하는 Team Chainers' Master Fund ETF 시뮬레이터 입니다.
+
 ## KDT Team Project : 팀 Chainers 🫡
 
 ## Project Master : Young-Sang Song
@@ -10,9 +12,13 @@
 
 ### 프로젝트 개요
 
-본 프로젝트는 **Task-Constrained RL Cold-Start** 조건에서 복수의 강화학습 알고리즘을 비교하는 멀티 에이전트 트레이딩 시뮬레이터다. 6명의 팀원이 각자 담당 종목에 에이전트를 배치하여 개인 수익률과 팀 포트폴리오 수익률을 측정한다. 핵심 비교 대상은 EMA 기반 4/8-상태 **STATIC_H Actor-Critic** (Tabular PPO Clipping + Adaptive Temperature) 과 2-상태 **Vanilla Q-Learning** 이며, 추가로 심층 강화학습 5종 (**A2C / A3C / PPO / SAC / DDPG**, NumPy 전용 TinyMLP)을 지원한다. 하이퍼파라미터는 **PG Actor-Critic Optimizer**가 복합 Gap 목표를 극대화하는 방향으로 자동 탐색한다. 모든 평가는 **워크포워드 검증**(앞 70% 학습 / 뒤 30% OOS)으로 과적합을 방지한다.
+본 프로젝트는 **Task-Constrained RL Cold-Start** 조건에서 복수의 강화학습 알고리즘을 비교하는 멀티 에이전트 트레이딩 시뮬레이터이다.
 
-**핵심 연구 질문**: 사전 데이터 없이 Cold-Start 조건에서, EMA 기반 STATIC_H 에이전트(Tabular PPO + Adaptive Temperature)는 2-상태 Q-Learning 에이전트 대비 얼마나 높은 누적 수익률을 달성하는가?
+팀원이 각자 담당 종목에 에이전트를 배치하여 개인 수익률과 팀 포트폴리오 수익률을 측정한다. 핵심 비교 대상은 EMA 기반 4/8-상태 **STATIC_H Actor-Critic** (Tabular PPO Clipping + Adaptive Temperature) 과 2-상태 **Vanilla Q-Learning** 이며, 추가로 심층 강화학습 5종 (**A2C / A3C / PPO / SAC / DDPG**, NumPy 전용 TinyMLP)을 지원한다.
+
+하이퍼파라미터(Hyperparameter)는 **PG Actor-Critic Optimizer**가 복합 Gap 목표를 극대화하는 방향으로 자동 탐색한다. 모든 평가는 **워크포워드 검증**(앞 70% 학습 / 뒤 30% OOS)으로 과적합을 방지한다.
+
+**핵심 테스트 질문**: 사전 데이터 없이 Cold-Start 조건에서, EMA 기반 STATIC_H 에이전트(Tabular PPO + Adaptive Temperature)는 2-상태 Q-Learning 에이전트 대비 얼마나 높은 누적 수익률을 달성하는가?
 
 **Alpha Gap** = STATIC_H RL 최종 수익률 − Market (Buy&Hold) 최종 수익률
 
