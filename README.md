@@ -109,11 +109,40 @@
 
 ### 설치 및 실행
 
+#### 로컬 실행
+
 ```
-Python 3.9+
-pip install streamlit yfinance numpy pandas plotly
+Python 3.11 (runtime.txt 기준)
+pip install -r requirements.txt
 streamlit run app.py
 ```
+
+#### Streamlit Cloud 배포 (웹 공개)
+
+GitHub 저장소와 연동하여 별도 서버 없이 웹에 공개할 수 있다.
+
+1. [share.streamlit.io](https://share.streamlit.io/) 에 접속 후 **GitHub 계정으로 로그인**
+2. **"New app"** 클릭 → Repository / Branch / Main file (`app.py`) 선택
+3. **"Deploy!"** 클릭 → 자동 빌드 완료 후 공개 URL 발급 (`https://[앱명].streamlit.app`)
+4. 이후 `main` 브랜치에 `git push` 할 때마다 자동으로 앱이 재배포된다.
+
+> **필수 파일**: `requirements.txt` (패키지 목록), `runtime.txt` (Python 버전) — 이미 포함됨.
+
+#### Cloud 환경에서의 시뮬레이션 및 Run Evaluation
+
+Streamlit Cloud는 **공유 CPU** 환경으로, 로컬 대비 연산 속도가 느릴 수 있다.
+
+| 항목 | 로컬 | Streamlit Cloud |
+|------|------|----------------|
+| CPU | 개인 PC 사양 | 공유 CPU (vCPU 1~2코어) |
+| 메모리 | 제한 없음 | 약 1GB |
+| Run Evaluation | 빠름 | 종목당 5~15초 |
+| Simulation (36 iter) | 빠름 | 종목당 1~3분 |
+| 데이터 캐시 | 세션 유지 | 재배포 시 초기화 |
+
+- 앱 상단 **System Status** 패널에서 `Cloud / Local` 환경이 자동 감지되어 표시된다.
+- Cloud 환경에서는 `Auto Run Count`를 낮게(3~4회), `Sim Min Steps`를 작게(10~15) 설정하면 타임아웃을 방지할 수 있다.
+- 웹 접속 시 마지막으로 저장된 config.py 파라미터로 **자동 Run Evaluation이 실행**되므로, 배포 후 바로 결과를 확인할 수 있다.
 
 ---
 
