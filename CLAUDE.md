@@ -4,7 +4,7 @@
 
 | 파일 | 역할 |
 |------|------|
-| `app.py` | Streamlit UI + `get_rl_data()` |
+| `app.py` | Streamlit UI + `get_rl_data()` (~2500줄) |
 | `common/base_agent.py` | RL 훈련·평가 (STATIC/STATIC_H/Vanilla/Neural) |
 | `common/nn_utils.py` | TinyMLP, ReplayBuffer, extract_features |
 | `common/heuristic.py` | PGActorCriticOptimizer (Cosine σ_max 상한) |
@@ -12,6 +12,11 @@
 | `common/data_loader.py` | yfinance fetch + EMA_10, Rolling_Std |
 | `common/stock_registry.py` | STOCK_REGISTRY(12종) + FEE_REGISTRY |
 | `members/member_N/config.py` | MEMBER_NAME, TARGET_INDICES, RL_PARAMS |
+| `members/member_N/custom_logic.py` | 멤버별 커스텀 로직 (확장용, 현재 미사용) |
+| `.streamlit/config.toml` | Streamlit 서버 설정 (업로드 10MB, fastReruns ON) |
+| `requirements.txt` | Python 패키지 의존성 |
+| `runtime.txt` | Python 버전 지정 (Streamlit Cloud 배포용) |
+| `.devcontainer/devcontainer.json` | GitHub Codespaces 개발 환경 설정 |
 
 ## get_rl_data 시그니처 (9-tuple, 모든 호출에서 9개 언패킹 필수)
 
@@ -58,7 +63,7 @@ RL_PARAMS = {
         "lr": float, "gamma": float, "epsilon": float, "v_epsilon": float,
         "episodes": int, "train_episodes": int, "seed": int,
         "use_vol": bool, "roll_period": int|None,
-        "algorithm": "STATIC"  # "STATIC"|"STATIC_H"|"A2C"|"A3C"|"PPO"|"ACER"|"SAC"|"DDPG"
+        "algorithm": "STATIC_H"  # "STATIC"|"STATIC_H"|"A2C"|"A3C"|"PPO"|"ACER"|"SAC"|"DDPG"
     },
     "default": { ... }
 }
@@ -81,16 +86,29 @@ per-member 위젯 키: `f"{prefix}_{m_name}_{stock_name}"`
 apply_all: ① 스냅 → ② 새값 적용 → ③ `st.rerun()`
 revert_all: 스냅 복원 → `st.rerun()`
 
-## 현재 성과 (improve 7-3 기준)
+## 현재 성과 (improve 7-4 기준 — 전 종목 STATIC_H)
 
-| M | 종목 | STATIC | Market | Gap | 비고 |
-|---|------|--------|--------|-----|------|
-| 1 | SPY | 23.86% | 14.65% | +9.3%p | seed=42 |
-| 2 | QQQ | 46.12% | 16.93% | +29.3%p | seed=137, 안정 🏆 |
-| 3 | KOSPI | 133.22% | 122.98% | +10.8%p | seed=2024, MDD 주의 |
-| 4 | KOSDAQ | 63.79% | 62.96% | +1.2%p | seed=777, 구조적 OOS 한계 |
-| 5 | SCHD | 19.60% | 17.21% | +2.5%p | seed=314 |
-| 6 | RGLD | 105.17% | 92.12% | +13.2%p | seed=99 |
+| M | 종목 | Ticker | STATIC_H | Composite Gap | 파라미터 특이사항 |
+|---|------|--------|----------|---------------|------------------|
+| 1 | SPY | SPY | 23.68% | 8.96 | seed=42, use_vol=True |
+| 2 | QQQ | QQQ | 48.40% | 30.81 | seed=137, 최고성과 🏆 |
+| 3 | KOSPI | ^KS11 | 157.06% | 17.53 | seed=2024, use_vol=True, 8-State |
+| 4 | KOSDAQ | ^KQ11 | 53.38% | 22.43 | seed=777, use_vol=True, roll=30 |
+| 5 | SCHD | SCHD | 28.61% | 2.00 | seed=314, use_vol=True, roll=60 |
+| 6 | RGLD | RGLD | 105.17% | 12.17 | seed=100, use_vol=True |
+
+> Composite Gap = 0.6×(STATIC_H−Market) + 0.4×(STATIC_H−max(Vanilla, Market×0.3))
+
+## 저장된 최적 파라미터 (config.py 기준 — improve 7-4)
+
+| M | lr | gamma | epsilon | v_epsilon | episodes | train_epi | seed | use_vol | roll |
+|---|----|-------|---------|-----------|----------|-----------|------|---------|------|
+| 1 | 0.07268 | 0.938065 | 0.133828 | 0.102277 | 300 | 150 | 42 | True | None |
+| 2 | 0.080412 | 0.907645 | 0.119118 | 0.177335 | 500 | 300 | 137 | False | None |
+| 3 | 0.049807 | 0.880582 | 0.023155 | 0.160969 | 500 | 300 | 2024 | True | None |
+| 4 | 0.038007 | 0.921727 | 0.075960 | 0.061587 | 500 | 300 | 777 | True | 30 |
+| 5 | 0.025708 | 0.917577 | 0.037793 | 0.106362 | 500 | 400 | 314 | True | 60 |
+| 6 | 0.022200 | 0.950344 | 0.164422 | 0.139944 | 300 | 150 | 100 | True | None |
 
 ## 워크플로우 규칙
 

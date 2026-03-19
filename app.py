@@ -1175,7 +1175,7 @@ if apply_all_clicked and st.session_state.fallback_params:
                 st.session_state[f"v_eps_{_mn}_{_sn}"]         = _fp["v_epsilon"]
             if _chks.get("algo"):
                 _new_algo = _fp.get("algorithm", "STATIC")
-                if _new_algo in ["STATIC", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
+                if _new_algo in ["STATIC", "STATIC_H", "A2C", "A3C", "PPO", "ACER", "SAC", "DDPG"]:
                     st.session_state[f"algo_{_mn}_{_sn}"]      = _new_algo
             if _chks.get("sim_min"):
                 st.session_state[f"sim_min_{_mn}_{_sn}"]       = _fp["sim_min"]
@@ -2112,7 +2112,7 @@ for m_config in sorted_modules:
                     )
                 # [P2] 학습된 정책 캐시 저장 (State Analysis Dashboard용)
                 # 신경망 알고리즘(A2C/PPO 등)은 s_theta = TinyMLP actor → theta 표시 불가
-                _is_neural = eff_algorithm not in ("STATIC",)
+                _is_neural = eff_algorithm not in ("STATIC", "STATIC_H")
                 _theta_for_cache = None if _is_neural else s_theta
                 if _theta_for_cache is not None or v_qtable is not None:
                     st.session_state.policy_cache[hist_key] = {
