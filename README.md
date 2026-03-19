@@ -6,6 +6,17 @@
 
 ---
 
+### RL 포트폴리오 성과 모니터링 대시보드 (웹 앱 전체 화면)
+
+![전체화면창](Captures/전체화면창.jpg)
+
+- **배포 링크** : https://task-constrained-rl-coldstartysv1-1-azz5zvkw3zr9he2qcx2pze.streamlit.app/
+- 좌측 사이드바에서 전역 하이퍼파라미터(학습률·감가율·탐색률·시드 등)와 Fund 배분 설정(Softmax Temperature, Max Single Weight)을 일괄 제어하고, **Eval. All / Simul. All** 버튼으로 6개 멤버 에이전트를 동시에 실행할 수 있다.
+- 상단 메인 영역의 **Master Fund Portfolio Report**는 멤버별 자본 배분 도넛 차트·Vanilla vs STATIC 수익 비교 막대 차트·전체 누적수익률 라인 차트(Team Fund: +43.40%)를 한눈에 제공하며, **Portfolio Alpha Strategy Report** 테이블에서 STATIC·Vanilla·Alpha(Gap)·MDD·Score·Weight%를 종목별로 비교할 수 있다.
+- 하단 **Portfolio Managers** 섹션은 멤버별로 누적수익 비교 차트, Trial History 통계 분석(Return Distribution·시드별 성과 표), Agent Decision Analysis(BUY/CASH 행동 빈도 + 일별 수익 테이블)를 독립적으로 제공하며, 웹 접속 시 저장된 `config.py` 파라미터로 **자동 Run Evaluation이 즉시 실행**된다.
+
+---
+
 ## 저작권
 
 본 저장소에 포함된 코드 및 모든 출력 이미지 결과물은 저작권법에 의해 보호됩니다.
@@ -138,17 +149,59 @@ Python 3.11 (runtime.txt 기준)
 pip install -r requirements.txt
 streamlit run app.py
 ```
+#### ⭐Alpha Vantage API Key 및 기타 보안 설정
 
-#### Streamlit Cloud 배포 (웹 공개)
+Streamlit Cloud 배포 시 API 키 등 민감 정보는 **Secrets** 기능으로 안전하게 관리한다.
+
+**API 키 발급 방법**
+1. [https://www.alphavantage.co/support/#](https://www.alphavantage.co/support/#) 접속
+2. **"GET YOUR FREE API KEY TODAY"** 클릭
+3. 이메일 주소 입력 후 즉시 발급 (무료, 회원가입 불필요)
+4. 발급된 키를 아래 `alpha_vantage` 값에 입력 (`"#####"` 교체)
+
+**보안 주의**
+- `secrets.toml` 파일은 `.gitignore`에 포함되어 GitHub에 업로드되지 않는다.
+- Streamlit Cloud 배포 시: 앱 설정 → **Secrets** 메뉴에 동일 내용 입력
+- 코드에서 접근: `st.secrets["api_keys"]["alpha_vantage"]`
+
+`.streamlit/secrets.toml` 파일 형식:
+
+#### ⭐Streamlit Cloud 배포 (웹 공개)
 
 GitHub 저장소와 연동하여 별도 서버 없이 웹에 공개할 수 있다.
 
 1. [share.streamlit.io](https://share.streamlit.io/) 에 접속 후 **GitHub 계정으로 로그인**
 2. **"New app"** 클릭 → Repository / Branch / Main file (`app.py`) 선택
-3. **"Deploy!"** 클릭 → 자동 빌드 완료 후 공개 URL 발급 (`https://[앱명].streamlit.app`)
-4. 이후 `main` 브랜치에 `git push` 할 때마다 자동으로 앱이 재배포된다.
+3. 세로 점3개 클릭 -> Settings -> App settings -> General -> Python version을 VScode에서 사용중인 Python 버전과 같도록 선택. 예: 3.12
+4. 세로 점3개 클릭 -> Settings ->App settings -> Secrets 에서 ' alpha_vantage = "발급받은 API 키입력" ' -> Save changes
+5. **"Deploy!"** 클릭 → 자동 빌드 완료 후 공개 URL 발급 (`https://[앱명].streamlit.app`)
+6. 이후 `main` 브랜치에 `git push` 할 때마다 자동으로 앱이 재배포된다.
+7. 에러 또는 로딩이 길어지는 등의 경우, 세로 점3개 클릭 -> Reboot 클릭 or 웹 새로 고침.
 
 > **필수 파일**: `requirements.txt` (패키지 목록), `runtime.txt` (Python 버전) — 이미 포함됨.
+
+
+
+```toml
+# Alpha Vantage API Key 및 기타 보안 설정
+# ============================================================
+#
+# [API 키 발급 방법]
+#   1. https://www.alphavantage.co/support/# 접속
+#   2. "GET YOUR FREE API KEY TODAY" 클릭
+#   3. 이메일 주소 입력 후 즉시 발급 (무료, 회원가입 불필요)
+#   4. 발급된 키를 아래 alpha_vantage 값에 입력 ("####" 교체)
+#
+# [보안 주의]
+#   - 이 파일은 .gitignore에 포함되어 GitHub에 업로드되지 않습니다.
+#   - Streamlit Cloud 배포 시: 앱 설정 → Secrets 메뉴에 동일 내용 입력
+#   - 코드에서 접근: st.secrets["api_keys"]["alpha_vantage"]
+#
+# ============================================================
+
+[api_keys]
+alpha_vantage = "#####"
+```
 
 #### Cloud 환경에서의 시뮬레이션 및 Run Evaluation
 
@@ -997,7 +1050,32 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 ![전체화면창](Captures/전체화면창.jpg)
 
-**설명**: Streamlit 웹 앱의 전체 레이아웃. 상단 사이드바(Eval.All / Simul.All / Fallback), 중앙 6개 멤버 섹션(파라미터 패널 + 4개 차트), 하단 팀 포트폴리오 대시보드로 구성된다. 웹 접속 시 저장된 config.py 파라미터로 자동 평가가 실행된다.
+**설명**: "Chainers Master Fund: Performance Monitoring Dashboard" 타이틀의 Streamlit 웹 앱 전체 레이아웃.
+
+**좌측 사이드바**
+- **System Status**: Cloud/CPU 환경 표시, 에이전트 분석 진행률 바, 마지막 수익률 실시간 표시
+- **Eval. All / Simul. All** 버튼 + **적용 / +전원리 / 초기화** 버튼으로 전체 멤버 일괄 제어
+- **Fund & Agent Settings 패널**: [P1] Softmax Temperature, Max Single Weight(%), [P2] 8-State Mode 토글, [P3] Rolling Retrain(OOS 주기 재학습) 토글
+- **Fallback Parameters / System Parameters**: Timeframe(1day), Trading Days(330), Train Episodes, Frame Speed, Base Seed(2026), Auto Run Count(6), Sim Min Steps(20), Sim Step Mult(6)
+- **Active Agents**: Vanilla RL / STATIC RL 활성화 토글
+- **RL Algorithm**: STATIC 드롭다운 선택, **RL Hyperparameters**: Learning Rate, Discount Factor(γ), STATIC ε, Vanilla ε 슬라이더
+
+**상단 메인 — Master Fund Portfolio Report**
+- **도넛 차트**: 6개 멤버별 자본 배분 비중 (Total Capital 9.93$)
+- **막대 차트**: Vanilla vs STATIC RL 최종 수익($) 비교
+- **누적 수익률 라인 차트**: 전 멤버 STATIC RL 누적수익 + Team Fund 합산 곡선 (Team Fund: +43.40%)
+
+**Portfolio Alpha Strategy Report 테이블**: Member별 Stocks, Persona, Capital($), STATIC(%), Vanilla(%), Alpha(Gap), MDD, Score, Weight% 한눈에 비교
+
+**Portfolio Managers (Independent RL Labs) — 멤버별 섹션 (Member 1 예시)**
+- Persona 탭 (ASV / PAV / PAS 등 + 실시간 자동매매 뱃지), 종목 태그(S&P 500 ETF)
+- 거래 수수료 정보 아코디언, **Run Evaluation** / **Simulation** 버튼
+- **Cumulative Return Comparison 차트**: Vanilla RL / HYBRID RL / Market(Buy&Hold) 3선 비교
+- **Trial History: Statistical Analysis**: Return Distribution 히스토그램, Vanilla/STATIC 평균·범위 통계 요약, 시드별 Final Return 표
+- **Performance Metrics**: HYBRID RL vs Market·Vanilla 비교 바 차트 + 자본 성장 곡선
+- **Agent Decision Analysis**: BUY/CASH 행동 빈도 막대 차트 + 일별 액션·수익률 테이블
+
+웹 접속 시 저장된 `config.py` 파라미터로 **자동 Run Evaluation이 즉시 실행**되어 결과를 바로 확인할 수 있다.
 
 ---
 
@@ -1006,13 +1084,50 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 ![Fund Agent Settings 1](Captures/Fund%20Agent%20Settings1.jpg)
 ![Fund Agent Settings 2](Captures/Fund%20Agent%20Settings2.jpg)
 
-**설명**: 사이드바 내 팀 펀드 배분 설정 패널.
+**설명**: 사이드바 상단 제어 패널 및 전역 하이퍼파라미터 설정 영역.
 
-- **[P1] Softmax Temperature (T = 2.50)**: 멤버 간 자본 배분의 균등도 제어. 높을수록 성과 차이를 무시하고 균등 배분.
-- **[P1] Max Single Weight (28%)**: 단일 멤버의 최대 포트폴리오 비중 상한. 특정 멤버 독점 방지.
-- **[P2] 정책 캐시 (자동)**: Run Evaluation 완료 후 학습된 theta(정책 행렬)를 자동 저장. State Analysis Dashboard의 Explainable RL 시각화에 활용 (별도 UI 없음).
-- **[P3] 8-State Mode (변동성 신호 추가)**: 전역 활성화 시 모든 종목에 8상태 강제 적용 (현재 비활성 — per-stock 설정 사용).
-- **[P4] Rolling Retrain (OOS 주기 재학습)**: 전역 활성화 시 설정 주기마다 학습 재실행 (M4·M5는 config.py에서 개별 설정).
+**System Status (최상단)**
+- Cloud | CPU 환경 표시, "Analyzing Agents... (100%)" 진행 바, "Last Run: 86.7%" 수익률 바 실시간 표시
+
+**버튼 행**
+- **▶ Eval. All**: 모든 멤버 Run Evaluation 일괄 실행 | **◎ Simul. All**: 전체 멤버 Simulation 일괄 실행 | **■**: 실행 중단
+- **적용**: 변경된 파라미터 일괄 적용 | **⇦ 되돌리기**: 직전 스냅샷으로 롤백 | **초기화**: 전체 파라미터 기본값 복원
+
+**Fund & Agent Settings 패널**
+
+- **[P1] Team Fund 배분 설정**
+  - **Softmax Temperature (T = 2.50)**: 멤버 간 자본 배분의 균등도 제어. 값이 높을수록 성과 차이를 무시하고 균등 배분.
+  - **Max Single Weight (% = 28)**: 단일 멤버의 최대 포트폴리오 비중 상한. 특정 멤버 자본 독점 방지.
+- **[P3] 상태 공간 확장 – 변동성 신호**
+  - **8-State Mode (변동성 신호 추가)**: 전역 활성화 시 모든 종목에 8상태 강제 적용 (현재 비활성 — per-stock 개별 설정 사용).
+- **[P4] Rolling Window 재학습**
+  - **Rolling Retrain (OOS 주기 재학습)**: 전역 활성화 시 설정 주기마다 학습 재실행 (현재 비활성 — M4·M5는 config.py에서 개별 설정).
+
+**Fallback Parameters 패널 (System Parameters — ☑ 체크한 항목만 일괄 적용)**
+
+| 파라미터 | 현재값 | 설명 |
+|----------|--------|------|
+| Timeframe | 1 day | 데이터 봉 단위 |
+| Trading Days | 300 | 평가 기간(봉 수) |
+| Train Episodes | 150 | RL 학습 에피소드 수 |
+| Frame Speed (sec) | 0.03 | 시뮬레이션 프레임 간격 |
+| Base Seed | 2026 | 난수 시드 기준값 |
+| Auto Run Count | 6 | 파라미터 탐색 반복 횟수 |
+| Sim Min Steps | 20 | 시뮬레이션 최소 스텝 수 |
+| Sim Step Mult. | 6 | 시뮬레이션 스텝 배수 |
+| Active Agents | Vanilla RL, STATIC RL | 활성화할 에이전트 종류 |
+| RL Algorithm | STATIC | 전역 알고리즘 선택 |
+
+**RL Hyperparameters (STATIC RL: α / γ / ε(S) \| Vanilla RL: ε(V))**
+
+| 파라미터 | 현재값 | 설명 |
+|----------|--------|------|
+| Learning Rate (α) | 0.010 | 정책 파라미터 갱신 폭 |
+| Discount Factor (γ) | 0.95 | 미래 보상 할인율 |
+| STATIC ε | 0.08 | STATIC RL 탐색률 |
+| Vanilla ε | 0.10 | Vanilla Q-Learning 탐색률 |
+
+각 항목의 체크박스를 선택한 후 **적용** 버튼을 누르면 체크된 파라미터만 모든 멤버에 일괄 적용된다.
 
 ---
 
