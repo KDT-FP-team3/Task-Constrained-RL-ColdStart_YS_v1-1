@@ -50,7 +50,7 @@ Contact : sjowun@gmail.com
 ### 팀 구성 및 담당 종목 (STATIC_H 최종 결과)
 
 | 멤버     | 담당 종목            | Ticker | 시드 | 알고리즘 | 8-State | Roll | STATIC_H    | Market  | Alpha Gap      |
-| -------- | -------------------- | ------ | ---- | -------- | --------- | ---- | ----------- | ------- | ---------------- |
+| --------- | -------------------- | ------ | ---- | -------- | ---------- | ---- | ----------- | ------- | ----------------- |
 | Member 1 | S&P 500 ETF          | SPY    | 42   | STATIC_H | O       | —    | **23.86%**  | 12.40%  | **+11.6%p**    |
 | Member 2 | Nasdaq 100 ETF       | QQQ    | 137  | STATIC_H | —       | —    | **67.26%**  | 35.36%  | **+32.0%p 🏆** |
 | Member 3 | KOSPI 지수           | ^KS11  | 2024 | STATIC_H | O       | —    | **119.91%** | 117.06% | **+3.3%p**     |
@@ -1033,7 +1033,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | -9.00%             |
 | Action Frequency          | BUY 181 / CASH 118 |
 
-**분석**: SPY는 미국 대형주 지수로 안정적인 상승 추세를 보인다. STATIC_H가 8-State 변동성 신호를 활용하여 고변동성 구간(2025년 중반 하락)에서 CASH 전환을 적절히 수행, 시장 대비 +11.6%p Alpha를 달성했다. Expected Alpha 9.06%p는 시드 독립성이 높음을 나타낸다.
+**분석**
+- SPY는 미국 대형주 지수로 안정적인 상승 추세를 보인다. STATIC_H가 8-State 변동성 신호를 활용하여 고변동성 구간(2025년 중반 하락)에서 CASH 전환을 적절히 수행, 시장 대비 +11.6%p Alpha를 달성했다. Expected Alpha 9.06%p는 시드 독립성이 높음을 나타낸다.
 
 ---
 
@@ -1053,7 +1054,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | -12.88%            |
 | Action Frequency          | BUY 389 / CASH 110 |
 
-**분석**: QQQ는 팀 내 최고 Alpha 달성 종목이다. 4-State(변동성 신호 미사용)임에도 EMA 신호만으로 Nasdaq의 강한 추세를 효과적으로 포착했다. Expected Alpha 31.20%p는 6개 시드 전체에서 안정적으로 높은 Alpha를 기록, 시드 의존성이 낮다. BUY 비중 78%로 상승 추세 충실 추종.
+**분석**
+- QQQ는 팀 내 최고 Alpha 달성 종목이다. 4-State(변동성 신호 미사용)임에도 EMA 신호만으로 Nasdaq의 강한 추세를 효과적으로 포착했다. Expected Alpha 31.20%p는 6개 시드 전체에서 안정적으로 높은 Alpha를 기록, 시드 의존성이 낮다. BUY 비중 78%로 상승 추세 충실 추종.
 
 ---
 
@@ -1073,7 +1075,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | -19.24% ⚠️         |
 | Action Frequency          | BUY 332 / CASH 151 |
 
-**분석**: KOSPI는 학습 구간(2024~2025 상반기) 횡보/하락, OOS 구간(2025 하반기~2026) 급등이라는 워크포워드 구조적 불리함에도 불구하고 +3.3%p Alpha를 달성했다. STATIC_H의 Adaptive Temperature가 OOS 급등 구간에서 BUY 비중을 유연하게 유지, Market을 미세하게 초과. MDD -19.24%는 팀 내 주의 종목. 낮은 ε=0.02는 학습된 정책에 강하게 의존함을 의미.
+**분석**
+- KOSPI는 학습 구간(2024~2025 상반기) 횡보/하락, OOS 구간(2025 하반기~2026) 급등이라는 워크포워드 구조적 불리함에도 불구하고 +3.3%p Alpha를 달성했다. STATIC_H의 Adaptive Temperature가 OOS 급등 구간에서 BUY 비중을 유연하게 유지, Market을 미세하게 초과. MDD -19.24%는 팀 내 주의 종목. 낮은 ε=0.02는 학습된 정책에 강하게 의존함을 의미.
 
 ---
 
@@ -1093,7 +1096,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | -17.97% ⚠️         |
 | Action Frequency          | BUY 233 / CASH 258 |
 
-**분석**: KOSDAQ는 KOSPI보다 더 극적인 OOS 급등(2026년)을 보인다. Roll Period=30봉으로 OOS 구간 레짐 변화에 주기적으로 재학습하여 +21%p Alpha 달성. Action Frequency에서 CASH 비중(52%)이 높아 고변동성 하락 구간을 적극 회피, MDD 관리와 수익률 균형을 이루었다. Expected Alpha 20.66%p로 시드 안정성 우수.
+**분석**
+- KOSDAQ는 KOSPI보다 더 극적인 OOS 급등(2026년)을 보인다. Roll Period=30봉으로 OOS 구간 레짐 변화에 주기적으로 재학습하여 +21%p Alpha 달성. Action Frequency에서 CASH 비중(52%)이 높아 고변동성 하락 구간을 적극 회피, MDD 관리와 수익률 균형을 이루었다. Expected Alpha 20.66%p로 시드 안정성 우수.
 
 ---
 
@@ -1113,7 +1117,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | **-9.11%**         |
 | Action Frequency          | BUY 293 / CASH 206 |
 
-**분석**: SCHD는 배당 ETF로 일변동성이 작아 EMA 신호 구분력이 낮다. Roll Period=60봉(장기 롤링)으로 느린 레짐 변화에 적응하여 +6.5%p Alpha 달성. MDD -9.11%는 팀 내 두 번째로 낮아 안전한 수익 특성. 낮은 학습률(lr=0.026)과 낮은 ε=0.04는 보수적이고 안정적인 정책 수렴을 반영.
+**분석**
+- SCHD는 배당 ETF로 일변동성이 작아 EMA 신호 구분력이 낮다. Roll Period=60봉(장기 롤링)으로 느린 레짐 변화에 적응하여 +6.5%p Alpha 달성. MDD -9.11%는 팀 내 두 번째로 낮아 안전한 수익 특성. 낮은 학습률(lr=0.026)과 낮은 ε=0.04는 보수적이고 안정적인 정책 수렴을 반영.
 
 ---
 
@@ -1133,7 +1138,8 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 | MDD                       | -20.30% ⚠️        |
 | Action Frequency          | BUY 229 / CASH 70 |
 
-**분析**: RGLD(원자재·금 로열티)는 2025년 금 가격 급등과 함께 높은 수익률을 기록했다. 8-State 변동성 신호가 금 가격의 사이클성 변동을 포착하여 +17.6%p Alpha 달성. BUY 비중 76%로 상승 사이클을 강하게 추종. Vanilla도 84.55%의 높은 수익률을 기록, 시장 자체가 강세였음을 반영. MDD -20.30%는 원자재 특유의 높은 변동성에 기인.
+**분석**
+- RGLD(원자재·금 로열티)는 2025년 금 가격 급등과 함께 높은 수익률을 기록했다. 8-State 변동성 신호가 금 가격의 사이클성 변동을 포착하여 +17.6%p Alpha 달성. BUY 비중 76%로 상승 사이클을 강하게 추종. Vanilla도 84.55%의 높은 수익률을 기록, 시장 자체가 강세였음을 반영. MDD -20.30%는 원자재 특유의 높은 변동성에 기인.
 
 ---
 
