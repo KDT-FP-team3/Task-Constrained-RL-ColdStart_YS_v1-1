@@ -2335,7 +2335,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         with stat_col:
                             # 스페이서: 통계 요약 섹션을 하단으로 이동
                             st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
-                            st.markdown(f"""<div style='background:var(--secondary-background-color);padding:10px 0 12px 0;border-radius:10px;border:1px solid rgba(128,128,128,0.3);width:100%;box-sizing:border-box;'><h4 style='margin-top:0;margin-bottom:8px;font-weight:900;font-size:15px;line-height:1.25;padding:0 6px;'>Statistics Summary<br>(Expected &amp; Risk)</h4><div style='display:flex;gap:0;padding:0 4px;'><div style='flex:1;border-right:1px solid rgba(128,128,128,0.3);padding-right:4px;'><ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'><li style='margin-bottom:8px;'><b style='color:#e05050;'>Vanilla Mean</b><br>{v_mean:.2f}% (σ={v_std:.2f}%)</li><li style='margin-bottom:4px;'><b style='color:#e05050;'>Vanilla Range</b><br>{v_min:.2f}% ~ {v_max:.2f}%</li></ul></div><div style='flex:1;padding-left:4px;'><ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'><li style='margin-bottom:8px;'><b style='color:#4a90d9;'>STATIC Mean</b><br>{s_mean:.2f}% (σ={s_std:.2f}%)</li><li style='margin-bottom:4px;'><b style='color:#4a90d9;'>STATIC Range</b><br>{s_min:.2f}% ~ {s_max:.2f}%</li></ul></div></div></div>""", unsafe_allow_html=True)
+                            st.markdown(f"""<div style='background:var(--secondary-background-color);padding:10px 0 12px 0;border-radius:10px;border:1px solid rgba(128,128,128,0.3);width:100%;min-width:0;box-sizing:border-box;display:block;'><h4 style='margin-top:0;margin-bottom:8px;font-weight:900;font-size:15px;line-height:1.25;padding:0 6px;'>Statistics Summary<br>(Expected &amp; Risk)</h4><div style='display:flex;gap:0;padding:0 4px;'><div style='flex:1 1 0;min-width:0;border-right:1px solid rgba(128,128,128,0.3);padding-right:4px;'><ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'><li style='margin-bottom:8px;'><b style='color:#e05050;'>Vanilla Mean</b><br>{v_mean:.2f}% (σ={v_std:.2f}%)</li><li style='margin-bottom:4px;'><b style='color:#e05050;'>Vanilla Range</b><br>{v_min:.2f}% ~ {v_max:.2f}%</li></ul></div><div style='flex:1 1 0;min-width:0;padding-left:4px;'><ul style='font-size:13px;margin:0;padding-left:0;line-height:1.4;list-style:none;text-align:left;'><li style='margin-bottom:8px;'><b style='color:#4a90d9;'>STATIC Mean</b><br>{s_mean:.2f}% (σ={s_std:.2f}%)</li><li style='margin-bottom:4px;'><b style='color:#4a90d9;'>STATIC Range</b><br>{s_min:.2f}% ~ {s_max:.2f}%</li></ul></div></div></div>""", unsafe_allow_html=True)
 
                             def _color_neg(val):
                                 if isinstance(val, (int, float)) and val < 0:
@@ -2367,12 +2367,12 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                                         ("line-height", "1.3"),
                                     ]},
                                     {"selector": "td", "props": [("padding", "3px 6px")]},
-                                    {"selector": "table", "props": [("width", "100%"), ("border-collapse", "collapse")]},
+                                    {"selector": "table", "props": [("width", "100%"), ("min-width", "100%"), ("table-layout", "fixed"), ("border-collapse", "collapse")]},
                                 ])
                                 .to_html(escape=False)
                             )
                             st.markdown(
-                                f'<div style="max-height:300px;overflow-y:auto;font-size:13px;width:100%;box-sizing:border-box;">{_tbl_html}</div>',
+                                f'<div style="max-height:300px;overflow-y:auto;font-size:13px;width:100%;min-width:0;box-sizing:border-box;display:block;">{_tbl_html}</div>',
                                 unsafe_allow_html=True
                             )
 
@@ -2451,8 +2451,8 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                     _bar_span = max(_cmp_caps) - min(_cmp_caps)
                     # Y 하한: 최솟값 막대 아래 소폭 여백 (손익분기 $1 기준선 포함)
                     _y_min = max(0.90, min(_cmp_caps) - max(0.03, _bar_span * 0.12))
-                    # Y 상한: 최댓값 막대 + 막대 위 텍스트 + vs Market 주석 공간 (겹침 방지)
-                    _y_max = max(_cmp_caps) + max(0.18, _bar_span * 0.65)
+                    # Y 상한: 막대 위 텍스트 + vs Market 주석만큼만 여유 (상단 공백 최소화)
+                    _y_max = max(_cmp_caps) + max(0.10, _bar_span * 0.45)
                     _fig_cmp.update_layout(
                         title=dict(
                             text=f"<b>Capital 비교</b> &nbsp;·&nbsp; $1 초기 → $X &nbsp;({stock_name})",
@@ -2467,7 +2467,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                         ),
                         xaxis=dict(showgrid=False, tickfont=dict(size=15)),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                        height=490, margin=dict(t=30, b=90, l=72, r=20),
+                        height=430, margin=dict(t=30, b=90, l=72, r=20),
                         bargap=0.45,
                     )
                     st.plotly_chart(_fig_cmp, use_container_width=True,
