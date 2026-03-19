@@ -10,7 +10,6 @@
 
 ![전체화면창](Captures/전체화면창.jpg)
 
-- **배포 링크** : https://task-constrained-rl-coldstartysv1-1-azz5zvkw3zr9he2qcx2pze.streamlit.app/
 - 좌측 사이드바에서 전역 하이퍼파라미터(학습률·감가율·탐색률·시드 등)와 Fund 배분 설정(Softmax Temperature, Max Single Weight)을 일괄 제어하고, **Eval. All / Simul. All** 버튼으로 6개 멤버 에이전트를 동시에 실행할 수 있다.
 - 상단 메인 영역의 **Master Fund Portfolio Report**는 멤버별 자본 배분 도넛 차트·Vanilla vs STATIC 수익 비교 막대 차트·전체 누적수익률 라인 차트(Team Fund: +43.40%)를 한눈에 제공하며, **Portfolio Alpha Strategy Report** 테이블에서 STATIC·Vanilla·Alpha(Gap)·MDD·Score·Weight%를 종목별로 비교할 수 있다.
 - 하단 **Portfolio Managers** 섹션은 멤버별로 누적수익 비교 차트, Trial History 통계 분석(Return Distribution·시드별 성과 표), Agent Decision Analysis(BUY/CASH 행동 빈도 + 일별 수익 테이블)를 독립적으로 제공하며, 웹 접속 시 저장된 `config.py` 파라미터로 **자동 Run Evaluation이 즉시 실행**된다.
