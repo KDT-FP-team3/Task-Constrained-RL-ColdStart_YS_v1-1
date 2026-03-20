@@ -513,10 +513,10 @@
       .tbl th {
         background: var(--bg3);
         color: var(--cyan);
-        font-family: var(--mono);
-        font-size: 0.6rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        font-family: var(--sans);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
         padding: 0.7rem 0.9rem;
         text-align: left;
         border-bottom: 1px solid var(--border);
@@ -583,10 +583,10 @@
         background: rgba(0, 255, 157, 0.04);
       }
       .cmp-head {
-        font-family: var(--mono);
-        font-size: 0.65rem;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
+        font-family: var(--sans);
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
         padding-bottom: 0.7rem;
         border-bottom: 1px solid var(--border);
         margin-bottom: 1.1rem;
@@ -601,10 +601,11 @@
         margin-bottom: 0.9rem;
       }
       .cmp-row-label {
-        font-size: 0.62rem;
-        color: var(--text3);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        font-family: var(--sans);
+        font-size: 0.82rem;
+        color: #ffffff;
+        font-weight: 700;
+        letter-spacing: 0.02em;
         margin-bottom: 0.25rem;
       }
       .cmp-row-val {
@@ -947,10 +948,10 @@
           Chainers Master Fund — 실전 트레이딩 시뮬레이터
         </h2>
         <p class="sec-desc" style="color: #c8ddf0">
-          아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제
+          - 아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제
           시장 데이터에 적용된 결과다. <br />
-          6명의 에이전트가 각자 담당 종목에서 STATIC_Hybrid(STATIC_H)를 실행하여
-          전 종목 양수 Alpha Gap을 달성했다.
+          - 6명의 에이전트가 각자 담당 종목에서 STATIC_Hybrid(STATIC_H)를
+          실행하여 전 종목 양수 Alpha Gap을 달성했다.
         </p>
 
         <!-- 성과 배너 -->
@@ -958,7 +959,7 @@
           <div class="rb-label">
             TASK-CONSTRAINED RL COLD-START · MULTI-AGENT TRADING SIMULATOR
           </div>
-          <div class="rb-val"><!-- @tf-banner@ -->Team Fund: +42.58%</div>
+          <div class="rb-val"><!-- @tf-banner@ -->Team Fund: +35.47%</div>
           <div class="rb-desc" style="color: #c0e8d0">
             6종목 전 양수 Alpha Gap · PG Actor-Critic Optimizer · Tabular PPO
             Clipping + Adaptive Temperature
@@ -993,7 +994,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m1-ret@ -->+23.86%
+              <!-- @m1-ret@ -->+21.84%
             </div>
             <div
               style="
@@ -1002,7 +1003,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m1-alpha@ -->Alpha +11.6%p
+              <!-- @m1-alpha@ -->Alpha +8.4%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               8-State · lr=0.073 · γ=0.94
@@ -1027,7 +1028,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m2-ret@ -->+67.26%
+              <!-- @m2-ret@ -->+60.62%
             </div>
             <div
               style="
@@ -1036,7 +1037,7 @@
                 color: var(--gold);
               "
             >
-              <!-- @m2-alpha@ -->Alpha +32.0%p
+              <!-- @m2-alpha@ -->Alpha +26.3%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               4-State · lr=0.080 · γ=0.91
@@ -1061,7 +1062,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m3-ret@ -->+119.91%
+              <!-- @m3-ret@ -->+124.33%
             </div>
             <div
               style="
@@ -1070,7 +1071,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m3-alpha@ -->Alpha +3.3%p
+              <!-- @m3-alpha@ -->Alpha +9.4%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               8-State · lr=0.050 · γ=0.88
@@ -1095,7 +1096,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m4-ret@ -->+48.59%
+              <!-- @m4-ret@ -->+51.03%
             </div>
             <div
               style="
@@ -1104,7 +1105,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m4-alpha@ -->Alpha +21.0%p
+              <!-- @m4-alpha@ -->Alpha +20.7%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               8-State · Roll=30봉 · lr=0.038
@@ -1129,7 +1130,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m5-ret@ -->+30.18%
+              <!-- @m5-ret@ -->+29.02%
             </div>
             <div
               style="
@@ -1138,7 +1139,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m5-alpha@ -->Alpha +6.5%p
+              <!-- @m5-alpha@ -->Alpha +6.1%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               8-State · Roll=60봉 · lr=0.026
@@ -1163,7 +1164,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m6-ret@ -->+102.12%
+              <!-- @m6-ret@ -->+86.06%
             </div>
             <div
               style="
@@ -1172,7 +1173,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m6-alpha@ -->Alpha +17.6%p
+              <!-- @m6-alpha@ -->Alpha +16.0%p
             </div>
             <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
               8-State · lr=0.022 · γ=0.95
@@ -1221,8 +1222,9 @@
           >
             <div class="card-sym">Run Evaluation</div>
             <div class="card-body" style="font-size: 0.78rem">
-              현재 파라미터로 RL 에이전트를 평가하고 Trial History를 축적한다.
-              6회 반복으로 기대 Alpha 분포를 추정한다.
+              - 현재 파라미터로 RL 에이전트를 평가하고 Trial History를
+              축적한다.<br />
+              - 6회 반복으로 기대 Alpha 분포를 추정한다.
             </div>
           </div>
           <div
@@ -1231,8 +1233,8 @@
           >
             <div class="card-sym">Simulation (PG Optimizer)</div>
             <div class="card-body" style="font-size: 0.78rem">
-              PG Actor-Critic Optimizer가 α, γ, ε을 자동 탐색하여 복합 Gap(시장
-              60% + Vanilla 40%)을 극대화한다.
+              - PG Actor-Critic Optimizer가 α, γ, ε을 자동 탐색하여 복합
+              Gap(시장 60% + Vanilla 40%)을 극대화한다.
             </div>
           </div>
           <div
@@ -1241,7 +1243,7 @@
           >
             <div class="card-sym">Team Portfolio Dashboard</div>
             <div class="card-body" style="font-size: 0.78rem">
-              Softmax 가중 배분으로 6개 에이전트를 Team Fund로 합성하여
+              - Softmax 가중 배분으로 6개 에이전트를 Team Fund로 합성하여
               집계한다. <br />
               (Score = Return/(1+|MDD|))
             </div>
@@ -1257,7 +1259,7 @@
         <div class="sec-label">01 · 기초 프레임워크</div>
         <h2 class="sec-title">Markov Decision Process (MDP)</h2>
         <p class="sec-desc">
-          강화학습의 모든 수식은 이 MDP 5-튜플 프레임워크 위에 세워진다.
+          강화학습의 모든 수식은 이 MDP 5-튜플 프레임워크 위에 세워진다.<br />
           에이전트는 환경을 관측하고, 행동을 선택하며, 보상을 받고, 새로운
           상태로 전이한다.
         </p>
@@ -1272,7 +1274,7 @@
             <div class="card-sym">S · State (상태)</div>
             <div class="card-name">에이전트의 현재 위치</div>
             <div class="card-body">
-              트레이딩: EMA 위치 × 추세 방향 조합으로 시장 국면을 표현
+              - 트레이딩: EMA 위치 × 추세 방향 조합으로 시장 국면을 표현
             </div>
             <div class="card-note">
               s ∈ {0,1,2,3} 4개 이산 상태<br />use_vol=True → s ∈ {0..7} 8개
@@ -1283,8 +1285,8 @@
             <div class="card-sym">A · Action (행동)</div>
             <div class="card-name">에이전트가 선택할 수 있는 행동</div>
             <div class="card-body">
-              매 시점 이진(Binary) 결정. BUY=1이면 전액 매수, CASH=0이면 현금
-              보유
+              - 매 시점 이진(Binary) 결정<br />
+              - BUY=1이면 전액 매수, CASH=0이면 현금 보유
             </div>
             <div class="card-note">A = {0: CASH(현금보유), 1: BUY(매수)}</div>
           </div>
@@ -1292,9 +1294,9 @@
             <div class="card-sym">P · Transition (전이확률)</div>
             <div class="card-name">P(s'|s,a) — 다음 상태 도달 확률</div>
             <div class="card-body">
-              상태 s에서 행동 a를 선택했을 때 다음 상태 s'로 전이할 확률.
-              트레이딩에서 시장 가격 변동이 이를 결정하므로 직접 알 수
-              없다(Model-free)
+              - 상태 s에서 행동 a를 선택했을 때 다음 상태 s'로 전이할 확률.<br />
+              - 트레이딩에서 시장 가격 변동이 이를 결정하므로 직접 알 수 없다.
+              (Model-free)
             </div>
             <div class="card-note">시장 가격 변동이 외생적으로 결정</div>
           </div>
@@ -1376,10 +1378,14 @@
         </table>
         <div class="info" style="margin-top: 1rem">
           <div class="tag">Cold-Start 수수료 장벽 완화</div>
-          수수료가 높을수록 BUY 선호 초기화값을 크게 설정하여 초반 CASH 고착을
-          방지한다. 미국(fee=0.001): θ[1,1]=0.05 / 한국(fee=0.0023):
-          θ[1,1]=0.069. 8-State 확장 시 상태 {4..7}은 고변동성 레짐으로, 동일
-          EMA·추세 신호에서 별도 정책을 학습한다.
+          - 수수료가 높을수록 BUY 선호 초기화값을 크게 설정하여 초반 CASH 고착을
+          방지한다.<br />
+          - 미국(fee=0.001): θ[1,1]=0.05 / 한국(fee=0.0023): θ[1,1]=0.069.
+          8-State 확장 시 상태 {4..7}은 고변동성 레짐(Regime)으로, 동일 EMA·추세
+          신호에서 별도 정책을 학습한다.<br /><br />
+          * Regime: 시장 국면/체제를 의미하는 금융 트레이딩 용어.<br />
+          - '저'변동성 레짐: 시장이 '안정적'으로 움직이는 구간<br />
+          - '고'변동성 레짐: 시장이 급등락하는 '불안정'한 구간
         </div>
       </div>
     </section>
@@ -1391,8 +1397,9 @@
         <div class="sec-label">02 · 가치 함수 정의</div>
         <h2 class="sec-title">Bellman Equation</h2>
         <p class="sec-desc">
-          핵심 질문: "현재 상태 s에 있을 때, 앞으로 받을 총 보상은 얼마인가?" —
-          이 질문의 답이 가치 함수 V(s)이며, 모든 RL 알고리즘의 수학적 토대가
+          핵심 질문: "현재 상태 s에 있을 때, 앞으로 받을 총 보상은 얼마인가?"
+          <br />
+          - 이 질문의 답이 가치 함수 V(s)이며, 모든 RL 알고리즘의 수학적 토대가
           된다.
         </p>
 
@@ -1406,16 +1413,17 @@
             <div class="card-sym">V(s)</div>
             <div class="card-name">현재 상태의 가치 (State Value)</div>
             <div class="card-body">
-              상태 s에서 시작하여 정책 π를 따랐을 때 받을 총 기대 수익.
-              에이전트가 학습하고 저장하는 핵심 값. Critic이 담당.
+              - 상태 s에서 시작하여 정책 π를 따랐을 때 받을 총 기대 수익.<br />
+              - 에이전트가 학습하고 저장하는 핵심 값.<br />
+              - Critic이 담당.
             </div>
           </div>
           <div class="card">
             <div class="card-sym">r(t)</div>
             <div class="card-name">즉각적 보상 (Immediate Reward)</div>
             <div class="card-body">
-              행동을 취한 직후 받는 보상. 시장 데이터가 수식에 유입되는 유일한
-              통로.
+              - 행동을 취한 직후 받는 보상.<br />
+              - 시장 데이터가 수식에 유입되는 유일한 통로.
             </div>
             <div class="card-note">= daily_return × a − fee × |a − prev_a|</div>
           </div>
@@ -1423,8 +1431,8 @@
             <div class="card-sym">γ · V(s(t+1))</div>
             <div class="card-name">할인된 미래 가치</div>
             <div class="card-body">
-              다음 상태의 가치를 γ로 할인. 현재의 가치는 미래 가치의 재귀적
-              합계임을 표현.
+              - 다음 상태의 가치를 γ로 할인.<br />
+              - 현재 가치는 미래 가치의 재귀적 합계임을 표현.
             </div>
             <div class="card-note">γ=0.95: 미래 1봉 후 가치의 95%만 인정</div>
           </div>
@@ -1433,9 +1441,9 @@
         <div class="info warn" style="margin-top: 1rem">
           <div class="tag">재귀적 구조 (Recursive Structure)</div>
           V(s)는 V(s')에 의존한다. 즉
-          <strong>현재의 가치는 미래의 가치로 정의</strong>된다. <br />이 재귀 관계가
-          동적 프로그래밍과 TD Learning의 핵심 원리이며, 가치 함수를 반복적으로
-          갱신하면 참값에 수렴한다.
+          <strong>현재의 가치는 미래의 가치로 정의</strong>된다. <br />
+          이 재귀 관계가 동적 프로그래밍과 TD Learning의 핵심 원리이며, 가치
+          함수를 반복적으로 갱신하면 참값에 수렴한다.
         </div>
 
         <hr class="divider" />
@@ -1455,24 +1463,24 @@
             <div class="card-sym">Q*(s, a)</div>
             <div class="card-name">최적 행동-가치 함수</div>
             <div class="card-body">
-              V(s)와 달리 (상태, 행동) 쌍의 가치를 모두 지정. "상태 s에서 행동
-              a를 하고, 이후 최적으로 행동하면 총 보상은?"
+              - V(s)와 달리 (상태, 행동) 쌍의 가치를 모두 지정.<br />
+              - "상태 s에서 행동 a를 하고, 이후 최적으로 행동하면 총 보상은?"
             </div>
           </div>
           <div class="card">
             <div class="card-sym">max<sub>a'</sub> Q*(s',a')</div>
             <div class="card-name">미래 최적 행동 선택 (greedy)</div>
             <div class="card-body">
-              다음 상태에서 가능한 행동 중 가장 좋은 것을 선택. 이것이 "최적"의
-              의미: 미래 결정은 항상 완벽하다고 가정.
+              - 다음 상태에서 가능한 행동 중 가장 좋은 것을 선택함.<br />
+              - 이것이 "최적"의 의미: 미래 결정은 항상 완벽하다고 가정함.
             </div>
           </div>
           <div class="card">
             <div class="card-sym">V(s) vs Q(s,a)</div>
             <div class="card-name">관계식</div>
             <div class="card-body">
-              V(s) = 상태의 가치 (모든 행동 평균 혹은 최적 행동)<br />Q(s,a) =
-              특정 (상태, 행동) 쌍의 가치
+              - V(s) = 상태의 가치 (모든 행동 평균, 최적 행동)<br />
+              - Q(s,a) = 특정 (상태, 행동) 쌍의 가치
             </div>
             <div class="card-note">V(s) = max_a Q(s,a) (최적 정책 하에서)</div>
           </div>
@@ -1487,8 +1495,9 @@
         <div class="sec-label">03 · Vanilla RL 구현</div>
         <h2 class="sec-title">Q-Learning — Temporal Difference Update</h2>
         <p class="sec-desc">
-          전이 모델 P(s'|s,a)를 모르는 상태에서 Q*를 근사하는 Model-free 방법.
-          경험(r, s, a, s')을 통해 Q-테이블을 반복 갱신한다.
+          - 전이 모델 P(s'|s,a)를 모르는 상태에서 Q*를 근사하는 Model-free
+          방법.<br />
+          - 경험(r, s, a, s')을 통해 Q-테이블을 반복 갱신한다.
         </p>
 
         <div class="fbox purple">
@@ -1504,32 +1513,34 @@
             <div class="card-sym">r + γ · max<sub>a'</sub> Q(s',a')</div>
             <div class="card-name">TD Target (목표값)</div>
             <div class="card-body">
-              에이전트가 "받았어야 할" 기대값. 실제 보상 r과 다음 상태 최선 행동
-              가치 추정을 합산. Q(s,a)가 수렴하려는 '정답'.
+              - 에이전트가 "받았어야 할" 기대값. 실제 보상 r과 다음 상태 최선
+              행동 가치 추정을 합산.<br />
+              - Q(s,a)가 수렴하려는 '정답'.
             </div>
           </div>
           <div class="card">
             <div class="card-sym">Q(s, a)</div>
             <div class="card-name">현재 추정값</div>
             <div class="card-body">
-              에이전트가 "예상했던" 값. Q-테이블에 저장된 현재 (상태, 행동) 쌍의
-              가치. 2×2 행렬: Q[상태][행동]
+              -에이전트가 "예상했던" 값.<br />
+              - Q-테이블에 저장된 현재 (상태, 행동) 쌍의 가치. - 2×2 행렬:
+              Q[상태][행동]
             </div>
           </div>
           <div class="card">
             <div class="card-sym">δ = Target − Q(s,a)</div>
             <div class="card-name">TD Error (예측 오차 신호)</div>
             <div class="card-body">
-              δ &gt; 0: 현실이 예상보다 좋았음 → Q 증가<br />δ &lt; 0: 현실이
-              예상보다 나빴음 → Q 감소
+              - δ &gt; 0: 현실이 예상보다 좋았음 → Q 증가<br />
+              - δ &lt; 0: 현실이 예상보다 나빴음 → Q 감소
             </div>
           </div>
           <div class="card">
             <div class="card-sym">α (Learning Rate)</div>
             <div class="card-name">학습률 [0.005 ~ 0.1]</div>
             <div class="card-body">
-              경험 하나당 Q를 얼마나 조정할지.<br />작은 α = 신중한 학습 / 큰 α
-              = 공격적 학습
+              - 경험 하나당 Q를 얼마나 조정할지.<br />
+              - 작은 α = 신중한 학습 / 큰 α = 공격적 학습
             </div>
             <div class="card-note">
               실전: α = 0.010 ~ 0.073 (시뮬레이션 탐색)
@@ -1574,9 +1585,9 @@
             </div>
             <div class="info warn" style="margin-top: 0.8rem">
               <div class="tag">Vanilla의 한계</div>
-              Q-테이블은 기대값만 저장, 확률 분포를 다루지 못함 → Policy
-              Gradient 불가, 엔트로피 제어 불가. 2-상태만 사용하여 EMA 위치
-              신호를 버림.
+              Q-테이블은 기대값만 저장, 확률 분포를 다루지 못함<br />
+              → Policy & Gradient 불가, 엔트로피 제어 불가.<br />
+              2-상태만 사용하여 EMA 위치 신호를 버림.
             </div>
           </div>
         </div>
@@ -1590,14 +1601,15 @@
         <div class="sec-label">03.5 · 논문 기반 개념 정의</div>
         <h2 class="sec-title">STATIC이란 무엇인가?</h2>
         <p class="sec-desc">
-          Su et al. (2026) "Vectorizing the Trie" 논문에서 제안된
+          "Vectorizing the Trie, Su et al. (Feb. 2026) " 논문에서 제안된
           <strong style="color: var(--purple)">STATIC</strong>은
           <em
-            >Sparse Transition Matrix-Accelerated Trie Index for Constrained
+            >Transition Matrix-Accelerated Trie Index for Constrained
             Decoding</em
           >의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
-          실현하는 기법이다. 이 개념은 트레이딩 강화학습의 상태 제약 구조와
-          구조적으로 동형(isomorphic)이다.
+          실현하는 기법이다.<br />
+          이 개념은 트레이딩 강화학습의 상태 제약 구조와 구조적으로
+          동형(isomorphic)이다.
         </p>
 
         <!-- 핵심 문제 -->
@@ -1605,8 +1617,9 @@
           <div class="tag">논문이 해결하는 문제</div>
           표준 오토레그레시브 디코딩은 출력 공간을 제어할 수 없어 "할루시네이션"
           — 재고에 없거나 너무 오래된 아이템의 ID를 자신 있게 생성 — 이
-          발생한다. Trie(프리픽스 트리) 기반 제약은 개념적으로 올바르지만,
-          포인터 체이싱 특성상 TPU/GPU에서 심각한 지연을 유발한다.
+          발생한다.<br />
+          Trie(프리픽스 트리) 기반 제약은 개념적으로 올바르지만, 포인터 체이싱
+          특성상 TPU/GPU에서 심각한 지연을 유발한다.
         </div>
 
         <hr class="divider" />
@@ -1618,18 +1631,22 @@
           <div class="card" style="border-color: var(--red)">
             <div class="card-sym">기존 Trie (문제)</div>
             <div class="card-body" style="margin-top: 0.5rem">
-              포인터 체이싱으로 비연속 메모리 접근 → HBM burst 활용 불가<br /><br />동적
-              제어 흐름으로 XLA 정적 그래프 컴파일 불가<br /><br />CPU 오프로드
-              시 PCIe 전송 오버헤드 → 추론 시간 2× 증가
+              포인터 체이싱으로 비연속 메모리 접근<br />
+              → HBM burst 활용 불가<br /><br />
+              동적 제어 흐름으로 XLA 정적 그래프 컴파일 불가<br /><br />
+              CPU 오프로드 시 PCIe 전송 오버헤드<br />
+              → 추론 시간 2× 증가
             </div>
             <div class="card-note">I/O 복잡도: O(log|C|) 이상</div>
           </div>
           <div class="card" style="border-color: var(--gold)">
             <div class="card-sym">CSR 변환 (해법)</div>
             <div class="card-body" style="margin-top: 0.5rem">
-              프리픽스 트리를 Compressed Sparse Row 행렬로 평탄화<br /><br />불규칙
-              트리 순회 → 완전 벡터화 희소 행렬 연산으로 전환<br /><br />정적
-              계산 그래프 → XLA/Inductor 컴파일 완전 호환
+              프리픽스 트리를 Compressed Sparse Row 행렬로 평탄화<br /><br />
+              불규칙 트리 순회<br />
+              → 완전 벡터화 희소 행렬 연산으로 전환<br /><br />
+              정적 계산 그래프<br />
+              → XLA/Inductor 컴파일 완전 호환
             </div>
             <div class="card-note">I/O 복잡도: O(1) — 단일 연속 읽기</div>
           </div>
@@ -1642,10 +1659,12 @@
               <strong style="color: var(--green)">1033×</strong> 빠름<br />PPV
               Approx 대비
               <strong style="color: var(--green)">47×</strong>
-              빠름<br /><br />0.033ms/step · 추론 시간의 0.25%만 사용
+              빠름<br /><br />
+              → 0.033ms/step · 추론 시간의 0.25%만 사용
             </div>
             <div class="card-note">
-              20M 신선 동영상 제약 · 7일 신선 조회수 +5.1%
+              2천만개의 최신 동영상으로 후보 제약<br />
+              최근 7일 신규 조회수 +5.1% 증가
             </div>
           </div>
         </div>
@@ -1682,10 +1701,10 @@
         <div class="mini-title">트레이딩 STATIC RL과의 구조적 대응</div>
 
         <p class="sec-desc" style="margin-bottom: 1rem">
-          논문의 STATIC과 트레이딩 STATIC_H는
-          <em>서로 다른 도메인의 동일한 수학 구조</em>를 공유한다. 논문은 LLM
-          출력 공간을 유효 아이템으로 제약하고, 트레이딩 시스템은 시장 상태를
-          유효 행동으로 제약한다.
+          논문의 STATIC과 트레이딩 STATIC_H는 "서로 다른 도메인의 동일한 수학
+          구조"를 공유한다.<br />
+          논문은 LLM 출력 공간을 유효 아이템으로 제약하고, 트레이딩 시스템은
+          시장 상태를 유효 행동으로 제약한다.
         </p>
 
         <table class="tbl">
@@ -1742,22 +1761,25 @@
           <div class="card" style="border-color: var(--cyan)">
             <div class="card-sym">① 제약된 상태 공간</div>
             <div class="card-body" style="margin-top: 0.5rem">
-              4/8개 이산 상태만 학습 → Cold-Start 조건(사전 데이터 없음)에서도
-              빠른 수렴. 논문의 CSR처럼 유효한 시장 국면만 탐색.
+              4/8개 이산 상태만 학습<br />
+              → Cold-Start 조건(사전 데이터 없음)에서도 빠른 수렴.<br />
+              → 논문의 CSR처럼 유효한 시장 국면만 탐색.
             </div>
           </div>
           <div class="card" style="border-color: var(--gold)">
             <div class="card-sym">② Adaptive Temperature</div>
             <div class="card-body" style="margin-top: 0.5rem">
-              flip_rate 기반 α_t로 시장 레짐 변화를 자동 감지. 상승장→하락장
-              전환 시 탐험을 즉시 늘려 OOS 구간 재적응 속도 향상.
+              flip_rate 기반 α_t로 시장 레짐 변화 자동 감지.<br />
+              → 상승장에서 하락장으로 전환 시 탐험을 즉시 늘려 OOS 구간 재적응
+              속도 향상.
             </div>
           </div>
           <div class="card" style="border-color: var(--green)">
             <div class="card-sym">③ Tabular PPO Clipping</div>
             <div class="card-body" style="margin-top: 0.5rem">
-              논문의 PPO 클리핑 개념을 Tabular 정책에 적용. 단기 노이즈에 의한
-              정책 급변(BUY 100% 고착)을 방지하여 OOS 안정성 확보.
+              논문의 PPO 클리핑 개념을 Tabular 정책에 적용.<br />
+              → 단기 노이즈에 의한 정책 급변(BUY 100% 고착)을 방지하여 OOS
+              안정성 확보.
             </div>
           </div>
         </div>
@@ -1771,8 +1793,9 @@
         <div class="sec-label">04 · STATIC RL — Actor-Critic</div>
         <h2 class="sec-title">Policy Gradient + TD Critic 이중 구조</h2>
         <p class="sec-desc">
-          STATIC은 4/8-상태 Tabular Actor-Critic 알고리즘이다. Actor가 확률적
-          정책으로 행동을 선택하고, Critic이 TD 오차로 상태 가치를 평가한다.
+          STATIC은 4/8-상태 Tabular Actor-Critic 알고리즘이다.<br />
+          Actor가 확률적 정책으로 행동을 선택하고, Critic이 TD 오차로 상태
+          가치를 평가한다.<br />
           Q-Learning이 기대값만 저장하는 것과 달리, STATIC은
           <strong>행동 확률 분포</strong>를 직접 학습한다.
         </p>
@@ -1789,8 +1812,8 @@
               π(a|s) = exp(θ[s,a]) / Σ exp(θ[s,:])
             </div>
             <div class="card-body">
-              θ[s, BUY] &gt; θ[s, CASH] 이면 BUY 확률이 더 높음. 원시 선호도를
-              행동 확률 분포로 변환.
+              θ[s, BUY] &gt; θ[s, CASH] 이면 BUY 확률이 더 높음.<br />
+              원시 선호도를 행동 확률 분포로 변환.
             </div>
           </div>
           <div class="card" style="border-color: var(--gold)">
@@ -1807,8 +1830,9 @@
               δ = r_eff + γ·V(s') − V(s)<br />V(s) += lr · δ
             </div>
             <div class="card-body">
-              δ = TD Error = 예측 오차 신호. 양수: 실제>예상 / 음수:
-              실제&lt;예상. V(s)는 누적 시장 지식 저장소.
+              δ = TD Error = 예측 오차 신호.<br />
+              양수: 실제>예상 / 음수: 실제&lt;예상. V(s)는 누적 시장 지식
+              저장소.
             </div>
           </div>
         </div>
@@ -1816,8 +1840,9 @@
         <div class="info good">
           <div class="tag">공유 신호 δ (TD Error)</div>
           Critic의 TD Error δ = r_eff + γ·V(s') − V(s) 가 Actor와 Critic 양쪽에
-          전달된다. Actor에게는 "이 결정이 예상보다 좋았는지 나빴는지"를,
-          Critic에게는 "가치 추정이 얼마나 틀렸는지"를 알려준다.
+          전달된다.<br />
+          Actor에게는 "이 결정이 예상보다 좋았는지 나빴는지"를, Critic에게는
+          "가치 추정이 얼마나 틀렸는지"를 알려준다.
         </div>
 
         <hr class="divider" />
@@ -1833,8 +1858,8 @@
             <div class="card-sym">J(θ)</div>
             <div class="card-name">목적 함수 (Objective)</div>
             <div class="card-body">
-              정책 π_θ 하에서의 기대 총 수익. Actor의 목표는 θ를 조정하여 J를
-              최대화하는 것.
+              정책 π_θ 하에서의 기대 총 수익.<br />
+              Actor의 목표는 θ를 조정하여 J를 최대화하는 것.
             </div>
           </div>
           <div class="card">
@@ -1883,7 +1908,8 @@
         <h2 class="sec-title">Entropy Regularization — 정책 붕괴 방지</h2>
         <p class="sec-desc">
           탐험 제어 없이는 정책이 항상 BUY 또는 항상 CASH로 붕괴(고착)될 수
-          있다. 엔트로피를 보상 신호에 더해 에이전트가 다양한 행동을 유지하도록
+          있다.<br />
+          엔트로피를 보상 신호에 더해 에이전트가 다양한 행동을 유지하도록
           유도한다.
         </p>
 
@@ -1895,8 +1921,8 @@
         <div class="card" style="margin: 1rem 0; padding: 1.4rem">
           <div class="card-sym">Entropy H(π) 직관적 이해</div>
           <div class="card-body" style="margin-bottom: 1rem">
-            정책의 행동 선택 불확실성(무질서도) 측정치. 높은 엔트로피 = 다양한
-            행동 선택 = 더 많은 탐험.
+            정책의 행동 선택 불확실성(무질서도) 측정치.<br />
+            높은 엔트로피 = 다양한 행동 선택 = 더 많은 탐험.
           </div>
           <div class="ent-row">
             <div class="ent-label">π = (0.50, 0.50) — 최대 불확실성</div>
@@ -1943,9 +1969,11 @@
 
         <div class="info">
           <div class="tag">엔트로피 보상의 효과</div>
-          계수 0.05는 STATIC에서 고정값이다. 시장이 일관되게 BUY를 보상하더라도,
-          엔트로피 보너스가 정책 붕괴(π(BUY)=1.0)를 방지한다. STATIC_H에서는 이
-          계수가 시장 상황에 따라 자동으로 변한다(Adaptive Temperature).
+          계수 0.05는 STATIC에서 고정값이다.<br />
+          시장이 일관되게 BUY를 보상하더라도, 엔트로피 보너스가 정책
+          붕괴(π(BUY)=1.0)를 방지한다.<br />
+          STATIC_H에서는 이 계수가 시장 상황에 따라 자동으로 변한다(Adaptive
+          Temperature).
         </div>
       </div>
     </section>
@@ -1958,14 +1986,16 @@
         <h2 class="sec-title">STATIC_H — 두 가지 안정화 메커니즘 추가</h2>
         <p class="sec-desc">
           STATIC Actor-Critic 위에 Adaptive Temperature와 Tabular PPO Clipping을
-          추가한 하이브리드 알고리즘. PPO Clipping은 Su et al. (2026) 논문의
-          신경망 PPO 개념을 Tabular 정책에 적용한 것이다. 본 프로젝트 핵심
-          알고리즘으로, 6명 전원이 전 종목 양수 Alpha를 달성했다.
+          추가한 하이브리드 알고리즘.<br />
+          PPO Clipping은 Su et al. (2026) 논문의 신경망 PPO 개념을 Tabular
+          정책에 적용한 것이다.<br />
+          본 프로젝트 핵심 알고리즘으로, 6명 전원이 전 종목 양수 Alpha를
+          달성했다.
         </p>
 
         <div class="info warn" style="margin-bottom: 2rem">
           <div class="tag">STATIC의 두 가지 한계</div>
-          (1) 고정 엔트로피 계수 0.05는 시장 레짐 변화에 적응 불가 — 강한 추세
+          (1) 고정 엔트로피 계수 0.05는 시장 레짐 변화에 적응 불가 → 강한 추세
           구간에서 과도한 탐험 또는 부족한 탐험 발생<br />
           (2) 정책 갱신 크기에 제약이 없음 → θ가 한 스텝에 급변하여 BUY↔CASH가
           급격히 뒤집힐 수 있음
@@ -1979,9 +2009,9 @@
             </div>
             <div class="card-body" style="margin-top: 0.5rem">
               최근 행동 전환 빈도(flip_rate)에 따라 엔트로피 계수 α_t를 자동
-              조정. STATIC의 고정 0.05를 <strong>[0.01, 0.15]</strong> 범위로
-              대체.<br /><br />방지: 고착 시 탐험 부족 / 안정적 추세에서 과도한
-              탐험
+              조정.<br />
+              STATIC의 고정 0.05를 <strong>[0.01, 0.15]</strong> 범위로 대체.<br /><br />
+              방지: 고착 시 탐험 부족 / 안정적 추세에서 과도한 탐험
             </div>
           </div>
           <div class="card" style="border-color: var(--purple)">
@@ -1990,9 +2020,9 @@
               <span class="badge badge-new">NEW</span>
             </div>
             <div class="card-body" style="margin-top: 0.5rem">
-              한 번의 갱신에서 정책이 변할 수 있는 폭을 제한. 신경망 PPO의
-              클리핑을 Tabular 정책에 적용.<br /><br />방지: 강한 추세에서 BUY
-              100% 고착 / 갑작스런 CASH 전환
+              한 번의 갱신에서 정책이 변할 수 있는 폭을 제한.<br />
+              신경망 PPO의 클리핑을 Tabular 정책에 적용.<br /><br />
+              방지: 강한 추세에서 BUY 100% 고착 / 갑작스런 CASH 전환
             </div>
           </div>
         </div>
@@ -2054,7 +2084,8 @@
                 "
                 >r_eff = reward + α_t · H(π)</code
               ><br /><br />
-              STATIC의 고정 0.05를<br />동적 α_t로 대체.<br />
+              STATIC의 고정 0.05를<br />
+              동적 α_t로 대체.<br />
               고착 시 탐험 유지, 과전환 시 탐험 장려
             </div>
           </div>
@@ -2354,12 +2385,12 @@
       <div class="container">
         <div class="accent-line" style="background: var(--orange)"></div>
         <div class="sec-label">07 · 화살표 연산 다이어그램</div>
-        <h2 class="sec-title">
-          STATIC_H 전체 연산 흐름 — 수식 누락 없는 완전 흐름도
-        </h2>
+        <h2 class="sec-title">STATIC_H 전체 연산 흐름도</h2>
         <p class="sec-desc">
-          MDP 정의부터 PPO Clipping Actor 갱신까지 모든 수식이 어떤 순서로
-          연산되는지 화살표로 표현한다.
+          MDP 정의부터 PPO Clipping Actor 갱신까지의 모든 과정을 시각적으로
+          표현한 다이어그램.<br />
+          각 화살표는 데이터 흐름과 신호 전달을 나타내며, 색상으로 주요 경로와
+          안정화 메커니즘을 구분했다.
         </p>
 
         <!-- LEGEND -->
@@ -2450,7 +2481,7 @@
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 1060 2780"
-            style="width: 100%; min-width: 700px; display: block"
+            style="width: 100%; min-width: 700px; display: block; font-family: 'Noto Sans KR', sans-serif"
           >
             <defs>
               <marker
@@ -2571,7 +2602,7 @@
               height="28"
               rx="3"
               fill="none"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.6"
             />
             <text
@@ -2579,7 +2610,7 @@
               y="34"
               text-anchor="middle"
               font-size="12"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
               letter-spacing="2"
             >
               PHASE 0 · MDP = ( S, A, P, R, γ ) 정의
@@ -2610,7 +2641,7 @@
               y="98"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               s ∈ {0,1,2,3}/{0..7}
             </text>
@@ -2640,7 +2671,7 @@
               y="98"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               a ∈ {0:CASH, 1:BUY}
             </text>
@@ -2661,7 +2692,7 @@
               y="80"
               text-anchor="middle"
               font-size="13"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
               font-weight="600"
             >
               P · 전이확률
@@ -2671,7 +2702,7 @@
               y="98"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               P(s'|s,a): 시장이 결정
             </text>
@@ -2701,7 +2732,7 @@
               y="98"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               ret×a − fee×|a−prev_a|
             </text>
@@ -2731,7 +2762,7 @@
               y="98"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               미래 보상 가중치 [0,1]
             </text>
@@ -2754,7 +2785,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -2766,7 +2797,7 @@
             >
               STEP 1
             </text>
-            <text x="140" y="158" font-size="11" fill="#7a9cbf">
+            <text x="140" y="158" font-size="11" fill="#e0eaf4">
               상태 관측 — 시장 신호를 이산 인덱스로 변환
             </text>
 
@@ -2778,7 +2809,7 @@
               height="46"
               rx="5"
               fill="#0a1220"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.7"
             />
             <text
@@ -2786,7 +2817,7 @@
               y="202"
               text-anchor="middle"
               font-size="12"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
               font-weight="500"
             >
               is_bull
@@ -2796,7 +2827,7 @@
               y="218"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               daily_return &gt; 0 → True
             </text>
@@ -2808,7 +2839,7 @@
               height="46"
               rx="5"
               fill="#0a1220"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.7"
             />
             <text
@@ -2816,7 +2847,7 @@
               y="202"
               text-anchor="middle"
               font-size="12"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
               font-weight="500"
             >
               is_above_ema
@@ -2826,7 +2857,7 @@
               y="218"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               Close ≥ EMA_10 → True
             </text>
@@ -2857,7 +2888,7 @@
               y="214"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               rolling_std &gt; train_median
             </text>
@@ -2866,7 +2897,7 @@
               y="226"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               use_vol=True 시 활성화
             </text>
@@ -2897,7 +2928,7 @@
               y="296"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               4-상태: s ∈ {0,1,2,3} | 8-상태: s ∈ {0,1,2,3,4,5,6,7}
               (use_vol=True)
@@ -2940,7 +2971,7 @@
               height="130"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -2948,7 +2979,7 @@
               y="202"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               s=0: 하락+EMA↓ θ[0,1]=0
             </text>
@@ -2957,7 +2988,7 @@
               y="218"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               s=1: 상승+EMA↓ fee×30
             </text>
@@ -2966,7 +2997,7 @@
               y="234"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               s=2: 하락+EMA↑ fee×50
             </text>
@@ -2984,7 +3015,7 @@
               y1="258"
               x2="931"
               y2="265"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3024,7 +3055,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3036,7 +3067,7 @@
             >
               STEP 2
             </text>
-            <text x="140" y="354" font-size="11" fill="#7a9cbf">
+            <text x="140" y="354" font-size="11" fill="#e0eaf4">
               행동 선택 — Actor Softmax 정책에서 확률적 샘플링
             </text>
 
@@ -3065,7 +3096,7 @@
               y="418"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               Actor 선호도 파라미터
             </text>
@@ -3095,7 +3126,7 @@
               y="418"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               = exp(θ[s,a]) / Σ exp(θ[s,:])
             </text>
@@ -3125,7 +3156,7 @@
               y="418"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               확률 분포에서 행동 샘플링
             </text>
@@ -3157,7 +3188,7 @@
               height="56"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.7"
             />
             <text
@@ -3165,7 +3196,7 @@
               y="400"
               text-anchor="middle"
               font-size="12"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               prev_a
             </text>
@@ -3174,7 +3205,7 @@
               y="418"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               이전 행동 메모리
             </text>
@@ -3197,7 +3228,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3209,7 +3240,7 @@
             >
               STEP 3
             </text>
-            <text x="140" y="482" font-size="11" fill="#7a9cbf">
+            <text x="140" y="482" font-size="11" fill="#e0eaf4">
               보상 계산 — 시장 피드백이 수식으로 유입되는 지점
             </text>
 
@@ -3237,7 +3268,7 @@
               y="542"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               시장 데이터 (외생 입력)
             </text>
@@ -3249,7 +3280,7 @@
               height="46"
               rx="5"
               fill="#0a1220"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.7"
             />
             <text
@@ -3257,7 +3288,7 @@
               y="526"
               text-anchor="middle"
               font-size="12"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               fee
             </text>
@@ -3266,7 +3297,7 @@
               y="542"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               수수료율
             </text>
@@ -3297,7 +3328,7 @@
               y="620"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               포지션 수익 − 전환 비용 (Overtrading 패널티)
             </text>
@@ -3369,7 +3400,7 @@
               height="88"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3386,7 +3417,7 @@
               y="536"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               → 포지션 수익
             </text>
@@ -3395,7 +3426,7 @@
               y1="542"
               x2="940"
               y2="548"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3403,7 +3434,7 @@
               y="562"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               fee × |a − prev_a|
             </text>
@@ -3412,7 +3443,7 @@
               y="578"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               → 전환 비용 패널티
             </text>
@@ -3475,7 +3506,7 @@
               y="744"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               최근 20봉 행동 기록 버퍼
             </text>
@@ -3505,7 +3536,7 @@
               y="744"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               최근 20봉 행동 전환 횟수 / 20 ∈ [0, 1]
             </text>
@@ -3517,7 +3548,7 @@
               height="54"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3525,7 +3556,7 @@
               y="722"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               0.0 → 고착 (전환 없음)
             </text>
@@ -3534,7 +3565,7 @@
               y="737"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               0.5 → 절반 전환
             </text>
@@ -3584,7 +3615,7 @@
               y="830"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               ALPHA_MIN=0.01 | BASE_COEFF=0.05 | ALPHA_MAX=0.15 | FLIP_WIN=20
             </text>
@@ -3596,7 +3627,7 @@
               height="60"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3604,7 +3635,7 @@
               y="802"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               flip=0.0 → α_t=0.050
             </text>
@@ -3613,7 +3644,7 @@
               y="818"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               flip=0.5 → α_t=0.075
             </text>
@@ -3654,7 +3685,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3666,7 +3697,7 @@
             >
               STEP 6
             </text>
-            <text x="140" y="890" font-size="11" fill="#7a9cbf">
+            <text x="140" y="890" font-size="11" fill="#e0eaf4">
               엔트로피 정규화 — 정책 붕괴 방지 + 탐험 장려
             </text>
 
@@ -3695,7 +3726,7 @@
               y="956"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               정책의 불확실성(무질서도) 측정
             </text>
@@ -3707,7 +3738,7 @@
               height="56"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3715,7 +3746,7 @@
               y="934"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               π=(0.5,0.5) → H=0.693 최대
             </text>
@@ -3724,7 +3755,7 @@
               y="950"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               π=(0.99,0.01) → H=0.056
             </text>
@@ -3733,7 +3764,7 @@
               y="966"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               π=(1.0,0.0) → H=0.000 붕괴!
             </text>
@@ -3764,7 +3795,7 @@
               y="1050"
               text-anchor="middle"
               font-size="12"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               STATIC: 고정 0.05 | STATIC_H: 동적 α_t ∈ [0.01, 0.15]
             </text>
@@ -3831,7 +3862,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -3843,7 +3874,7 @@
             >
               STEP 7
             </text>
-            <text x="140" y="1112" font-size="11" fill="#7a9cbf">
+            <text x="140" y="1112" font-size="11" fill="#e0eaf4">
               TD Error 계산 — Actor와 Critic이 공유하는 핵심 예측 오차 신호
             </text>
 
@@ -3872,7 +3903,7 @@
               y="1178"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               현재 상태 가치 (Critic)
             </text>
@@ -3902,7 +3933,7 @@
               y="1178"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               할인된 다음 상태 가치
             </text>
@@ -3931,7 +3962,7 @@
               y="1178"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               유효 보상 (step 6)
             </text>
@@ -3962,7 +3993,7 @@
               y="1268"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               δ &gt; 0: 현실이 예상보다 좋았음 → 행동 강화 | δ &lt; 0: 예상보다
               나빴음 → 행동 약화
@@ -4004,7 +4035,7 @@
               height="78"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -4012,7 +4043,7 @@
               y="1154"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               벨만 방정식
             </text>
@@ -4021,7 +4052,7 @@
               y="1170"
               text-anchor="middle"
               font-size="10"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               V(s)=E[r+γV(s')]
             </text>
@@ -4030,7 +4061,7 @@
               y="1186"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               에서 유도된
             </text>
@@ -4074,7 +4105,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -4086,7 +4117,7 @@
             >
               STEP 8
             </text>
-            <text x="140" y="1336" font-size="11" fill="#7a9cbf">
+            <text x="140" y="1336" font-size="11" fill="#e0eaf4">
               Critic 갱신
             </text>
 
@@ -4115,7 +4146,7 @@
               y="1386"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               상태 가치를 현실에 맞게 조정
             </text>
@@ -4124,7 +4155,7 @@
               y="1400"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               V 테이블은 누적 시장 지식 저장소
             </text>
@@ -4198,7 +4229,7 @@
               y="1380"
               text-anchor="middle"
               font-size="13"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               π_old[s] = softmax(θ[s])
             </text>
@@ -4239,7 +4270,7 @@
               y="1452"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               Score 함수: 선택 행동 +1, 모든 행동에서 π 차감
             </text>
@@ -4248,7 +4279,7 @@
               y="1466"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               (Policy Gradient Theorem 편미분)
             </text>
@@ -4289,7 +4320,7 @@
               y="1534"
               text-anchor="middle"
               font-size="13"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               θ_try = θ[s] + lr · δ · grad_log_π
             </text>
@@ -4330,7 +4361,7 @@
               y="1606"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               Importance Sampling 비율 (신/구 정책 확률 비)
             </text>
@@ -4339,7 +4370,7 @@
               y="1620"
               text-anchor="middle"
               font-size="10"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               r_t=1.0: 변화없음 | r_t=1.5: 50% 증가 | r_t=0.5: 50% 감소
             </text>
@@ -4401,7 +4432,7 @@
               height="32"
               rx="5"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -4409,7 +4440,7 @@
               y="1756"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               정책 비율 [0.8, 1.2] 범위 이탈 시 갱신의 30%만 적용
             </text>
@@ -4432,7 +4463,7 @@
               height="28"
               rx="3"
               fill="#080f1c"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -4444,7 +4475,7 @@
             >
               STEP 12
             </text>
-            <text x="140" y="1818" font-size="11" fill="#7a9cbf">
+            <text x="140" y="1818" font-size="11" fill="#e0eaf4">
               최종 Actor 갱신 — STATIC vs STATIC_H 분기
             </text>
 
@@ -4464,7 +4495,7 @@
               y="1862"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               STATIC (직접 갱신)
             </text>
@@ -4473,7 +4504,7 @@
               y="1886"
               text-anchor="middle"
               font-size="13"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
               font-weight="600"
             >
               θ[s,a] += lr · δ · grad_log_π
@@ -4483,7 +4514,7 @@
               y="1908"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               scale 없음 → 한 스텝에 급변 가능
             </text>
@@ -4523,7 +4554,7 @@
               y="1908"
               text-anchor="middle"
               font-size="11"
-              fill="#7a9cbf"
+              fill="#e0eaf4"
             >
               scale ∈ {0.3, 1.0} → 점진적 정책 전이
             </text>
@@ -4533,13 +4564,13 @@
               x1="275"
               y1="1408"
               x2="275"
-              y2="1828"
+              y2="1840"
               stroke="#3d5a7a"
               stroke-width="1"
               stroke-dasharray="4 3"
               marker-end="url(#ad)"
             />
-            <text x="285" y="1650" font-size="10" fill="#3d5a7a">
+            <text x="285" y="1650" font-size="10" fill="#c0d4e8">
               STATIC 직접 경로
             </text>
 
@@ -4576,101 +4607,109 @@
               stroke-width="1"
             />
 
-            <text x="70" y="2026" font-size="12" fill="#3d5a7a">①</text>
-            <text x="100" y="2026" font-size="12" fill="#00d4ff">
+            <text x="70" y="2026" font-size="12" fill="#c0d4e8">①</text>
+            <text x="100" y="2026" font-size="12" fill="#e0eaf4">
+              상태 관측
+            </text>
+            <text x="210" y="2026" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2026" font-size="12" fill="#00d4ff">
               s = is_bull×1 + is_above_ema×2 [+ is_high_vol×4]
             </text>
-            <text x="700" y="2026" font-size="10" fill="#3d5a7a">
-              ← 상태 관측
-            </text>
 
-            <text x="70" y="2060" font-size="12" fill="#3d5a7a">②</text>
-            <text x="100" y="2060" font-size="12" fill="#b06eff">
+            <text x="70" y="2060" font-size="12" fill="#c0d4e8">②</text>
+            <text x="100" y="2060" font-size="12" fill="#e0eaf4">
+              Actor 정책
+            </text>
+            <text x="210" y="2060" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2060" font-size="12" fill="#b06eff">
               π(a|s) = softmax(θ[s]) = exp(θ[s,a]) / Σ exp(θ[s,:])
             </text>
-            <text x="700" y="2060" font-size="10" fill="#3d5a7a">
-              ← Actor 정책
-            </text>
 
-            <text x="70" y="2094" font-size="12" fill="#3d5a7a">③</text>
-            <text x="100" y="2094" font-size="12" fill="#ff6b35">
+            <text x="70" y="2094" font-size="12" fill="#c0d4e8">③</text>
+            <text x="100" y="2094" font-size="12" fill="#e0eaf4">
+              시장 보상
+            </text>
+            <text x="210" y="2094" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2094" font-size="12" fill="#ff6b35">
               R = daily_return × a − fee × |a − prev_a|
             </text>
-            <text x="700" y="2094" font-size="10" fill="#3d5a7a">
-              ← 시장 보상
-            </text>
 
-            <text x="70" y="2128" font-size="12" fill="#3d5a7a">④</text>
-            <text x="100" y="2128" font-size="12" fill="#00ff9d">
+            <text x="70" y="2128" font-size="12" fill="#c0d4e8">④</text>
+            <text x="100" y="2128" font-size="12" fill="#e0eaf4">
+              전환 빈도
+            </text>
+            <text x="210" y="2128" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2128" font-size="12" fill="#00ff9d">
               flip_rate = Σ|aₜ−aₜ₋₁| / 20 [STATIC_H only]
             </text>
-            <text x="700" y="2128" font-size="10" fill="#3d5a7a">
-              ← 전환 빈도
-            </text>
 
-            <text x="70" y="2162" font-size="12" fill="#3d5a7a">⑤</text>
-            <text x="100" y="2162" font-size="12" fill="#00ff9d">
+            <text x="70" y="2162" font-size="12" fill="#c0d4e8">⑤</text>
+            <text x="100" y="2162" font-size="12" fill="#e0eaf4">
+              적응 온도
+            </text>
+            <text x="210" y="2162" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2162" font-size="12" fill="#00ff9d">
               α_t = clip( 0.05 × (1+flip_rate), 0.01, 0.15 ) [STATIC_H only]
             </text>
-            <text x="700" y="2162" font-size="10" fill="#3d5a7a">
-              ← 적응 온도
-            </text>
 
-            <text x="70" y="2196" font-size="12" fill="#3d5a7a">⑥</text>
-            <text x="100" y="2196" font-size="12" fill="#f5c542">
+            <text x="70" y="2196" font-size="12" fill="#c0d4e8">⑥</text>
+            <text x="100" y="2196" font-size="12" fill="#e0eaf4">
+              정책 엔트로피
+            </text>
+            <text x="210" y="2196" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2196" font-size="12" fill="#f5c542">
               H(π) = −Σ π(a|s) · log π(a|s)
             </text>
-            <text x="700" y="2196" font-size="10" fill="#3d5a7a">
-              ← 정책 엔트로피
-            </text>
 
-            <text x="70" y="2230" font-size="12" fill="#3d5a7a">⑦</text>
-            <text x="100" y="2230" font-size="12" fill="#00d4ff">
+            <text x="70" y="2230" font-size="12" fill="#c0d4e8">⑦</text>
+            <text x="100" y="2230" font-size="12" fill="#e0eaf4">
+              유효 보상
+            </text>
+            <text x="210" y="2230" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2230" font-size="12" fill="#00d4ff">
               r_eff = R + α_t · H(π) [STATIC: 0.05 고정 / STATIC_H: 동적]
             </text>
-            <text x="700" y="2230" font-size="10" fill="#3d5a7a">
-              ← 유효 보상
-            </text>
 
-            <text x="70" y="2264" font-size="12" fill="#3d5a7a">⑧</text>
-            <text x="100" y="2264" font-size="12" fill="#f5c542">
+            <text x="70" y="2264" font-size="12" fill="#c0d4e8">⑧</text>
+            <text x="100" y="2264" font-size="12" fill="#e0eaf4">TD Error</text>
+            <text x="210" y="2264" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2264" font-size="12" fill="#f5c542">
               δ = r_eff + γ · V(s') − V(s)
             </text>
-            <text x="700" y="2264" font-size="10" fill="#3d5a7a">
-              ← TD Error
-            </text>
 
-            <text x="70" y="2298" font-size="12" fill="#3d5a7a">⑨</text>
-            <text x="100" y="2298" font-size="12" fill="#f5c542">
+            <text x="70" y="2298" font-size="12" fill="#c0d4e8">⑨</text>
+            <text x="100" y="2298" font-size="12" fill="#e0eaf4">
+              Critic 갱신
+            </text>
+            <text x="210" y="2298" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2298" font-size="12" fill="#f5c542">
               V(s) += lr · δ
             </text>
-            <text x="700" y="2298" font-size="10" fill="#3d5a7a">
-              ← Critic 갱신
-            </text>
 
-            <text x="70" y="2332" font-size="12" fill="#3d5a7a">⑩</text>
-            <text x="100" y="2332" font-size="12" fill="#b06eff">
+            <text x="70" y="2332" font-size="12" fill="#c0d4e8">⑩</text>
+            <text x="100" y="2332" font-size="12" fill="#e0eaf4">
+              Score 함수
+            </text>
+            <text x="210" y="2332" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2332" font-size="12" fill="#b06eff">
               grad_log_π = 1[a==chosen] − π(a|s)
             </text>
-            <text x="700" y="2332" font-size="10" fill="#3d5a7a">
-              ← Score 함수
-            </text>
 
-            <text x="70" y="2366" font-size="12" fill="#3d5a7a">⑪</text>
-            <text x="100" y="2366" font-size="12" fill="#b06eff">
+            <text x="70" y="2366" font-size="12" fill="#c0d4e8">⑪</text>
+            <text x="100" y="2366" font-size="12" fill="#e0eaf4">PPO Clip</text>
+            <text x="210" y="2366" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2366" font-size="12" fill="#b06eff">
               r_t = π_new[a] / π_old[a] → scale=0.3 if |r_t−1|&gt;0.2 else 1.0
               [★]
             </text>
-            <text x="700" y="2366" font-size="10" fill="#3d5a7a">
-              ← PPO Clip
-            </text>
 
-            <text x="70" y="2400" font-size="12" fill="#3d5a7a">⑫</text>
-            <text x="100" y="2400" font-size="12" fill="#00ff9d">
-              θ[s,a] += scale · lr · δ · grad_log_π
+            <text x="70" y="2400" font-size="12" fill="#c0d4e8">⑫</text>
+            <text x="100" y="2400" font-size="12" fill="#e0eaf4">
+              Actor 갱신
             </text>
-            <text x="700" y="2400" font-size="10" fill="#3d5a7a">
-              ← Actor 갱신
+            <text x="210" y="2400" font-size="12" fill="#e0eaf4">→</text>
+            <text x="235" y="2400" font-size="12" fill="#00ff9d">
+              θ[s,a] += scale · lr · δ · grad_log_π
             </text>
 
             <line
@@ -4678,7 +4717,7 @@
               y1="2416"
               x2="1010"
               y2="2416"
-              stroke="#1c3352"
+              stroke="#7090b0"
               stroke-width="0.5"
             />
             <text
@@ -4686,7 +4725,7 @@
               y="2436"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               ∇J(θ) = E[ ∇log π(a|s) · A(s,a) ] | V(s) = E[r + γ·V(s')] (Bellman
               재귀) | [★] = STATIC_H 추가
@@ -4696,7 +4735,7 @@
               y="2454"
               text-anchor="middle"
               font-size="11"
-              fill="#3d5a7a"
+              fill="#c0d4e8"
             >
               모든 수식은 하나의 흐름으로 연결: MDP → Bellman → Q-Learning →
               Actor-Critic → Entropy Reg. → STATIC_H
@@ -4739,10 +4778,10 @@
               <td>S&P 500 ETF</td>
               <td class="mono">SPY</td>
               <td>8-State</td>
-              <td class="mono pos"><!-- @t-m1-s@ -->+23.86%</td>
-              <td class="mono"><!-- @t-m1-m@ -->12.40%</td>
-              <td class="mono pos"><!-- @t-m1-a@ -->+11.6%p</td>
-              <td class="mono"><!-- @t-m1-mdd@ -->-9.00%</td>
+              <td class="mono pos"><!-- @t-m1-s@ -->+21.84%</td>
+              <td class="mono"><!-- @t-m1-m@ -->13.41%</td>
+              <td class="mono pos"><!-- @t-m1-a@ -->+8.4%p</td>
+              <td class="mono"><!-- @t-m1-mdd@ -->-14.56%</td>
               <td
                 style="
                   font-family: var(--mono);
@@ -4758,10 +4797,10 @@
               <td>Nasdaq 100 ETF</td>
               <td class="mono">QQQ</td>
               <td>4-State</td>
-              <td class="mono pos"><!-- @t-m2-s@ -->+67.26%</td>
-              <td class="mono"><!-- @t-m2-m@ -->35.36%</td>
-              <td class="mono star"><!-- @t-m2-a@ -->+32.0%p 🏆</td>
-              <td class="mono"><!-- @t-m2-mdd@ -->-12.88%</td>
+              <td class="mono pos"><!-- @t-m2-s@ -->+60.62%</td>
+              <td class="mono"><!-- @t-m2-m@ -->34.29%</td>
+              <td class="mono star"><!-- @t-m2-a@ -->+26.3%p</td>
+              <td class="mono"><!-- @t-m2-mdd@ -->-10.25%</td>
               <td
                 style="
                   font-family: var(--mono);
@@ -4777,9 +4816,9 @@
               <td>KOSPI 지수</td>
               <td class="mono">^KS11</td>
               <td>8-State</td>
-              <td class="mono pos"><!-- @t-m3-s@ -->+119.91%</td>
-              <td class="mono"><!-- @t-m3-m@ -->117.06%</td>
-              <td class="mono pos"><!-- @t-m3-a@ -->+3.3%p</td>
+              <td class="mono pos"><!-- @t-m3-s@ -->+124.33%</td>
+              <td class="mono"><!-- @t-m3-m@ -->114.90%</td>
+              <td class="mono pos"><!-- @t-m3-a@ -->+9.4%p</td>
               <td class="mono" style="color: var(--red)">
                 <!-- @t-m3-mdd@ -->-19.24%
               </td>
@@ -4798,9 +4837,9 @@
               <td>KOSDAQ 지수</td>
               <td class="mono">^KQ11</td>
               <td>8-State Roll=30</td>
-              <td class="mono pos"><!-- @t-m4-s@ -->+48.59%</td>
-              <td class="mono"><!-- @t-m4-m@ -->27.92%</td>
-              <td class="mono pos"><!-- @t-m4-a@ -->+21.0%p</td>
+              <td class="mono pos"><!-- @t-m4-s@ -->+51.03%</td>
+              <td class="mono"><!-- @t-m4-m@ -->30.30%</td>
+              <td class="mono pos"><!-- @t-m4-a@ -->+20.7%p</td>
               <td class="mono" style="color: var(--red)">
                 <!-- @t-m4-mdd@ -->-17.97%
               </td>
@@ -4819,9 +4858,9 @@
               <td>미국배당 ETF</td>
               <td class="mono">SCHD</td>
               <td>8-State Roll=60</td>
-              <td class="mono pos"><!-- @t-m5-s@ -->+30.18%</td>
-              <td class="mono"><!-- @t-m5-m@ -->23.82%</td>
-              <td class="mono pos"><!-- @t-m5-a@ -->+6.5%p</td>
+              <td class="mono pos"><!-- @t-m5-s@ -->+29.02%</td>
+              <td class="mono"><!-- @t-m5-m@ -->22.89%</td>
+              <td class="mono pos"><!-- @t-m5-a@ -->+6.1%p</td>
               <td class="mono"><!-- @t-m5-mdd@ -->-9.11%</td>
               <td
                 style="
@@ -4838,11 +4877,11 @@
               <td>로열 골드</td>
               <td class="mono">RGLD</td>
               <td>8-State</td>
-              <td class="mono pos"><!-- @t-m6-s@ -->+102.12%</td>
-              <td class="mono"><!-- @t-m6-m@ -->84.73%</td>
-              <td class="mono pos"><!-- @t-m6-a@ -->+17.6%p</td>
+              <td class="mono pos"><!-- @t-m6-s@ -->+86.06%</td>
+              <td class="mono"><!-- @t-m6-m@ -->70.05%</td>
+              <td class="mono pos"><!-- @t-m6-a@ -->+16.0%p</td>
               <td class="mono" style="color: var(--red)">
-                <!-- @t-m6-mdd@ -->-20.30%
+                <!-- @t-m6-mdd@ -->-26.03%
               </td>
               <td
                 style="
@@ -4861,10 +4900,10 @@
           <div class="rb-label">
             팀 포트폴리오 최종 성과 (Softmax 가중 합성)
           </div>
-          <div class="rb-val"><!-- @tf-results@ -->Team Fund: +42.58%</div>
+          <div class="rb-val"><!-- @tf-results@ -->Team Fund: +35.47%</div>
           <div class="rb-desc">
             6명 전원 STATIC_H로 양수 Alpha Gap 달성 ·
-            <!-- @best-alpha@ -->최고 Alpha: M2 QQQ +32.0%p 🏆
+            <!-- @best-alpha@ -->최고 Alpha: M2 Nasdaq 100 ETF +26.3%p 🏆
           </div>
         </div>
 
@@ -5352,7 +5391,7 @@
         &nbsp;·&nbsp; MULTI-AGENT TRADING SIMULATOR
       </p>
       <p style="margin-top: 0.5rem; font-size: 0.52rem">
-        Team Fund: +42.58% &nbsp;·&nbsp; 6종목 전 양수 Alpha Gap &nbsp;·&nbsp;
+        Team Fund: +35.47% &nbsp;·&nbsp; 6종목 전 양수 Alpha Gap &nbsp;·&nbsp;
         PG Actor-Critic Optimizer + Tabular PPO Clipping + Adaptive Temperature
       </p>
     </footer>
