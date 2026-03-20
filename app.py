@@ -333,13 +333,8 @@ def _update_presentation_html():
         mdd_str = f"{mdd:.2f}%"
         content = _sub(content, f"t-{mn}-mdd", mdd_str)
 
-    # ── HTML 쓰기 ──
-    try:
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        return True, tf_pct
-    except Exception as e:
-        return False, str(e)
+    # ── 결과 반환 (쓰기는 호출부에서 처리) ──
+    return True, (tf_pct, content)
 
 
 # ==========================================
@@ -481,7 +476,26 @@ _prs_btn = st.sidebar.button(
 if _prs_btn:
     _ok, _result = _update_presentation_html()
     if _ok:
-        st.sidebar.success(f"업데이트 완료! Team Fund {_result:+.2f}%")
+        _tf_val, _updated_html = _result
+        if not _IS_CLOUD:
+            # 로컬: 직접 파일 쓰기
+            _html_fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                       "Presentation_Bellman_to_Static_H.html")
+            with open(_html_fpath, "w", encoding="utf-8") as f:
+                f.write(_updated_html)
+            st.sidebar.success(f"업데이트 완료! Team Fund {_tf_val:+.2f}%")
+            st.sidebar.caption(f"저장: {_html_fpath}")
+        else:
+            # Cloud: 다운로드 버튼 제공
+            st.sidebar.success(f"생성 완료! Team Fund {_tf_val:+.2f}%")
+            st.sidebar.download_button(
+                "📥 업데이트된 HTML 다운로드",
+                data=_updated_html.encode("utf-8"),
+                file_name="Presentation_Bellman_to_Static_H.html",
+                mime="text/html",
+                use_container_width=True,
+            )
+            st.sidebar.caption("다운로드 후 로컬 루트 폴더의 HTML 파일을 교체하세요.")
     else:
         st.sidebar.error(f"오류: {_result}")
 

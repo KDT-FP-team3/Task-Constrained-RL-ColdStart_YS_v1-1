@@ -29,8 +29,8 @@
         --gold2: #c9992c;
         --red: #ff4d6d;
         --text: #dde8f5;
-        --text2: #7a9cbf;
-        --text3: #3d5a7a;
+        --text2: #e0eaf4;
+        --text3: #b0c4d8;
         --mono: "IBM Plex Mono", monospace;
         --sans: "Noto Sans KR", sans-serif;
       }
@@ -94,8 +94,7 @@
         flex: 1;
       }
       .nav-links a {
-        font-family: var(--mono);
-        font-size: 0.6rem;
+        font-size: 0.65rem;
         color: var(--text3);
         padding: 0 0.9rem;
         height: 50px;
@@ -158,8 +157,8 @@
       }
       .hero-tag {
         display: inline-block;
-        font-family: var(--mono);
-        font-size: 0.65rem;
+        font-family: var(--sans);
+        font-size: 0.78rem;
         color: var(--cyan);
         border: 1px solid var(--cyan);
         padding: 0.3rem 0.9rem;
@@ -236,11 +235,10 @@
         padding: 0 2rem;
       }
       .sec-label {
-        font-family: var(--mono);
-        font-size: 0.62rem;
+        font-family: var(--sans);
+        font-size: 0.95rem;
         color: var(--cyan);
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
+        letter-spacing: 0.04em;
         margin-bottom: 0.5rem;
       }
       .sec-title {
@@ -282,11 +280,11 @@
         pointer-events: none;
       }
       .fbox .flabel {
-        font-size: 0.58rem;
-        color: var(--text3);
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        margin-bottom: 0.4rem;
+        font-family: var(--sans);
+        font-size: 0.82rem;
+        color: var(--text2);
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
       }
       .fbox.orange {
         border-left-color: var(--orange);
@@ -344,10 +342,10 @@
         border-color: var(--border2);
       }
       .card-sym {
-        font-family: var(--mono);
-        font-size: 0.82rem;
+        font-family: var(--sans);
+        font-size: 0.88rem;
         color: var(--cyan);
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 0.3rem;
       }
       .card-name {
@@ -362,8 +360,8 @@
         line-height: 1.7;
       }
       .card-note {
-        font-family: var(--mono);
-        font-size: 0.68rem;
+        font-family: var(--sans);
+        font-size: 0.78rem;
         color: var(--orange);
         margin-top: 0.5rem;
       }
@@ -375,7 +373,8 @@
         margin: 2rem 0;
       }
       .mini-title {
-        font-size: 1rem;
+        font-family: var(--sans);
+        font-size: 1.15rem;
         font-weight: 700;
         margin: 1.5rem 0 0.8rem;
       }
@@ -391,11 +390,11 @@
         line-height: 1.8;
       }
       .info .tag {
-        font-family: var(--mono);
-        font-size: 0.58rem;
+        font-family: var(--sans);
+        font-size: 0.88rem;
         color: var(--orange);
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 700;
         margin-bottom: 0.3rem;
       }
       .info.warn {
@@ -630,10 +629,11 @@
         margin: 1.5rem 0;
       }
       .result-banner .rb-label {
-        font-family: var(--mono);
-        font-size: 0.6rem;
+        font-family: var(--sans);
+        font-size: 0.82rem;
         color: var(--green);
-        letter-spacing: 0.18em;
+        letter-spacing: 0.04em;
+        font-weight: 700;
         margin-bottom: 0.4rem;
       }
       .result-banner .rb-val {
@@ -908,6 +908,8 @@
       </div>
     </nav>
 
+    <!-- ═══════════════ 여기부터 본문 내용 ═══════════════ -->
+
     <!-- ═══════════════ HERO ═══════════════ -->
     <section id="hero">
       <div class="hero-bg"></div>
@@ -918,11 +920,11 @@
         </div>
         <h1 class="hero-title">
           <span class="hl-c">Bellman</span><span class="arr">→</span
-          ><span class="hl-g">STATIC_H</span>
+          ><span class="hl-g">STATIC Hybrid</span>
         </h1>
         <p class="hero-desc">
-          마르코프 결정 과정(MDP)의 수학적 기초부터 Tabular PPO Clipping +
-          Adaptive Temperature 하이브리드까지 —<br />
+          마르코프 결정 과정(MDP)의 수학적 기초부터<br />Tabular PPO Clipping +
+          Adaptive Temperature 하이브리드까지<br />
           실전 트레이딩 강화학습의 완전한 수식 흐름과 코드 로직
         </p>
         <div class="hero-chips">
@@ -945,7 +947,10 @@
           Chainers Master Fund — 실전 트레이딩 시뮬레이터
         </h2>
         <p class="sec-desc" style="color: #c8ddf0">
-          아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제 시장 데이터에 적용된 결과다. 6명의 에이전트가 각자 담당 종목에서 STATIC_H를 실행하여 전 종목 양수 Alpha Gap을 달성했다.
+          아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제
+          시장 데이터에 적용된 결과다. <br />
+          6명의 에이전트가 각자 담당 종목에서 STATIC_Hybrid(STATIC_H)를 실행하여
+          전 종목 양수 Alpha Gap을 달성했다.
         </p>
 
         <!-- 성과 배너 -->
@@ -1226,7 +1231,7 @@
           >
             <div class="card-sym">Simulation (PG Optimizer)</div>
             <div class="card-body" style="font-size: 0.78rem">
-              PG Actor-Critic Optimizer가 lr, γ, ε을 자동 탐색하여 복합 Gap(시장
+              PG Actor-Critic Optimizer가 α, γ, ε을 자동 탐색하여 복합 Gap(시장
               60% + Vanilla 40%)을 극대화한다.
             </div>
           </div>
@@ -1236,8 +1241,9 @@
           >
             <div class="card-sym">Team Portfolio Dashboard</div>
             <div class="card-body" style="font-size: 0.78rem">
-              Softmax 가중 배분(Score = Return/(1+|MDD|))으로 6개 에이전트를
-              Team Fund로 합성하여 집계한다.
+              Softmax 가중 배분으로 6개 에이전트를 Team Fund로 합성하여
+              집계한다. <br />
+              (Score = Return/(1+|MDD|))
             </div>
           </div>
         </div>
@@ -1427,7 +1433,7 @@
         <div class="info warn" style="margin-top: 1rem">
           <div class="tag">재귀적 구조 (Recursive Structure)</div>
           V(s)는 V(s')에 의존한다. 즉
-          <strong>현재의 가치는 미래의 가치로 정의</strong>된다. 이 재귀 관계가
+          <strong>현재의 가치는 미래의 가치로 정의</strong>된다. <br />이 재귀 관계가
           동적 프로그래밍과 TD Learning의 핵심 원리이며, 가치 함수를 반복적으로
           갱신하면 참값에 수렴한다.
         </div>
@@ -1586,9 +1592,12 @@
         <p class="sec-desc">
           Su et al. (2026) "Vectorizing the Trie" 논문에서 제안된
           <strong style="color: var(--purple)">STATIC</strong>은
-          <em>Sparse Transition Matrix-Accelerated Trie Index for Constrained Decoding</em>의
-          약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을 실현하는
-          기법이다. 이 개념은 트레이딩 강화학습의 상태 제약 구조와 구조적으로 동형(isomorphic)이다.
+          <em
+            >Sparse Transition Matrix-Accelerated Trie Index for Constrained
+            Decoding</em
+          >의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
+          실현하는 기법이다. 이 개념은 트레이딩 강화학습의 상태 제약 구조와
+          구조적으로 동형(isomorphic)이다.
         </p>
 
         <!-- 핵심 문제 -->
@@ -4771,7 +4780,9 @@
               <td class="mono pos"><!-- @t-m3-s@ -->+119.91%</td>
               <td class="mono"><!-- @t-m3-m@ -->117.06%</td>
               <td class="mono pos"><!-- @t-m3-a@ -->+3.3%p</td>
-              <td class="mono" style="color: var(--red)"><!-- @t-m3-mdd@ -->-19.24%</td>
+              <td class="mono" style="color: var(--red)">
+                <!-- @t-m3-mdd@ -->-19.24%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -4790,7 +4801,9 @@
               <td class="mono pos"><!-- @t-m4-s@ -->+48.59%</td>
               <td class="mono"><!-- @t-m4-m@ -->27.92%</td>
               <td class="mono pos"><!-- @t-m4-a@ -->+21.0%p</td>
-              <td class="mono" style="color: var(--red)"><!-- @t-m4-mdd@ -->-17.97%</td>
+              <td class="mono" style="color: var(--red)">
+                <!-- @t-m4-mdd@ -->-17.97%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -4828,7 +4841,9 @@
               <td class="mono pos"><!-- @t-m6-s@ -->+102.12%</td>
               <td class="mono"><!-- @t-m6-m@ -->84.73%</td>
               <td class="mono pos"><!-- @t-m6-a@ -->+17.6%p</td>
-              <td class="mono" style="color: var(--red)"><!-- @t-m6-mdd@ -->-20.30%</td>
+              <td class="mono" style="color: var(--red)">
+                <!-- @t-m6-mdd@ -->-20.30%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -4848,8 +4863,8 @@
           </div>
           <div class="rb-val"><!-- @tf-results@ -->Team Fund: +42.58%</div>
           <div class="rb-desc">
-            6명 전원 STATIC_H로 양수 Alpha Gap 달성 · <!-- @best-alpha@ -->최고 Alpha: M2 QQQ +32.0%p
-            🏆
+            6명 전원 STATIC_H로 양수 Alpha Gap 달성 ·
+            <!-- @best-alpha@ -->최고 Alpha: M2 QQQ +32.0%p 🏆
           </div>
         </div>
 
