@@ -4,6 +4,10 @@
 
 ## KDT Team Project : 팀 Chainers 🫡
 
+## Presentation
+
+[Bellman 방정식부터 STATIC_Hybrid 로직까지 — RL 이론과 구현 전략을 단계별로 설명하는 슬라이드 자료](Presentation_Bellman_to_Static_H.html)
+
 ---
 
 ### RL 포트폴리오 성과 모니터링 대시보드 (웹 앱 전체 화면)

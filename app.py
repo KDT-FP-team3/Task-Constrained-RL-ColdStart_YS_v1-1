@@ -254,6 +254,95 @@ if 'interrupt_requested' not in st.session_state:
     st.session_state.interrupt_requested = False
 
 # ==========================================
+# 0. 프레젠테이션 HTML 업데이트
+# ==========================================
+def _update_presentation_html():
+    """현재 평가 결과로 Presentation_Bellman_to_Static_H.html의 동적 수치를 갱신."""
+    import re
+    contribs = st.session_state.prev_final_contributions
+    traces   = st.session_state.member_traces
+
+    if not contribs:
+        return False, "평가 결과 없음 — Run Evaluation 후 시도하세요."
+
+    contribs_sorted = sorted(contribs, key=lambda x: x["Member"])
+
+    # ── Team Fund 재계산 (draw_top_dashboard와 동일 로직) ──
+    tf_pct = 0.0
+    if traces:
+        mn_sorted   = sorted(traces.keys())
+        scores_map  = {c["Member"]: c["Avg_Return"] / (1.0 + abs(c["Avg_MDD"])) for c in contribs}
+        scores_arr  = np.array([scores_map.get(mn, 0.0) for mn in mn_sorted], dtype=float)
+        _T          = float(st.session_state.get("fund_temperature", 1.0))
+        _cap        = float(st.session_state.get("fund_max_weight",  1.0))
+        w_arr       = calculate_softmax_weights(scores_arr, temperature=_T)
+        if _cap < 1.0:
+            for _ in range(20):
+                w_arr = np.minimum(w_arr, _cap)
+                _ws   = w_arr.sum()
+                if _ws > 0:
+                    w_arr /= _ws
+                if np.all(w_arr <= _cap + 1e-9):
+                    break
+        tl      = [traces[mn]["s_trace"] for mn in mn_sorted]
+        min_len = min(len(t) for t in tl)
+        tf_pct  = float(np.dot(w_arr, np.array([t[:min_len] for t in tl]))[-1])
+    else:
+        tf_pct = float(np.mean([c["Avg_Return"] for c in contribs]))
+
+    # ── HTML 읽기 ──
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "Presentation_Bellman_to_Static_H.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except FileNotFoundError:
+        return False, "HTML 파일을 찾을 수 없습니다."
+
+    def _sub(text, marker, new_val):
+        return re.sub(rf"(<!-- @{marker}@ -->)[^<]*", rf"\g<1>{new_val}", text)
+
+    # Team Fund 배너 두 곳 + 결론 섹션 전체 패턴
+    tf_str  = f"Team Fund: {tf_pct:+.2f}%"
+    content = _sub(content, "tf-banner",  tf_str)
+    content = _sub(content, "tf-results", tf_str)
+    content = re.sub(r"Team Fund: [+-]?[\d.]+%", tf_str, content)
+
+    # 베스트 Alpha 멤버 계산
+    alphas   = [c["Avg_Return"] - c.get("Market_Return", 0.0) for c in contribs_sorted]
+    best_idx = int(np.argmax(alphas))
+    best_stk = contribs_sorted[best_idx].get("Stocks", f"M{best_idx+1}")
+    best_a   = alphas[best_idx]
+    content  = _sub(content, "best-alpha",
+                    f"최고 Alpha: M{best_idx+1} {best_stk} {best_a:+.1f}%p 🏆")
+
+    # 멤버별 수치 (Member 1 → m1, …, Member 6 → m6)
+    for i, c in enumerate(contribs_sorted, 1):
+        s   = c["Avg_Return"]
+        m   = c.get("Market_Return", 0.0)
+        alp = s - m
+        mdd = c["Avg_MDD"]
+        mn  = f"m{i}"
+        # 쇼케이스 카드
+        content = _sub(content, f"{mn}-ret",   f"{s:+.2f}%")
+        content = _sub(content, f"{mn}-alpha",  f"Alpha {alp:+.1f}%p")
+        # 결과 테이블
+        content = _sub(content, f"t-{mn}-s",   f"{s:+.2f}%")
+        content = _sub(content, f"t-{mn}-m",   f"{abs(m):.2f}%")
+        content = _sub(content, f"t-{mn}-a",   f"{alp:+.1f}%p")
+        mdd_str = f"{mdd:.2f}%"
+        content = _sub(content, f"t-{mn}-mdd", mdd_str)
+
+    # ── HTML 쓰기 ──
+    try:
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return True, tf_pct
+    except Exception as e:
+        return False, str(e)
+
+
+# ==========================================
 # 1. 실시간 시스템 상태: 단순 수평 막대
 # ==========================================
 def update_load_bar(episodes_run, placeholder, is_loading=False):
@@ -379,6 +468,22 @@ if _sb_r2c3.button("🗑 초기화", key="btn_reset_dashboard",
     st.session_state.member_traces = {}
     st.session_state.prev_final_contributions = []
     st.rerun()
+
+# ── 3행: [📊 프레젠테이션 업데이트] ──
+_has_results = bool(st.session_state.prev_final_contributions)
+_prs_btn = st.sidebar.button(
+    "📊 프레젠테이션 업데이트",
+    key="btn_update_presentation",
+    use_container_width=True,
+    disabled=not _has_results,
+    help="현재 평가 결과를 Presentation_Bellman_to_Static_H.html에 반영합니다."
+)
+if _prs_btn:
+    _ok, _result = _update_presentation_html()
+    if _ok:
+        st.sidebar.success(f"업데이트 완료! Team Fund {_result:+.2f}%")
+    else:
+        st.sidebar.error(f"오류: {_result}")
 
 with st.sidebar.expander("Fund & Agent Settings", expanded=False):
     st.markdown("<div style='margin:0 0 2px 0'><small><b>[P1] Team Fund 배분 설정</b></small></div>", unsafe_allow_html=True)
@@ -1265,7 +1370,7 @@ for m_config in sorted_modules:
             key=f"ms_{m_name}"
         )
 
-        mem_s_rets, mem_v_rets, mem_mdds = [], [], []
+        mem_s_rets, mem_v_rets, mem_m_rets, mem_mdds = [], [], [], []
         if selected_stock_names:
             for stock_name in selected_stock_names:
                 ticker    = get_ticker_by_name(stock_name)
@@ -2482,6 +2587,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
 
                 mem_s_rets.append(s_final)
                 mem_v_rets.append(v_final)
+                mem_m_rets.append(market_final)
                 mem_mdds.append(s_mdd)
 
         # ── 멤버 평균 에쿼티 곡선 계산 및 session_state 저장 ──
@@ -2497,7 +2603,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
             }
 
         if mem_s_rets:
-            avg_s, avg_v = np.mean(mem_s_rets), np.mean(mem_v_rets)
+            avg_s, avg_v, avg_m = np.mean(mem_s_rets), np.mean(mem_v_rets), np.mean(mem_m_rets)
             # selected_stock_names는 현재 멤버 루프의 마지막 종목 목록
             _m_stocks = st.session_state.get(f"ms_{m_name}", [
                 all_stock_names[i] for i in getattr(m_config, 'TARGET_INDICES', [])
@@ -2511,6 +2617,7 @@ border:1px solid rgba(128,128,128,0.3);text-align:center;margin-top:20px;'>
                 "Vanilla_Profit": (1.0 * (1 + avg_v / 100)) - 1.0,
                 "Avg_Return": avg_s,
                 "Vanilla_Return": avg_v,
+                "Market_Return": avg_m,
                 "Avg_MDD": np.mean(mem_mdds),
                 "CTPT_Code": ctpt_code
             })
