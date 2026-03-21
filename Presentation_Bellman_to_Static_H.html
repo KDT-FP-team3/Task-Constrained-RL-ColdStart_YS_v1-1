@@ -2480,7 +2480,7 @@
         <div class="diagram-wrap">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 1060 2940"
+            viewBox="0 0 1060 3110"
             style="width: 100%; min-width: 700px; display: block; font-family: 'Noto Sans KR', sans-serif"
           >
             <defs>
@@ -4827,37 +4827,107 @@
             <text x="235" y="2818" font-size="12" fill="#e0eaf4">
               워크포워드: 앞 70% 학습 / 뒤 30% OOS  |  평가: argmax(θ[s]) 결정론적 정책
             </text>
-            <text x="235" y="2838" font-size="10" fill="#7a9cbf">
+            <text x="235" y="2838" font-size="10" fill="#ffffff">
               TRAIN_RATIO = 0.7  |  ε-greedy 미사용 (greedy only)  |  수익률·MDD·Composite Gap 산출
             </text>
 
-            <!-- ── 하단 요약 ── -->
-            <line
-              x1="40"
-              y1="2866"
-              x2="1010"
-              y2="2866"
-              stroke="#00d4ff"
-              stroke-width="0.5"
-            />
-            <text
-              x="530"
-              y="2888"
-              text-anchor="middle"
-              font-size="11"
-              fill="#c0d4e8"
-            >
-              V(s) = E[r + γ·V(s')]  (Bellman 재귀)  |  ∇J(θ) = E[ ∇log π(a|s) · A(s,a) ]  (Policy Gradient)  |  [★] = STATIC_H 전용
+            <!-- ── 하단 요약: 핵심 수식 계보 — 한 줄 흐름 (통합) ── -->
+            <!-- 외곽 박스: 정리 상자 여백 확보를 위해 전폭 확장, center=530 -->
+            <rect x="30" y="2850" width="1000" height="250" rx="6"
+              fill="#040e1a" stroke="#00d4ff" stroke-width="1.5"/>
+
+            <text x="530" y="2875" text-anchor="middle" font-size="13"
+              fill="#00d4ff" font-weight="700" letter-spacing="1">
+              핵심 수식 계보 — 한 줄 흐름
             </text>
-            <text
-              x="530"
-              y="2908"
-              text-anchor="middle"
-              font-size="11"
-              fill="#c0d4e8"
-            >
-              모든 수식은 하나의 흐름으로 연결: MDP → Bellman → Q-Learning → Actor-Critic → Entropy Reg. → STATIC_H
-            </text>
+
+            <!-- 1행 명칭 레이블 (굵은 이탤릭, 균등 패딩 기준 중앙 x 업데이트) -->
+            <!-- 균등 패딩 14px: 총 콘텐츠=52+12+176+12+184+12+248+12+176=884px, center=530 -->
+            <text x="114" y="2900" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#a0b8cc" font-style="italic">문제 공식화</text>
+            <text x="240" y="2900" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#c8a000" font-style="italic">Bellman 방정식</text>
+            <text x="432" y="2900" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#9050d0" font-style="italic">Q-Learning</text>
+            <text x="660" y="2900" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#00a8c8" font-style="italic">Policy Gradient</text>
+            <text x="884" y="2900" text-anchor="middle" font-size="11"
+              font-weight="700" fill="#c8a000" font-style="italic">엔트로피 정규화</text>
+
+            <!-- 1행: 수식 상자 (균등 좌우 여백 ~14px: start=88, end=972) -->
+            <rect x="88" y="2904" width="52" height="34" rx="5"
+              fill="#0a1828" stroke="#a0b8cc" stroke-width="1"/>
+            <text x="114" y="2926" text-anchor="middle" font-size="11"
+              fill="#a0b8cc" font-weight="600">MDP</text>
+
+            <line x1="140" y1="2921" x2="152" y2="2921"
+              stroke="#a0b8cc" stroke-width="1.2" marker-end="url(#ac)"/>
+
+            <rect x="152" y="2904" width="176" height="34" rx="5"
+              fill="#1a1400" stroke="#f5c542" stroke-width="1"/>
+            <text x="240" y="2926" text-anchor="middle" font-size="11"
+              fill="#f5c542">V(s) = E[r + γV(s')]</text>
+
+            <line x1="328" y1="2921" x2="340" y2="2921"
+              stroke="#f5c542" stroke-width="1.2" marker-end="url(#ay)"/>
+
+            <rect x="340" y="2904" width="184" height="34" rx="5"
+              fill="#140828" stroke="#b06eff" stroke-width="1"/>
+            <text x="432" y="2926" text-anchor="middle" font-size="11"
+              fill="#b06eff">Q += α[r + γmaxQ − Q]</text>
+
+            <line x1="524" y1="2921" x2="536" y2="2921"
+              stroke="#b06eff" stroke-width="1.2" marker-end="url(#ap)"/>
+
+            <rect x="536" y="2904" width="248" height="34" rx="5"
+              fill="#081820" stroke="#00d4ff" stroke-width="1"/>
+            <text x="660" y="2926" text-anchor="middle" font-size="11"
+              fill="#00d4ff">π = softmax(θ), θ += lr·δ·grad</text>
+
+            <line x1="784" y1="2921" x2="796" y2="2921"
+              stroke="#00d4ff" stroke-width="1.2" marker-end="url(#ac)"/>
+
+            <rect x="796" y="2904" width="176" height="34" rx="5"
+              fill="#1a1400" stroke="#f5c542" stroke-width="1"/>
+            <text x="884" y="2926" text-anchor="middle" font-size="11"
+              fill="#f5c542">r_eff = R + α_t·H(π)</text>
+
+            <!-- 2행: 화살표 꺾임 (r_eff 중앙 x=884 → STATIC_H 중앙 x=530) -->
+            <line x1="884" y1="2938" x2="884" y2="2956"
+              stroke="#f5c542" stroke-width="1.2"/>
+            <line x1="884" y1="2956" x2="530" y2="2956"
+              stroke="#00ff9d" stroke-width="1.2"/>
+            <line x1="530" y1="2956" x2="530" y2="2966"
+              stroke="#00ff9d" stroke-width="1.2" marker-end="url(#ag)"/>
+
+            <!-- STATIC_H 명칭 레이블: x=540 시작으로 화살표(x=530) 겹침 방지 -->
+            <text x="540" y="2971" text-anchor="start" font-size="11"
+              fill="#00cc7a" font-style="italic">★ REINFORCE + PPO Clip + Adaptive Entropy</text>
+
+            <!-- STATIC_H 박스: 좌우 여백 확대 (270→340) -->
+            <rect x="360" y="2976" width="340" height="38" rx="5"
+              fill="#041a0a" stroke="#00ff9d" stroke-width="2"/>
+            <text x="530" y="3000" text-anchor="middle" font-size="13"
+              fill="#00ff9d" font-weight="700">θ += scale · lr · δ · grad = STATIC_H</text>
+
+            <!-- 핵심 정리 두 상자: 외곽 박스 전폭 활용 (각 width 407→475) -->
+            <!-- inner: x=45~1015=970px, 각 박스=(970-20gap)/2=475px -->
+            <rect x="45" y="3030" width="475" height="30" rx="4"
+              fill="#101d30" stroke="#f5c542" stroke-width="0.8"/>
+            <text x="282" y="3050" text-anchor="middle" font-size="10"
+              fill="#f5c542">V(s) = E[r + γ·V(s')]  (Bellman 재귀) — 모든 RL의 수학적 기초</text>
+
+            <text x="530" y="3050" text-anchor="middle" font-size="12"
+              fill="#ffffff">+</text>
+
+            <!-- ∇J 박스: 좌우 여백 확대 (407→475) -->
+            <rect x="540" y="3030" width="475" height="30" rx="4"
+              fill="#101d30" stroke="#b06eff" stroke-width="0.8"/>
+            <text x="777" y="3050" text-anchor="middle" font-size="10"
+              fill="#b06eff">∇J(θ) = E[ ∇log π(a|s) · A(s,a) ]  (Policy Gradient) — Actor 갱신 근거</text>
+
+            <text x="530" y="3082" text-anchor="middle" font-size="10"
+              fill="#ffffff">두 정리가 Actor-Critic 구조로 결합  |  [★] = STATIC_H 전용 확장</text>
           </svg>
         </div>
       </div>
@@ -5349,8 +5419,8 @@
               <code style="color: var(--green)"
                 >state = is_bull×1 + is_above_ema×2</code
               >로 4개(또는 8개) 이산 상태로 압축한다.<br />
-              - 이는 Su et al.(2026) 논문의 CSR 전이 행렬 구조와 동형이다.<br /> — Trie 노드가 시장 상태로,
-              SID 토큰이 BUY/CASH 행동으로 대응된다.<br />
+              - 이는 Su et al.(2026) 논문의 CSR 전이 행렬 구조와 동형이다.<br />
+              → Trie 노드가 시장 상태로, SID 토큰이 BUY/CASH 행동으로 대응된다.<br />
               - Q-Learning으로 TD 오차를
               학습하고, STATIC Actor-Critic으로 확률적 정책
               <code style="color: var(--green)">π(a|s) = softmax(θ[s])</code>를
@@ -5448,44 +5518,6 @@
           </div>
         </div>
 
-        <!-- 핵심 수식 계보 한 줄 요약 -->
-        <div
-          style="
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            padding: 1.5rem 2rem;
-            font-family: var(--mono);
-            font-size: 0.8rem;
-            color: #c8d8f0;
-            line-height: 2.2;
-          "
-        >
-          <div
-            style="
-              font-family: var(--sans);
-              color: var(--cyan);
-              font-size: 0.78rem;
-              font-weight: 700;
-              letter-spacing: 0.1em;
-              margin-bottom: 0.6rem;
-            "
-          >
-            핵심 수식 계보 — 한 줄 흐름
-          </div>
-          <span style="color: #a0b8cc">MDP</span>
-          <span style="color: var(--text3)">→</span>
-          <span style="color: var(--gold)">V(s)=E[r+γV(s')]</span>
-          <span style="color: var(--text3)">→</span>
-          <span style="color: var(--purple)">Q+=α[r+γmaxQ−Q]</span>
-          <span style="color: var(--text3)">→</span>
-          <span style="color: var(--cyan)">π=softmax(θ), θ+=lr·δ·grad</span>
-          <span style="color: var(--text3)">→</span>
-          <span style="color: var(--gold)">r_eff=R+α_t·H(π)</span>
-          <span style="color: var(--text3)">→</span>
-          <span style="color: var(--green)">θ+=scale·lr·δ·grad</span>
-          <span style="color: var(--text3)"> = </span>
-          <span style="color: var(--green); font-weight: 700">STATIC_H</span>
-        </div>
 
         <!-- 앱 링크 -->
         <div style="text-align: center; margin-top: 2rem">
