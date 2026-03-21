@@ -302,11 +302,12 @@ def _update_presentation_html():
     def _sub(text, marker, new_val):
         return re.sub(rf"(<!-- @{marker}@ -->)[^<]*", rf"\g<1>{new_val}", text)
 
-    # Team Fund 배너 두 곳 + 결론 섹션 전체 패턴
+    # Team Fund 배너 두 곳 (마커 기반) + 본문 전체 패턴 (콜론 유무 무관)
     tf_str  = f"Team Fund: {tf_pct:+.2f}%"
     content = _sub(content, "tf-banner",  tf_str)
     content = _sub(content, "tf-results", tf_str)
-    content = re.sub(r"Team Fund: [+-]?[\d.]+%", tf_str, content)
+    content = re.sub(r"(Team(?:\s+Fund)?:?\s)[+-]?[\d.]+%",
+                     rf"\g<1>{tf_pct:+.2f}%", content)
 
     # 베스트 Alpha 멤버 계산
     alphas   = [c["Avg_Return"] - c.get("Market_Return", 0.0) for c in contribs_sorted]
