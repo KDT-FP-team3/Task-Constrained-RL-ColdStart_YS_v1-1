@@ -64,14 +64,14 @@ Project Master : Young-Sang Song
 
 ### 팀 구성 및 담당 종목 (STATIC_H 최종 결과)
 
-| 멤버     | 담당 종목            | Ticker | 시드 | 알고리즘 | 8-State | Roll | STATIC_H    | Market  | Alpha Gap      |
-| --------- | -------------------- | ------ | ---- | -------- | ---------- | ---- | ----------- | ------- | ----------------- |
-| Member 1 | S&P 500 ETF          | SPY    | 42   | STATIC_H | O       | —    | **20.03%**  | 11.62%  | **+8.4%p**     |
-| Member 2 | Nasdaq 100 ETF       | QQQ    | 137  | STATIC_H | —       | —    | **64.79%**  | 31.66%  | **+33.1%p 🏆** |
-| Member 3 | KOSPI 지수           | ^KS11  | 2024 | STATIC_H | O       | —    | **125.64%** | 114.90% | **+10.7%p**    |
-| Member 4 | KOSDAQ 지수          | ^KQ11  | 777  | STATIC_H | O       | 30봉 | **44.95%**  | 30.30%  | **+14.7%p**    |
-| Member 5 | 미국배당다우존스 ETF | SCHD   | 314  | STATIC_H | O       | 60봉 | **27.34%**  | 22.84%  | **+4.5%p**     |
-| Member 6 | 로열골드(RGLD)       | RGLD   | 100  | STATIC_H | O       | —    | **74.66%**  | 59.48%  | **+15.2%p**    |
+| <small>멤버</small> | <small>담당 종목</small> | <small>Ticker</small> | <small>시드</small> | <small>알고리즘</small> | <small>8-State</small> | <small>Roll</small> | <small>STATIC_H</small> | <small>Market</small> | <small>Alpha Gap</small> |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <small>Member 1</small> | <small>S&P 500 ETF</small> | <small>SPY</small> | <small>42</small> | <small>STATIC_H</small> | <small>O</small> | <small>—</small> | <small>**20.03%**</small> | <small>11.62%</small> | <small>**+8.4%p**</small> |
+| <small>Member 2</small> | <small>Nasdaq 100 ETF</small> | <small>QQQ</small> | <small>137</small> | <small>STATIC_H</small> | <small>—</small> | <small>—</small> | <small>**64.79%**</small> | <small>31.66%</small> | <small>**+33.1%p 🏆**</small> |
+| <small>Member 3</small> | <small>KOSPI 지수</small> | <small>^KS11</small> | <small>2024</small> | <small>STATIC_H</small> | <small>O</small> | <small>—</small> | <small>**125.64%**</small> | <small>114.90%</small> | <small>**+10.7%p**</small> |
+| <small>Member 4</small> | <small>KOSDAQ 지수</small> | <small>^KQ11</small> | <small>777</small> | <small>STATIC_H</small> | <small>O</small> | <small>30봉</small> | <small>**44.95%**</small> | <small>30.30%</small> | <small>**+14.7%p**</small> |
+| <small>Member 5</small> | <small>미국배당다우존스 ETF</small> | <small>SCHD</small> | <small>314</small> | <small>STATIC_H</small> | <small>O</small> | <small>60봉</small> | <small>**27.34%**</small> | <small>22.84%</small> | <small>**+4.5%p**</small> |
+| <small>Member 6</small> | <small>로열골드(RGLD)</small> | <small>RGLD</small> | <small>100</small> | <small>STATIC_H</small> | <small>O</small> | <small>—</small> | <small>**74.66%**</small> | <small>59.48%</small> | <small>**+15.2%p**</small> |
 
 추가 지원 종목: NVDA, TSLA, GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
 
@@ -88,14 +88,14 @@ Project Master : Young-Sang Song
 | 최고 Alpha 멤버              | Member 2 (QQQ, +33.1%p)    |
 | 최고 수익률 멤버             | Member 3 (KOSPI, +125.64%) |
 
-| 멤버     | 종목                 | Capital ($) | STATIC_H (%) | Alpha (Gap) | MDD        | Score | 비중  |
-| -------- | -------------------- | ----------- | ------------ | ----------- | ---------- | ----- | ----- |
-| Member 1 | S&P 500 ETF          | $1.21       | 21.07        | +9.6%       | -9.31%     | 2.044 | 9.6%  |
-| Member 2 | Nasdaq 100 ETF       | $1.65       | 64.79        | +33.3%      | -12.88%    | 4.668 | 27.4% |
-| Member 3 | KOSPI 지수           | $2.25       | 125.32       | +10.9%      | -19.24% ⚠️ | 6.191 | 28.0% |
-| Member 4 | KOSDAQ 지수          | $1.46       | 46.45        | +16.4%      | -18.09% ⚠️ | 2.433 | 11.2% |
-| Member 5 | 미국배당다우존스 ETF | $1.27       | 27.34        | +4.6%       | **-9.11%** | 2.704 | 12.5% |
-| Member 6 | 로열 골드            | $1.75       | 74.66        | +15.3%      | -29.27% ⚠️ | 2.466 | 11.4% |
+| <small>멤버</small> | <small>종목</small> | <small>Capital ($)</small> | <small>STATIC_H (%)</small> | <small>Alpha (Gap)</small> | <small>MDD</small> | <small>Score</small> | <small>비중</small> |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| <small>Member 1</small> | <small>S&P 500 ETF</small> | <small>$1.21</small> | <small>21.07</small> | <small>+9.6%</small> | <small>-9.31%</small> | <small>2.044</small> | <small>9.6%</small> |
+| <small>Member 2</small> | <small>Nasdaq 100 ETF</small> | <small>$1.65</small> | <small>64.79</small> | <small>+33.3%</small> | <small>-12.88%</small> | <small>4.668</small> | <small>27.4%</small> |
+| <small>Member 3</small> | <small>KOSPI 지수</small> | <small>$2.25</small> | <small>125.32</small> | <small>+10.9%</small> | <small>-19.24% ⚠️</small> | <small>6.191</small> | <small>28.0%</small> |
+| <small>Member 4</small> | <small>KOSDAQ 지수</small> | <small>$1.46</small> | <small>46.45</small> | <small>+16.4%</small> | <small>-18.09% ⚠️</small> | <small>2.433</small> | <small>11.2%</small> |
+| <small>Member 5</small> | <small>미국배당다우존스 ETF</small> | <small>$1.27</small> | <small>27.34</small> | <small>+4.6%</small> | <small>**-9.11%**</small> | <small>2.704</small> | <small>12.5%</small> |
+| <small>Member 6</small> | <small>로열 골드</small> | <small>$1.75</small> | <small>74.66</small> | <small>+15.3%</small> | <small>-29.27% ⚠️</small> | <small>2.466</small> | <small>11.4%</small> |
 
 ---
 
@@ -1142,15 +1142,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 8-State | Trading Days=300 | Train Epi=150 | Seed=42 | lr=0.073 | γ=0.94 | ε=0.13 | v*ε=0.10
 
-| 지표                      | 값                 |
-| ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **20.03%**         |
-| Vanilla RL                | 11.50%             |
-| Market (Buy&Hold)         | 11.62%             |
-| Alpha vs Market           | **+8.4%p**         |
-| Expected Alpha (6 Trials) | +8.48%p            |
-| MDD                       | -9.31%             |
-| Action Frequency          | BUY 243 / CASH 56  |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**20.03%**</small> |
+| <small>Vanilla RL</small> | <small>11.50%</small> |
+| <small>Market (Buy&Hold)</small> | <small>11.62%</small> |
+| <small>Alpha vs Market</small> | <small>**+8.4%p**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+8.48%p</small> |
+| <small>MDD</small> | <small>-9.31%</small> |
+| <small>Action Frequency</small> | <small>BUY 243 / CASH 56</small> |
 
 **분석**
 - SPY는 미국 대형주 지수로 안정적인 상승 추세를 보인다. STATIC_H가 8-State 변동성 신호를 활용하여 고변동성 구간에서 CASH 전환을 수행, 시장 대비 +8.4%p Alpha를 달성했다. BUY 비중 81%(243/299)로 상승 추세를 강하게 추종하며, Expected Alpha 8.48%p는 시드 독립성이 양호함을 나타낸다.
@@ -1163,15 +1163,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 4-State | Trading Days=500 | Train Epi=300 | Seed=137 | lr=0.080 | γ=0.91 | ε=0.12 | v*ε=0.18
 
-| 지표                      | 값                 |
-| ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **64.79%**         |
-| Vanilla RL                | 31.53%             |
-| Market (Buy&Hold)         | 31.66%             |
-| Alpha vs Market           | **+33.1%p 🏆**     |
-| Expected Alpha (6 Trials) | +33.65%p           |
-| MDD                       | -12.88%            |
-| Action Frequency          | BUY 390 / CASH 109 |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**64.79%**</small> |
+| <small>Vanilla RL</small> | <small>31.53%</small> |
+| <small>Market (Buy&Hold)</small> | <small>31.66%</small> |
+| <small>Alpha vs Market</small> | <small>**+33.1%p 🏆**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+33.65%p</small> |
+| <small>MDD</small> | <small>-12.88%</small> |
+| <small>Action Frequency</small> | <small>BUY 390 / CASH 109</small> |
 
 **분석**
 - QQQ는 팀 내 최고 Alpha 달성 종목이다. 4-State(변동성 신호 미사용)임에도 EMA 신호만으로 Nasdaq의 강한 추세를 효과적으로 포착했다. Expected Alpha 33.65%p는 시드 전체에서 안정적으로 높은 Alpha를 기록, 시드 의존성이 낮다. BUY 비중 78%(390/499)로 상승 추세 충실 추종.
@@ -1184,15 +1184,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 8-State | Trading Days=500 | Train Epi=300 | Seed=2024 | lr=0.050 | γ=0.88 | ε=0.02 | v*ε=0.16
 
-| 지표                      | 값                 |
-| ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **125.64%**        |
-| Vanilla RL                | 114.42%            |
-| Market (Buy&Hold)         | 114.90%            |
-| Alpha vs Market           | **+10.7%p**        |
-| Expected Alpha (6 Trials) | +10.58%p           |
-| MDD                       | -19.24% ⚠️         |
-| Action Frequency          | BUY 331 / CASH 153 |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**125.64%**</small> |
+| <small>Vanilla RL</small> | <small>114.42%</small> |
+| <small>Market (Buy&Hold)</small> | <small>114.90%</small> |
+| <small>Alpha vs Market</small> | <small>**+10.7%p**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+10.58%p</small> |
+| <small>MDD</small> | <small>-19.24% ⚠️</small> |
+| <small>Action Frequency</small> | <small>BUY 331 / CASH 153</small> |
 
 **분석**
 - KOSPI는 학습 구간 횡보/하락, OOS 구간 급등이라는 워크포워드 구조적 불리함에도 불구하고 +10.7%p Alpha를 달성했다. STATIC_H의 Adaptive Temperature가 OOS 급등 구간에서 BUY 비중을 유연하게 유지, Market을 초과. MDD -19.24%는 팀 내 주의 종목. 낮은 ε=0.02는 학습된 정책에 강하게 의존함을 의미.
@@ -1205,15 +1205,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 8-State | Roll=30봉 | Trading Days=500 | Train Epi=300 | Seed=777 | lr=0.038 | γ=0.92 | ε=0.08 | v*ε=0.06
 
-| 지표                      | 값                 |
-| ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **44.95%**         |
-| Vanilla RL                | 30.00%             |
-| Market (Buy&Hold)         | 30.30%             |
-| Alpha vs Market           | **+14.7%p**        |
-| Expected Alpha (6 Trials) | +16.15%p           |
-| MDD                       | -18.09% ⚠️         |
-| Action Frequency          | BUY 227 / CASH 257 |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**44.95%**</small> |
+| <small>Vanilla RL</small> | <small>30.00%</small> |
+| <small>Market (Buy&Hold)</small> | <small>30.30%</small> |
+| <small>Alpha vs Market</small> | <small>**+14.7%p**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+16.15%p</small> |
+| <small>MDD</small> | <small>-18.09% ⚠️</small> |
+| <small>Action Frequency</small> | <small>BUY 227 / CASH 257</small> |
 
 **분석**
 - KOSDAQ는 KOSPI보다 더 극적인 OOS 급등을 보인다. Roll Period=30봉으로 OOS 구간 레짐 변화에 주기적으로 재학습하여 +14.7%p Alpha 달성. Action Frequency에서 CASH 비중(53%)이 높아 고변동성 하락 구간을 적극 회피, MDD 관리와 수익률 균형을 이루었다. Expected Alpha 16.15%p로 시드 안정성 우수.
@@ -1226,15 +1226,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 8-State | Roll=60봉 | Trading Days=500 | Train Epi=300 | Seed=314 | lr=0.026 | γ=0.92 | ε=0.04 | v*ε=0.11
 
-| 지표                      | 값                 |
-| ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **27.34%**         |
-| Vanilla RL                | 22.71%             |
-| Market (Buy&Hold)         | 22.84%             |
-| Alpha vs Market           | **+4.5%p**         |
-| Expected Alpha (6 Trials) | +4.62%p            |
-| MDD                       | **-9.11%**         |
-| Action Frequency          | BUY 296 / CASH 203 |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**27.34%**</small> |
+| <small>Vanilla RL</small> | <small>22.71%</small> |
+| <small>Market (Buy&Hold)</small> | <small>22.84%</small> |
+| <small>Alpha vs Market</small> | <small>**+4.5%p**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+4.62%p</small> |
+| <small>MDD</small> | <small>**-9.11%**</small> |
+| <small>Action Frequency</small> | <small>BUY 296 / CASH 203</small> |
 
 **분석**
 - SCHD는 배당 ETF로 일변동성이 작아 EMA 신호 구분력이 낮다. Roll Period=60봉(장기 롤링)으로 느린 레짐 변화에 적응하여 +4.5%p Alpha 달성. MDD -9.11%는 팀 내 최저로 안전한 수익 특성. 낮은 학습률(lr=0.026)과 낮은 ε=0.04는 보수적이고 안정적인 정책 수렴을 반영.
@@ -1247,15 +1247,15 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **파라미터**: STATIC*H | 8-State | Trading Days=300 | Train Epi=150 | Seed=100 | lr=0.022 | γ=0.95 | ε=0.16 | v*ε=0.14
 
-| 지표                      | 값                |
-| ------------------------- | ----------------- |
-| HYBRID RL (STATIC_H)      | **74.66%**         |
-| Vanilla RL                | 59.32%             |
-| Market (Buy&Hold)         | 59.48%             |
-| Alpha vs Market           | **+15.2%p**        |
-| Expected Alpha (6 Trials) | +12.82%p           |
-| MDD                       | -29.27% ⚠️         |
-| Action Frequency          | BUY 229 / CASH 70  |
+| <small>지표</small> | <small>값</small> |
+| --- | --- |
+| <small>HYBRID RL (STATIC_H)</small> | <small>**74.66%**</small> |
+| <small>Vanilla RL</small> | <small>59.32%</small> |
+| <small>Market (Buy&Hold)</small> | <small>59.48%</small> |
+| <small>Alpha vs Market</small> | <small>**+15.2%p**</small> |
+| <small>Expected Alpha (6 Trials)</small> | <small>+12.82%p</small> |
+| <small>MDD</small> | <small>-29.27% ⚠️</small> |
+| <small>Action Frequency</small> | <small>BUY 229 / CASH 70</small> |
 
 **분석**
 - RGLD(원자재·금 로열티)는 금 가격 상승과 함께 높은 수익률을 기록했다. 8-State 변동성 신호가 금 가격의 사이클성 변동을 포착하여 +15.2%p Alpha 달성. BUY 비중 77%(229/299)로 상승 사이클을 강하게 추종. MDD -29.27%는 팀 내 최고 수준으로 원자재 특유의 높은 변동성에 기인.
@@ -1472,7 +1472,7 @@ Simul. All → best 파라미터 config.py 자동 저장 → 모듈 리로드 �
 
 ## 17. 향후 개선 제안
 
-v1 결과(전 종목 양수 Alpha, Team Fund +32.42%)를 기반으로 성능 향상 및 실전 운용을 위한 단계별 개선 방향을 제시한다. 구현 난이도와 기대효과를 함께 고려하여 우선순위를 정리했다.
+v1 결과(전 종목 양수 Alpha, Team Fund +42.58%)를 기반으로 성능 향상 및 실전 운용을 위한 단계별 개선 방향을 제시한다. 구현 난이도와 기대효과를 함께 고려하여 우선순위를 정리했다.
 
 ---
 
