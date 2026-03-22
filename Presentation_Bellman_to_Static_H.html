@@ -973,7 +973,7 @@
           <div class="rb-label">
             TASK-CONSTRAINED RL COLD-START · MULTI-AGENT TRADING SIMULATOR
           </div>
-          <div class="rb-val"><!-- @tf-banner@ -->Team Fund: +32.82%</div>
+          <div class="rb-val"><!-- @tf-banner@ -->Team Fund: +32.92%</div>
           <div class="rb-desc" style="color: #c0e8d0">
             6종목 전 양수 Alpha Gap · PG Actor-Critic Optimizer · Tabular PPO
             Clipping + Adaptive Temperature
@@ -1008,7 +1008,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m1-ret@ -->+20.03%
+              <!-- @m1-ret@ -->+21.58%
             </div>
             <div
               style="
@@ -1017,7 +1017,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m1-alpha@ -->Alpha +8.4%p
+              <!-- @m1-alpha@ -->Alpha +10.0%p
             </div>
             <div
               id="params-m1"
@@ -1045,7 +1045,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m2-ret@ -->+64.79%
+              <!-- @m2-ret@ -->+60.51%
             </div>
             <div
               style="
@@ -1054,7 +1054,7 @@
                 color: var(--gold);
               "
             >
-              <!-- @m2-alpha@ -->Alpha +33.1%p
+              <!-- @m2-alpha@ -->Alpha +28.9%p
             </div>
             <div
               id="params-m2"
@@ -1082,7 +1082,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m3-ret@ -->+125.64%
+              <!-- @m3-ret@ -->+125.32%
             </div>
             <div
               style="
@@ -1091,7 +1091,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m3-alpha@ -->Alpha +10.7%p
+              <!-- @m3-alpha@ -->Alpha +10.4%p
             </div>
             <div
               id="params-m3"
@@ -1119,7 +1119,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m4-ret@ -->+44.95%
+              <!-- @m4-ret@ -->+46.45%
             </div>
             <div
               style="
@@ -1128,7 +1128,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m4-alpha@ -->Alpha +14.7%p
+              <!-- @m4-alpha@ -->Alpha +16.2%p
             </div>
             <div
               id="params-m4"
@@ -1156,7 +1156,7 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m5-ret@ -->+27.34%
+              <!-- @m5-ret@ -->+30.35%
             </div>
             <div
               style="
@@ -1165,7 +1165,7 @@
                 color: var(--green);
               "
             >
-              <!-- @m5-alpha@ -->Alpha +4.5%p
+              <!-- @m5-alpha@ -->Alpha +7.5%p
             </div>
             <div
               id="params-m5"
@@ -2197,7 +2197,7 @@
           "Vectorizing the Trie, Su et al. (Feb. 2026)" 논문에서 제안된
           <strong style="color: var(--purple)">STATIC</strong>은
           <em
-            >State Transition mAtrix-accelerated Trie Index for Constrained
+            >Sparse Transition mAtrix-accelerated Trie Index for Constrained
             decoding</em
           >
           의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
@@ -2225,9 +2225,14 @@
         </div>
 
         <p class="sec-desc" style="margin-bottom: 0.6rem">
-          유튜브 추천 시스템에서 LLM은 영상 ID를 <strong>토큰 단위로 직접 생성</strong>한다.
-          이때 <strong>존재하지 않는 ID가 만들어지면 안 되므로</strong>, 유효한 경로만 허용해야 한다. 기존 방식은 Trie를 한 칸씩 이동하며 체크했는데, 이는 순차적이라 GPU를 활용하지 않고 CPU로만 연산하게 된다.<br />
-          <strong>→ STATIC의 해법:</strong> 이 트리를 <strong>2D 행렬(CSR)로 납작하게 펴서</strong> GPU가 수천 개 경로를 동시에 조회하도록 변환한다.
+          유튜브 추천 시스템에서 LLM은 영상 ID를
+          <strong>토큰 단위로 직접 생성</strong>한다. 이때
+          <strong>존재하지 않는 ID가 만들어지면 안 되므로</strong>, 유효한
+          경로만 허용해야 한다. 기존 방식은 Trie를 한 칸씩 이동하며 체크했는데,
+          이는 순차적이라 GPU를 활용하지 않고 CPU로만 연산하게 된다.<br />
+          <strong>→ STATIC의 해법:</strong> 이 트리를
+          <strong>2D 행렬(CSR)로 납작하게 펴서</strong> GPU가 수천 개 경로를
+          동시에 조회하도록 변환한다.
         </p>
 
         <div class="three-col" style="margin-bottom: 1.5rem">
@@ -2272,11 +2277,30 @@
           </div>
         </div>
 
-        <div style="margin-bottom:1.2rem; padding:1rem 1.2rem; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.3); border-radius:8px;">
-          <div style="font-family:var(--sans); font-size:0.9rem; font-weight:700; color:var(--purple); margin-bottom:0.7rem;">
+        <div
+          style="
+            margin-bottom: 1.2rem;
+            padding: 1rem 1.2rem;
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+          "
+        >
+          <div
+            style="
+              font-family: var(--sans);
+              font-size: 0.9rem;
+              font-weight: 700;
+              color: var(--purple);
+              margin-bottom: 0.7rem;
+            "
+          >
             ↔ 이 프로젝트에 동일 구조가 적용된 방식
           </div>
-          <table class="tbl" style="margin-bottom:0.8rem; font-family:var(--sans)">
+          <table
+            class="tbl"
+            style="margin-bottom: 0.8rem; font-family: var(--sans)"
+          >
             <thead>
               <tr>
                 <th>구조 요소</th>
@@ -2312,10 +2336,21 @@
               </tr>
             </tbody>
           </table>
-          <div style="font-family:var(--sans); font-size:0.85rem; color:var(--text2); border-top:1px solid rgba(255,255,255,0.1); padding-top:0.6rem;">
-            <strong style="color:var(--yellow)">핵심 공통점:</strong>
-            논문은 "존재하지 않는 영상 ID 생성 차단", 이 프로젝트는 "불리한 매매 행동 억제" —
-            <strong style="color:var(--text1)">둘 다 처음부터 불가능한 선택지를 구조적으로 막아놓는다.</strong>
+          <div
+            style="
+              font-family: var(--sans);
+              font-size: 0.85rem;
+              color: var(--text2);
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+              padding-top: 0.6rem;
+            "
+          >
+            <strong style="color: var(--yellow)">핵심 공통점:</strong>
+            논문은 "존재하지 않는 영상 ID 생성 차단", 이 프로젝트는 "불리한 매매
+            행동 억제" —
+            <strong style="color: var(--text1)"
+              >둘 다 처음부터 불가능한 선택지를 구조적으로 막아놓는다.</strong
+            >
           </div>
         </div>
 
@@ -2324,40 +2359,93 @@
           T[s, v] = s_next &nbsp;if&nbsp; (s →<sup>v</sup> s_next)
           exists,&nbsp;&nbsp; else 0<br />
           <br />
-          <span style="color: var(--text2); font-size: 0.82rem; font-family: var(--sans)">
+          <span
+            style="
+              color: var(--text2);
+              font-size: 0.82rem;
+              font-family: var(--sans);
+            "
+          >
             s : 현재 prefix 노드 상태 (trie node index)<br />
             v : 선택한 토큰 (token index)<br />
             s_next : 전이 후 다음 노드 ID<br />
             0 : 무효 전이 (터미널 상태 → 해당 토큰 마스킹)
           </span>
-          <div style="margin-top:0.7rem; padding:0.5rem 0.75rem; background:rgba(255,255,255,0.05); border-left:3px solid var(--purple); border-radius:4px; font-size:0.82rem; color:var(--text2); font-family: var(--sans);">
-            <strong style="color:var(--purple)">핵심 직관:</strong>
+          <div
+            style="
+              margin-top: 0.7rem;
+              padding: 0.5rem 0.75rem;
+              background: rgba(255, 255, 255, 0.05);
+              border-left: 3px solid var(--purple);
+              border-radius: 4px;
+              font-size: 0.82rem;
+              color: var(--text2);
+              font-family: var(--sans);
+            "
+          >
+            <strong style="color: var(--purple)">핵심 직관:</strong>
             전체 (노드 수 × 어휘 크기) 행렬은 수억 개 원소지만,<br />
-            실제 Trie 경로가 존재하는 칸은 극소수 → <strong>CSR 압축</strong>으로 0이 아닌 값만 저장.<br />
-            T[s,v] = 0 인 토큰은 디코딩 시 log-prob = −∞ 로 마스킹 → 해당 토큰 생성 완전 차단.
+            실제 Trie 경로가 존재하는 칸은 극소수 →
+            <strong>CSR 압축</strong>으로 0이 아닌 값만 저장.<br />
+            T[s,v] = 0 인 토큰은 디코딩 시 log-prob = −∞ 로 마스킹 → 해당 토큰
+            생성 완전 차단.
           </div>
         </div>
 
         <div class="fbox purple" style="margin-top: 0.8rem">
           <div class="flabel">CSR 3개 배열 구조 + VNTK 슬라이싱</div>
-          P[n] : Row Pointers &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family:var(--sans)">← 노드 n의 유효 전이 시작 인덱스</span><br />
-          C[P[n]:P[n+1]] : Columns <span style="font-family:var(--sans)">← 유효 토큰 ID 목록</span><br />
-          V[P[n]:P[n+1]] : Values <span style="font-family:var(--sans)">← 대응하는 다음 노드 ID 목록</span><br />
+          P[n] : Row Pointers &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+            style="font-family: var(--sans)"
+            >← 노드 n의 유효 전이 시작 인덱스</span
+          ><br />
+          C[P[n]:P[n+1]] : Columns
+          <span style="font-family: var(--sans)">← 유효 토큰 ID 목록</span
+          ><br />
+          V[P[n]:P[n+1]] : Values
+          <span style="font-family: var(--sans)"
+            >← 대응하는 다음 노드 ID 목록</span
+          ><br />
           <br />
           <span style="color: var(--text2); font-size: 0.82rem"
-            ># VNTK (Vectorized Node Transition Kernel) <span style="font-family:var(--sans)">핵심 연산</span><br />
-            d_col = DynamicSlice(C, start=P[n], len=B_t) <span style="font-family:var(--sans)">← 고정 크기 슬라이싱</span><br />
-            m = Scatter(valid_tokens, values=True) <span style="font-family:var(--sans)">← 희소 → 밀집 마스크</span><br />
-            log_prob[invalid] = −∞ <span style="font-family:var(--sans)">← 무효 토큰 제거</span></span
+            ># VNTK (Vectorized Node Transition Kernel)
+            <span style="font-family: var(--sans)">핵심 연산</span><br />
+            d_col = DynamicSlice(C, start=P[n], len=B_t)
+            <span style="font-family: var(--sans)">← 고정 크기 슬라이싱</span
+            ><br />
+            m = Scatter(valid_tokens, values=True)
+            <span style="font-family: var(--sans)">← 희소 → 밀집 마스크</span
+            ><br />
+            log_prob[invalid] = −∞
+            <span style="font-family: var(--sans)">← 무효 토큰 제거</span></span
           >
-          <div style="margin-top:0.7rem; padding:0.5rem 0.75rem; background:rgba(255,255,255,0.05); border-left:3px solid var(--purple); border-radius:4px; font-size:0.82rem; color:var(--text2); font-family:var(--sans);">
-            <strong style="color:var(--purple)">쉽게 이해하기 — 도서관 비유:</strong><br />
-            <strong style="color:var(--text1)">P[n]</strong> : 노드 n의 데이터가 C/V 배열 <em>몇 번째 칸</em>에 있는지 알려주는 <strong>목차 포인터</strong><br />
-            <strong style="color:var(--text1)">C[P[n]:P[n+1]]</strong> : 그 노드에서 <em>실제로 갈 수 있는</em> 토큰 ID 목록 (유효 다음 단어들)<br />
-            <strong style="color:var(--text1)">V[P[n]:P[n+1]]</strong> : 각 토큰 선택 시 <em>도착하는</em> 다음 Trie 노드 ID (이동 목적지)<br /><br />
-            <strong style="color:var(--yellow)">VNTK의 역할:</strong>
-            가변 길이 희소 행(P→C/V 슬라이스)을 <strong>고정 크기 텐서</strong>로 패딩 →<br />
-            배치 내 모든 빔(beam)을 <strong>동일 크기로 정렬</strong> → GPU/TPU 병렬 연산 완전 활용
+          <div
+            style="
+              margin-top: 0.7rem;
+              padding: 0.5rem 0.75rem;
+              background: rgba(255, 255, 255, 0.05);
+              border-left: 3px solid var(--purple);
+              border-radius: 4px;
+              font-size: 0.82rem;
+              color: var(--text2);
+              font-family: var(--sans);
+            "
+          >
+            <strong style="color: var(--purple)"
+              >쉽게 이해하기 — 도서관 비유:</strong
+            ><br />
+            <strong style="color: var(--text1)">P[n]</strong> : 노드 n의
+            데이터가 C/V 배열 <em>몇 번째 칸</em>에 있는지 알려주는
+            <strong>목차 포인터</strong><br />
+            <strong style="color: var(--text1)">C[P[n]:P[n+1]]</strong> : 그
+            노드에서 <em>실제로 갈 수 있는</em> 토큰 ID 목록 (유효 다음
+            단어들)<br />
+            <strong style="color: var(--text1)">V[P[n]:P[n+1]]</strong> : 각
+            토큰 선택 시 <em>도착하는</em> 다음 Trie 노드 ID (이동 목적지)<br /><br />
+            <strong style="color: var(--yellow)">VNTK의 역할:</strong>
+            가변 길이 희소 행(P→C/V 슬라이스)을
+            <strong>고정 크기 텐서</strong>로 패딩 →<br />
+            배치 내 모든 빔(beam)을 <strong>동일 크기로 정렬</strong> → GPU/TPU
+            병렬 연산 완전 활용
           </div>
         </div>
 
@@ -2418,32 +2506,65 @@
           </tbody>
         </table>
 
-        <div style="margin-top:0.9rem; padding:0.85rem 1.1rem; background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.18); border-radius:6px; font-family:var(--sans); font-size:0.82rem; color:var(--text2);">
-          <div style="font-weight:700; color:var(--cyan); margin-bottom:0.65rem; font-size:0.87rem;">각 행의 의미 풀이</div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.55rem 1.4rem;">
+        <div
+          style="
+            margin-top: 0.9rem;
+            padding: 0.85rem 1.1rem;
+            background: rgba(0, 212, 255, 0.04);
+            border: 1px solid rgba(0, 212, 255, 0.18);
+            border-radius: 6px;
+            font-family: var(--sans);
+            font-size: 0.82rem;
+            color: var(--text2);
+          "
+        >
+          <div
+            style="
+              font-weight: 700;
+              color: var(--cyan);
+              margin-bottom: 0.65rem;
+              font-size: 0.87rem;
+            "
+          >
+            각 행의 의미 풀이
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 0.55rem 1.4rem;
+            "
+          >
             <div>
-              <strong style="color:var(--text1)">노드/상태:</strong>
-              논문은 "영상 ID를 어디까지 생성했는지(prefix 위치)", 이 프로젝트는 "지금 시장이 어떤 국면인지(상승/하락 × EMA 위/아래 = 4~8가지)"
+              <strong style="color: var(--text1)">노드/상태:</strong>
+              논문은 "영상 ID를 어디까지 생성했는지(prefix 위치)", 이 프로젝트는
+              "지금 시장이 어떤 국면인지(상승/하락 × EMA 위/아래 = 4~8가지)"
             </div>
             <div>
-              <strong style="color:var(--text1)">선택/행동:</strong>
-              논문은 "다음에 붙일 영상 ID 조각(토큰)", 이 프로젝트는 "매수(BUY) 또는 현금 대기(CASH) 중 하나 선택"
+              <strong style="color: var(--text1)">선택/행동:</strong>
+              논문은 "다음에 붙일 영상 ID 조각(토큰)", 이 프로젝트는 "매수(BUY)
+              또는 현금 대기(CASH) 중 하나 선택"
             </div>
             <div>
-              <strong style="color:var(--text1)">전이 구조:</strong>
-              논문은 T[s,v]로 다음 Trie 노드를 즉시 조회, 이 프로젝트는 θ[s,a]로 각 행동의 선호도를 결정 — 둘 다 2D 표 한 번 조회로 끝남
+              <strong style="color: var(--text1)">전이 구조:</strong>
+              논문은 T[s,v]로 다음 Trie 노드를 즉시 조회, 이 프로젝트는 θ[s,a]로
+              각 행동의 선호도를 결정 — 둘 다 2D 표 한 번 조회로 끝남
             </div>
             <div>
-              <strong style="color:var(--text1)">무효 처리:</strong>
-              논문은 Trie 경로가 없는 토큰을 −∞로 차단, 이 프로젝트는 Cold-Start로 불리한 행동을 낮은 θ로 초기화해 구조적으로 억제
+              <strong style="color: var(--text1)">무효 처리:</strong>
+              논문은 Trie 경로가 없는 토큰을 −∞로 차단, 이 프로젝트는
+              Cold-Start로 불리한 행동을 낮은 θ로 초기화해 구조적으로 억제
             </div>
             <div>
-              <strong style="color:var(--text1)">제약 조건:</strong>
-              논문은 최신성·카테고리·재고로 후보 영상을 필터링, 이 프로젝트는 EMA·추세·변동성으로 유효 시장 국면을 정의
+              <strong style="color: var(--text1)">제약 조건:</strong>
+              논문은 최신성·카테고리·재고로 후보 영상을 필터링, 이 프로젝트는
+              EMA·추세·변동성으로 유효 시장 국면을 정의
             </div>
             <div>
-              <strong style="color:var(--text1)">안정화:</strong>
-              논문은 Trie→CSR 변환으로 947× 속도 향상, 이 프로젝트는 STATIC→STATIC_H(PPO Clip + Adaptive Temperature)로 전 종목 양수 Alpha 달성
+              <strong style="color: var(--text1)">안정화:</strong>
+              논문은 Trie→CSR 변환으로 947× 속도 향상, 이 프로젝트는
+              STATIC→STATIC_H(PPO Clip + Adaptive Temperature)로 전 종목 양수
+              Alpha 달성
             </div>
           </div>
         </div>
@@ -2542,9 +2663,12 @@
         <hr class="divider" />
         <div class="mini-title">Policy Gradient Theorem — Actor 갱신 수식</div>
 
-        <p class="sec-desc" style="margin-bottom:0.8rem">
-          "선택한 행동이 평균보다 좋으면(δ &gt; 0) 그 방향으로 θ를 밀고, 안 좋으면(δ &lt; 0) 당긴다" <br />
-          → <strong>Score 함수 ∇log π</strong>가 방향을, <strong>Advantage δ</strong>가 크기를, <strong>Critic V(s)</strong>가 기준선을 제공하는 세 역할의 곱이 Actor 갱신의 전부이다.
+        <p class="sec-desc" style="margin-bottom: 0.8rem">
+          "선택한 행동이 평균보다 좋으면(δ &gt; 0) 그 방향으로 θ를 밀고, 안
+          좋으면(δ &lt; 0) 당긴다" <br />
+          → <strong>Score 함수 ∇log π</strong>가 방향을,
+          <strong>Advantage δ</strong>가 크기를, <strong>Critic V(s)</strong>가
+          기준선을 제공하는 세 역할의 곱이 Actor 갱신의 전부이다.
         </p>
 
         <div class="fbox">
@@ -2579,8 +2703,15 @@
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-top:1rem;">
-          <div class="fbox" style="font-size:0.82rem; margin-top:0">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 1rem;
+          "
+        >
+          <div class="fbox" style="font-size: 0.82rem; margin-top: 0">
             <div class="flabel">
               Actor 실제 갱신 — base_agent.py _train_actor_critic_static()
             </div>
@@ -2589,7 +2720,7 @@
             θ[s, a] += lr · δ · grad_log_pi
             <span style="color: var(--text2)">← Policy Gradient 적용</span>
           </div>
-          <div class="fbox gold" style="font-size:0.82rem; margin-top:0">
+          <div class="fbox gold" style="font-size: 0.82rem; margin-top: 0">
             <div class="flabel">Critic 갱신</div>
             δ = r_eff + γ · V(s') − V(s)
             <span style="color: var(--text2)">← TD Error</span><br />
@@ -2618,8 +2749,16 @@
           H(π) = − Σ<sub>a</sub> π(a|s) · log π(a|s)
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin:1rem 0; align-items:stretch;">
-          <div class="fbox gold" style="margin:0; box-sizing:border-box;">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.9rem;
+            margin: 1rem 0;
+            align-items: stretch;
+          "
+        >
+          <div class="fbox gold" style="margin: 0; box-sizing: border-box">
             <div class="flabel">
               엔트로피 정규화 보상<br /><br />
               → STATIC에서 고정 계수 0.05 사용
@@ -2627,49 +2766,63 @@
             r_eff = reward + <span style="color: var(--cyan)">0.05</span> ·
             H(π)<br />
             <br />
-            <span style="color: var(--text2); font-size: 0.82rem; font-family: var(--sans)"
+            <span
+              style="
+                color: var(--text2);
+                font-size: 0.82rem;
+                font-family: var(--sans);
+              "
               >reward = daily_return × a − fee × |a − prev_a|<br />
               H(π) = −Σ π(a|s) · log π(a|s) ← 현재 정책 엔트로피</span
             >
           </div>
 
-          <div class="card" style="margin:0; padding:1.4rem;">
+          <div class="card" style="margin: 0; padding: 1.4rem">
             <div class="card-sym">Entropy H(π) 직관적 이해</div>
-            <div class="card-body" style="margin-bottom: 1rem; font-family: var(--sans)">
+            <div
+              class="card-body"
+              style="margin-bottom: 1rem; font-family: var(--sans)"
+            >
               정책의 행동 선택 불확실성(무질서도) 측정치.<br />
               높은 엔트로피 = 다양한 행동 선택 = 더 많은 탐험.
             </div>
             <div class="ent-row">
-              <div class="ent-label" style="font-family:var(--sans)">π = (0.50, 0.50) — 최대 불확실성</div>
+              <div class="ent-label" style="font-family: var(--sans)">
+                π = (0.50, 0.50) — 최대 불확실성
+              </div>
               <div class="ent-bar-wrap">
                 <div class="ent-bar" style="width: 100%"></div>
               </div>
               <div class="ent-val">H = 0.693</div>
             </div>
             <div class="ent-row">
-              <div class="ent-label" style="font-family:var(--sans)">π = (0.75, 0.25) — 중간 확실성</div>
+              <div class="ent-label" style="font-family: var(--sans)">
+                π = (0.75, 0.25) — 중간 확실성
+              </div>
               <div class="ent-bar-wrap">
                 <div class="ent-bar" style="width: 54%"></div>
               </div>
               <div class="ent-val">H = 0.562</div>
             </div>
             <div class="ent-row">
-              <div class="ent-label" style="font-family:var(--sans)">π = (0.99, 0.01) — 거의 확실</div>
+              <div class="ent-label" style="font-family: var(--sans)">
+                π = (0.99, 0.01) — 거의 확실
+              </div>
               <div class="ent-bar-wrap">
                 <div class="ent-bar" style="width: 8%"></div>
               </div>
               <div class="ent-val">H = 0.056</div>
             </div>
             <div class="ent-row">
-              <div class="ent-label" style="font-family:var(--sans)">π = (1.00, 0.00) — 완전 결정적 (붕괴)</div>
+              <div class="ent-label" style="font-family: var(--sans)">
+                π = (1.00, 0.00) — 완전 결정적 (붕괴)
+              </div>
               <div class="ent-bar-wrap">
                 <div class="ent-bar" style="width: 0%"></div>
               </div>
               <div class="ent-val">H = 0.000</div>
             </div>
           </div>
-
-
         </div>
 
         <div class="info">
@@ -2677,7 +2830,8 @@
           계수 0.05는 STATIC에서 고정값이다.<br />
           시장이 일관되게 BUY를 보상하더라도, 엔트로피 보너스가 정책
           붕괴(π(BUY)=1.0)를 방지한다.<br />
-          → STATIC_H에서는 이 계수가 시장 상황에 따라 <strong style="color:#7fff7f;">자동으로</strong> 변한다(Adaptive
+          → STATIC_H에서는 이 계수가 시장 상황에 따라
+          <strong style="color: #7fff7f">자동으로</strong> 변한다(Adaptive
           Temperature).
         </div>
       </div>
@@ -2692,7 +2846,8 @@
         <p class="sec-desc">
           STATIC Actor-Critic 위에 Adaptive Temperature와 Tabular PPO Clipping을
           추가한 하이브리드 알고리즘.<br />
-          PPO Clipping은 Vectorizing the Trie, Su et al. (Feb. 2026) 논문의 신경망 PPO 개념을 Tabular 정책에 적용한 것이다.<br />
+          PPO Clipping은 Vectorizing the Trie, Su et al. (Feb. 2026) 논문의
+          신경망 PPO 개념을 Tabular 정책에 적용한 것이다.<br />
           본 프로젝트 핵심 알고리즘으로, 모든 종목 시뮬레이션에서 양수 Alpha를
           달성했다.
         </p>
@@ -2817,9 +2972,7 @@
           class="info"
           style="margin-bottom: 1.5rem; border-left: 3px solid var(--purple)"
         >
-          <div class="tag">
-            ACER 구현 적용
-          </div>
+          <div class="tag">ACER 구현 적용</div>
           <strong
             >ACER(Actor-Critic with Experience Replay, Wang et al. 2016)</strong
           >는 본 프로젝트에
@@ -3078,39 +3231,53 @@
 
         <hr class="divider" />
         <div class="mini-title">STATIC vs STATIC_H 핵심 차이</div>
-        <table class="tbl" style="font-family:var(--sans);">
+        <table class="tbl" style="font-family: var(--sans)">
           <thead>
             <tr>
-              <th style="width:18%">항목</th>
-              <th style="width:41%; color:var(--red)">STATIC RL</th>
-              <th style="width:41%; color:var(--green)">STATIC_H (Hybrid)</th>
+              <th style="width: 18%">항목</th>
+              <th style="width: 41%; color: var(--red)">STATIC RL</th>
+              <th style="width: 41%; color: var(--green)">STATIC_H (Hybrid)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="font-weight:700; color:var(--text1)">엔트로피 계수</td>
-              <td style="color:var(--red)">고정: 0.05 (불변)</td>
-              <td style="color:var(--green)">동적: α_t ∈ [0.01, 0.15] 자동 조정</td>
+              <td style="font-weight: 700; color: var(--text1)">
+                엔트로피 계수
+              </td>
+              <td style="color: var(--red)">고정: 0.05 (불변)</td>
+              <td style="color: var(--green)">
+                동적: α_t ∈ [0.01, 0.15] 자동 조정
+              </td>
             </tr>
             <tr>
-              <td style="font-weight:700; color:var(--text1)">정솵 갱신</td>
-              <td style="color:var(--red)">직접: θ += lr·δ·grad (제약 없음)</td>
-              <td style="color:var(--green)">PPO Clip: scale ∈ {0.3, 1.0} 제어</td>
+              <td style="font-weight: 700; color: var(--text1)">정솵 갱신</td>
+              <td style="color: var(--red)">
+                직접: θ += lr·δ·grad (제약 없음)
+              </td>
+              <td style="color: var(--green)">
+                PPO Clip: scale ∈ {0.3, 1.0} 제어
+              </td>
             </tr>
             <tr>
-              <td style="font-weight:700; color:var(--text1)">급격한 변화</td>
-              <td style="color:var(--red)">제어 없음 → 한 스텝에 전환 가능</td>
-              <td style="color:var(--green)">clip_eps=0.2로 제약 → 점진적 전이</td>
+              <td style="font-weight: 700; color: var(--text1)">급격한 변화</td>
+              <td style="color: var(--red)">제어 없음 → 한 스텝에 전환 가능</td>
+              <td style="color: var(--green)">
+                clip_eps=0.2로 제약 → 점진적 전이
+              </td>
             </tr>
             <tr>
-              <td style="font-weight:700; color:var(--text1)">행동 고착</td>
-              <td style="color:var(--red)">강한 추세에서 불충분할 수 있음</td>
-              <td style="color:var(--green)">flip_rate 기반 α_t 자동 + Clip 방지</td>
+              <td style="font-weight: 700; color: var(--text1)">행동 고착</td>
+              <td style="color: var(--red)">강한 추세에서 불충분할 수 있음</td>
+              <td style="color: var(--green)">
+                flip_rate 기반 α_t 자동 + Clip 방지
+              </td>
             </tr>
             <tr>
-              <td style="font-weight:700; color:var(--text1)">OOS 적응력</td>
-              <td style="color:var(--red)">제한적: 모든 레짐 동일 강도</td>
-              <td style="color:var(--green)">강함: α_t가 레짐 변화 시 재탐험 유도</td>
+              <td style="font-weight: 700; color: var(--text1)">OOS 적응력</td>
+              <td style="color: var(--red)">제한적: 모든 레짐 동일 강도</td>
+              <td style="color: var(--green)">
+                강함: α_t가 레짐 변화 시 재탐험 유도
+              </td>
             </tr>
           </tbody>
         </table>
@@ -6028,10 +6195,10 @@
               <td>S&P 500 ETF</td>
               <td class="mono">SPY</td>
               <td>8-State</td>
-              <td class="mono pos"><!-- @t-m1-s@ -->+20.03%</td>
+              <td class="mono pos"><!-- @t-m1-s@ -->+21.58%</td>
               <td class="mono"><!-- @t-m1-m@ -->11.62%</td>
-              <td class="mono pos"><!-- @t-m1-a@ -->+8.4%p</td>
-              <td class="mono"><!-- @t-m1-mdd@ -->-14.56%</td>
+              <td class="mono pos"><!-- @t-m1-a@ -->+10.0%p</td>
+              <td class="mono"><!-- @t-m1-mdd@ -->-9.00%</td>
               <td
                 style="
                   font-family: var(--mono);
@@ -6047,10 +6214,10 @@
               <td>Nasdaq 100 ETF</td>
               <td class="mono">QQQ</td>
               <td>4-State</td>
-              <td class="mono pos"><!-- @t-m2-s@ -->+64.79%</td>
+              <td class="mono pos"><!-- @t-m2-s@ -->+60.51%</td>
               <td class="mono"><!-- @t-m2-m@ -->31.66%</td>
-              <td class="mono star"><!-- @t-m2-a@ -->+33.1%p</td>
-              <td class="mono"><!-- @t-m2-mdd@ -->-12.88%</td>
+              <td class="mono star"><!-- @t-m2-a@ -->+28.9%p</td>
+              <td class="mono"><!-- @t-m2-mdd@ -->-12.28%</td>
               <td
                 style="
                   font-family: var(--mono);
@@ -6066,9 +6233,9 @@
               <td>KOSPI 지수</td>
               <td class="mono">^KS11</td>
               <td>8-State</td>
-              <td class="mono pos"><!-- @t-m3-s@ -->+125.64%</td>
+              <td class="mono pos"><!-- @t-m3-s@ -->+125.32%</td>
               <td class="mono"><!-- @t-m3-m@ -->114.90%</td>
-              <td class="mono pos"><!-- @t-m3-a@ -->+10.7%p</td>
+              <td class="mono pos"><!-- @t-m3-a@ -->+10.4%p</td>
               <td class="mono" style="color: var(--red)">
                 <!-- @t-m3-mdd@ -->-19.24%
               </td>
@@ -6087,9 +6254,9 @@
               <td>KOSDAQ 지수</td>
               <td class="mono">^KQ11</td>
               <td>8-State Roll=30</td>
-              <td class="mono pos"><!-- @t-m4-s@ -->+44.95%</td>
+              <td class="mono pos"><!-- @t-m4-s@ -->+46.45%</td>
               <td class="mono"><!-- @t-m4-m@ -->30.30%</td>
-              <td class="mono pos"><!-- @t-m4-a@ -->+14.7%p</td>
+              <td class="mono pos"><!-- @t-m4-a@ -->+16.2%p</td>
               <td class="mono" style="color: var(--red)">
                 <!-- @t-m4-mdd@ -->-18.09%
               </td>
@@ -6108,9 +6275,9 @@
               <td>미국배당 ETF</td>
               <td class="mono">SCHD</td>
               <td>8-State Roll=60</td>
-              <td class="mono pos"><!-- @t-m5-s@ -->+27.34%</td>
+              <td class="mono pos"><!-- @t-m5-s@ -->+30.35%</td>
               <td class="mono"><!-- @t-m5-m@ -->22.84%</td>
-              <td class="mono pos"><!-- @t-m5-a@ -->+4.5%p</td>
+              <td class="mono pos"><!-- @t-m5-a@ -->+7.5%p</td>
               <td class="mono"><!-- @t-m5-mdd@ -->-9.11%</td>
               <td
                 style="
@@ -6150,10 +6317,10 @@
           <div class="rb-label">
             팀 포트폴리오 최종 성과 (Softmax 가중 합성)
           </div>
-          <div class="rb-val"><!-- @tf-results@ -->Team Fund: +32.82%</div>
+          <div class="rb-val"><!-- @tf-results@ -->Team Fund: +32.92%</div>
           <div class="rb-desc">
             6명 전원 STATIC_H로 양수 Alpha Gap 달성 ·
-            <!-- @best-alpha@ -->최고 Alpha: M2 Nasdaq 100 ETF +33.1%p 🏆
+            <!-- @best-alpha@ -->최고 Alpha: M2 Nasdaq 100 ETF +28.9%p 🏆
           </div>
         </div>
 
@@ -6162,8 +6329,8 @@
           하이퍼파라미터 탐색 — PG Actor-Critic Optimizer
         </div>
 
-        <div class="fbox" style="font-size:0.83rem">
-          <div class="flabel" style="font-size:1rem;font-weight:700">
+        <div class="fbox" style="font-size: 0.83rem">
+          <div class="flabel" style="font-size: 1rem; font-weight: 700">
             복합 Gap 목표 함수 — heuristic.py PGActorCriticOptimizer
           </div>
           gap_vs_market = STATIC_final − Market_final<br />
@@ -6176,8 +6343,10 @@
           >
         </div>
 
-        <div class="fbox" style="margin-top:0.8rem;font-size:0.83rem">
-          <div class="flabel" style="font-size:1rem;font-weight:700">PG Actor-Critic Optimizer — 탐색 알고리즘</div>
+        <div class="fbox" style="margin-top: 0.8rem; font-size: 0.83rem">
+          <div class="flabel" style="font-size: 1rem; font-weight: 700">
+            PG Actor-Critic Optimizer — 탐색 알고리즘
+          </div>
           <span style="color: var(--text2)"># Actor: 파라미터 공간 탐색</span
           ><br />
           Δ = N(0, σ),&nbsp; x_new = clip(μ + Δ, 0, 1)<br />
@@ -6254,7 +6423,7 @@
             <div class="sum-desc">
               Adaptive Temperature + Tabular PPO Clipping<br />
               (Su et al. 2026 논문 기반).<br /><br />
-              6종목 모두 양수 Alpha, Team +32.82%.
+              6종목 모두 양수 Alpha, Team +32.92%.
             </div>
           </div>
         </div>
@@ -6367,7 +6536,7 @@
             <tr>
               <td>배포 환경</td>
               <td>YouTube TPU v6e · 20M 아이템</td>
-              <td>6종목 · Team Fund +32.82%</td>
+              <td>6종목 · Team Fund +32.92%</td>
             </tr>
             <tr>
               <td class="hl">공통 통찰</td>
@@ -6577,9 +6746,10 @@
               달성했다.<br />
               - Vanilla Q-Learning 대비 풍부한 4/8 상태 공간, 확률적 정책, 동적
               엔트로피, PPO 클리핑의 복합 효과가
-              <strong style="color: var(--green)">Team Fund +32.82%</strong>라는
+              <strong style="color: var(--green)">Team Fund +32.92%</strong>라는
               단일 숫자로 수렴한다.<br />
-              - Bellman의 재귀 공식 하나에서 출발하여 실전 트레이딩 시스템까지, 모든 것은 연결된 하나의 수학적 체계다.
+              - Bellman의 재귀 공식 하나에서 출발하여 실전 트레이딩 시스템까지,
+              모든 것은 연결된 하나의 수학적 체계다.
             </p>
           </div>
         </div>
@@ -6614,7 +6784,7 @@
         &nbsp;·&nbsp; MULTI-AGENT TRADING SIMULATOR
       </p>
       <p style="margin-top: 0.5rem; font-size: 0.52rem">
-        Team Fund: +32.82% &nbsp;·&nbsp; 6종목 전 양수 Alpha Gap &nbsp;·&nbsp;
+        Team Fund: +32.92% &nbsp;·&nbsp; 6종목 전 양수 Alpha Gap &nbsp;·&nbsp;
         PG Actor-Critic Optimizer + Tabular PPO Clipping + Adaptive Temperature
       </p>
     </footer>
