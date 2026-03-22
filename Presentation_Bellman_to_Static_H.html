@@ -355,6 +355,7 @@
         margin-bottom: 0.4rem;
       }
       .card-body {
+        font-family: var(--sans);
         font-size: 0.76rem;
         color: var(--text2);
         line-height: 1.7;
@@ -381,6 +382,7 @@
 
       /* ── INFO BOX ── */
       .info {
+        font-family: var(--sans);
         background: var(--panel);
         border: 1px solid var(--border);
         padding: 1rem 1.4rem;
@@ -609,7 +611,7 @@
         margin-bottom: 0.25rem;
       }
       .cmp-row-val {
-        font-family: var(--mono);
+        font-family: var(--sans);
         font-size: 0.8rem;
         color: var(--text2);
         line-height: 1.5;
@@ -949,16 +951,21 @@
         </h2>
         <p class="sec-desc" style="color: #c8ddf0">
           - 아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제
-          시장 데이터에 적용된 결과다. <br />
+          시장 데이터에 적용된 결과이다. <br />
           - 6명의 에이전트가 각자 담당 종목에서 STATIC_Hybrid(STATIC_H)를
           실행하여 전 종목 "양수 Alpha Gap"을 달성했다.
         </p>
         <div class="info" style="margin-top: 0.8rem; margin-bottom: 0rem">
           <div class="tag">Alpha Gap이란?</div>
-          <strong>Alpha Gap</strong> = RL 전략 수익률 − 시장(Buy &amp; Hold) 수익률<br />
-          → 강화학습(RL, Reinforcement Learning) 에이전트가 단순히 보유만 했을 때보다 "얼마나 더 벌었는가"를 나타내는 <strong>초과 수익 지표</strong>.<br /><br />
-          <strong>양수(+)</strong>의 의미: RL 전략이 시장 수익률을 상회했다는 뜻.<br />
-          → Alpha Gap &gt; 0 이면 에이전트가 시장을 이긴 것, &lt; 0 이면 단순 보유가 더 유리했던 것.
+          <strong>Alpha Gap</strong> = RL 전략 수익률 − 시장(Buy &amp; Hold)
+          수익률<br />
+          → 강화학습(RL, Reinforcement Learning) 에이전트가 단순히 보유만 했을
+          때보다 "얼마나 더 벌었는가"를 나타내는
+          <strong>초과 수익 지표</strong>.<br /><br />
+          <strong>양수(+)</strong>의 의미: RL 전략이 "시장 수익률을 상회"했다는
+          뜻.<br />
+          → Alpha Gap &gt; 0 이면, 에이전트가 시장을 이긴 것.<br />
+          → Alpha Gap &lt; 0 이면, 단순 보유가 더 유리했던 것.
         </div>
 
         <!-- 성과 배너 -->
@@ -1001,7 +1008,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m1-ret@ -->+20.03%</div>
+              <!-- @m1-ret@ -->+20.03%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1009,9 +1017,13 @@
                 color: var(--green);
               "
             >
-              <!-- @m1-alpha@ -->Alpha +8.4%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              8-State · lr=0.073 · γ=0.94
+              <!-- @m1-alpha@ -->Alpha +8.4%p
+            </div>
+            <div
+              id="params-m1"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              8-State · lr=0.073 · γ=0.94 · εₛ=0.134 · εᵥ=0.102
             </div>
           </div>
           <div
@@ -1033,7 +1045,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m2-ret@ -->+64.79%</div>
+              <!-- @m2-ret@ -->+64.79%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1041,9 +1054,13 @@
                 color: var(--gold);
               "
             >
-              <!-- @m2-alpha@ -->Alpha +33.1%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              4-State · lr=0.080 · γ=0.91
+              <!-- @m2-alpha@ -->Alpha +33.1%p
+            </div>
+            <div
+              id="params-m2"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              4-State · lr=0.080 · γ=0.91 · εₛ=0.119 · εᵥ=0.177
             </div>
           </div>
           <div
@@ -1065,7 +1082,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m3-ret@ -->+125.64%</div>
+              <!-- @m3-ret@ -->+125.64%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1073,9 +1091,13 @@
                 color: var(--green);
               "
             >
-              <!-- @m3-alpha@ -->Alpha +10.7%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              8-State · lr=0.050 · γ=0.88
+              <!-- @m3-alpha@ -->Alpha +10.7%p
+            </div>
+            <div
+              id="params-m3"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              8-State · lr=0.050 · γ=0.88 · εₛ=0.023 · εᵥ=0.161
             </div>
           </div>
           <div
@@ -1097,7 +1119,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m4-ret@ -->+44.95%</div>
+              <!-- @m4-ret@ -->+44.95%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1105,9 +1128,13 @@
                 color: var(--green);
               "
             >
-              <!-- @m4-alpha@ -->Alpha +14.7%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              8-State · Roll=30봉 · lr=0.038
+              <!-- @m4-alpha@ -->Alpha +14.7%p
+            </div>
+            <div
+              id="params-m4"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              8-State · lr=0.038 · γ=0.92 · εₛ=0.076 · εᵥ=0.062 · Roll=30
             </div>
           </div>
           <div
@@ -1129,7 +1156,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m5-ret@ -->+27.34%</div>
+              <!-- @m5-ret@ -->+27.34%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1137,9 +1165,13 @@
                 color: var(--green);
               "
             >
-              <!-- @m5-alpha@ -->Alpha +4.5%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              8-State · Roll=60봉 · lr=0.026
+              <!-- @m5-alpha@ -->Alpha +4.5%p
+            </div>
+            <div
+              id="params-m5"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              8-State · lr=0.026 · γ=0.92 · εₛ=0.038 · εᵥ=0.106 · Roll=60
             </div>
           </div>
           <div
@@ -1161,7 +1193,8 @@
                 margin: 0.5rem 0;
               "
             >
-              <!-- @m6-ret@ -->+74.66%</div>
+              <!-- @m6-ret@ -->+74.66%
+            </div>
             <div
               style="
                 font-family: var(--mono);
@@ -1169,9 +1202,13 @@
                 color: var(--green);
               "
             >
-              <!-- @m6-alpha@ -->Alpha +15.2%p</div>
-            <div style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem">
-              8-State · lr=0.022 · γ=0.95
+              <!-- @m6-alpha@ -->Alpha +15.2%p
+            </div>
+            <div
+              id="params-m6"
+              style="font-size: 0.72rem; color: #a0b8cc; margin-top: 0.3rem"
+            >
+              8-State · lr=0.022 · γ=0.95 · εₛ=0.164 · εᵥ=0.140
             </div>
           </div>
         </div>
@@ -1199,8 +1236,9 @@
           </a>
           <p
             style="
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
               color: var(--text3);
               margin-top: 0.8rem;
             "
@@ -1228,8 +1266,13 @@
           >
             <div class="card-sym">Simulation (PG Optimizer)</div>
             <div class="card-body" style="font-size: 0.78rem">
-              - PG Actor-Critic Optimizer가 lr(=α), γ, ε을 자동 탐색하여 복합 Gap을 극대화한다.<br />
-              <span style="color:var(--text3);font-size:0.72rem">Composite Gap = 0.6×(STATIC−Market) + 0.4×(STATIC−max(Vanilla, Market×0.3))</span>
+              - PG(Policy Gradient) Actor-Critic Optimizer가 lr(=α), γ, ε을 자동
+              탐색하여 복합 Gap을 극대화한다.<br />
+              →
+              <span style="color: var(--text3); font-size: 0.72rem"
+                >Composite Gap = 0.6×(STATIC−Market) + 0.4×(STATIC−max(Vanilla,
+                Market×0.3))</span
+              >
             </div>
           </div>
           <div
@@ -1238,9 +1281,12 @@
           >
             <div class="card-sym">Team Portfolio Dashboard</div>
             <div class="card-body" style="font-size: 0.78rem">
-              - Softmax 가중 배분으로 6개 에이전트를 Team Fund로 합성하여
+              - Softmax 가중 배분으로 모든 에이전트들을 Team Fund로 종합하여
               집계한다. <br />
-              (Score = Return/(1+|MDD|))
+              →
+              <span style="color: var(--text3); font-size: 0.72rem"
+                >Score = Return/(1+|MDD|)</span
+              >
             </div>
           </div>
         </div>
@@ -1254,66 +1300,75 @@
         <div class="sec-label">01 · 기초 프레임워크</div>
         <h2 class="sec-title">Markov Decision Process (MDP)</h2>
         <p class="sec-desc">
-          강화학습의 모든 수식은 이 MDP 5-튜플 프레임워크 위에 세워진다.<br />
+          강화학습의 모든 수식은 MDP 5-튜플 프레임워크 위에 세워진다.<br />
           에이전트는 환경을 관측하고, 행동을 선택하며, 보상을 받고, 새로운
           상태로 전이한다.
         </p>
 
         <div class="card-grid" style="grid-template-columns: repeat(3, 1fr)">
           <div class="card">
-            <div class="card-sym">MDP · 마르코프 결정 과정</div>
+            <div class="card-sym">MDP : 마르코프 결정 과정</div>
             <div class="card-name">순차적 의사결정 수학 프레임워크</div>
             <div class="card-body">
-              에이전트가 환경과 상호작용하며 누적 보상을 최대화하는 최적 행동을 학습하는 구조.<br />
-              현재 상태만으로 미래를 결정할 수 있다는 <strong>마르코프 성질</strong>을 전제.
+              - 에이전트가 환경과 상호작용하며 누적 보상을 최대화하는 최적
+              행동을 학습하는 구조로써, 현재 상태만으로 미래를 결정할 수 있는
+              <strong>마르코프 성질</strong>을 전제함.
             </div>
-            <div class="card-note">MDP = ( S,&nbsp; A,&nbsp; P,&nbsp; R,&nbsp; γ )</div>
+            <div class="card-note">
+              MDP 5-tuple → MDP = ( S,&nbsp; A,&nbsp; P,&nbsp; R,&nbsp; γ )
+            </div>
           </div>
           <div class="card">
-            <div class="card-sym">S · State (상태)</div>
+            <div class="card-sym">S : State (상태)</div>
             <div class="card-name">에이전트의 현재 위치</div>
             <div class="card-body">
               - 트레이딩: EMA 위치×추세 방향 조합으로 시장 국면을 표현
             </div>
             <div class="card-note">
-              s ∈ {0,1,2,3} 4개 이산 상태<br />use_vol=True → s ∈ {0..7} 8개
-              상태
+              s ∈ {0, 1, 2, 3} → 4개 이산 상태<br />use_vol=True → s ∈ {0..7}
+              8개 상태
             </div>
           </div>
           <div class="card">
-            <div class="card-sym">A · Action (행동)</div>
+            <div class="card-sym">A : Action (행동)</div>
             <div class="card-name">에이전트가 선택할 수 있는 행동</div>
             <div class="card-body">
               - 매 시점 이진(Binary) 결정<br />
-              - BUY=1이면 전액 매수, CASH=0이면 현금 보유
+              - BUY = 1 → 전액 매수<br />
+              - CASH = 0 → 현금 보유
             </div>
             <div class="card-note">A = {0: CASH(현금보유), 1: BUY(매수)}</div>
           </div>
           <div class="card">
-            <div class="card-sym">P · Transition (전이확률)</div>
-            <div class="card-name">P(s'|s,a) — 다음 상태 도달 확률</div>
+            <div class="card-sym">P : Transition (전이확률)</div>
+            <div class="card-name">P(s'|s,a) → 다음 상태 도달 확률</div>
             <div class="card-body">
-              상태 s에서 행동 a를 선택했을 때 다음 상태 s'로 전이할 확률<br />
-              → 트레이딩에서 시장 가격 변동이 이를 결정하므로 직접 알 수 없다. (Model-free)
-              
+              상태 s에서 행동 a를 선택했을 때 다음 상태 s'로 전이할 확률.<br />
+              → 트레이딩에서 시장 가격 변동이 이를 결정하므로 직접 알 수 없다.
+              (Model-free)
             </div>
             <div class="card-note">시장 가격 변동이 외생적으로 결정</div>
           </div>
           <div class="card">
-            <div class="card-sym">R · Reward (보상)</div>
-            <div class="card-name">R(s,a,s') — 즉각적 피드백 신호</div>
+            <div class="card-sym">R : Reward (보상)</div>
+            <div class="card-name">R(s,a,s') → 즉각적 피드백 신호</div>
             <div class="card-body">
               행동의 즉각적 결과.<br />
-              수수료를 차감한 순 수익률로 계산
+              수수료를 차감한 순 수익률로 계산한다.
             </div>
-            <div class="card-note">daily_return × a − fee × 1[a=1, prev_a=0]<br /><span style="font-size:0.72rem;color:var(--text3)">※ 수수료는 CASH→BUY 전환 시에만 부과</span></div>
+            <div class="card-note">
+              daily_return × a − fee × 1[a=1, prev_a=0]<br /><span
+                style="font-size: 0.72rem; color: var(--text3)"
+                >※ 수수료는 CASH→BUY 전환 시에만 부과</span
+              >
+            </div>
           </div>
           <div class="card">
-            <div class="card-sym">γ · Discount (할인인수)</div>
+            <div class="card-sym">γ : Discount (할인인수)</div>
             <div class="card-name">미래 보상의 가중치 [0, 1]</div>
             <div class="card-body">
-              γ → 1: 장기적 수익 중시 (장기 투자자)<br />γ → 0: 눈앞의 보상에
-              집중 (단기 투기)
+              γ → 1 : 장기적 수익 중시 (장기 투자)<br />
+              γ → 0 : 눈앞의 보상에 집중 (단기 투자)
             </div>
             <div class="card-note">실전: γ = 0.87 ~ 0.97 (종목별 최적화)</div>
           </div>
@@ -1322,71 +1377,426 @@
         <!-- 4-State Design -->
         <hr class="divider" />
         <div class="mini-title">4가지 이산 상태 설계</div>
-        <div class="fbox">
-          <div class="flabel">상태 공간 설계 공식</div>
-          state = is_bull × 1 + is_above_ema × 2 &nbsp;[+ is_high_vol × 4]<br />
-          <br />
-          <span style="color: var(--text2); font-size: 0.82rem">
-            is_bull = (daily_return &gt; 0) ← 당일 수익률이 양수이면 True<br />
-            is_above_ema = (Close &gt;= EMA_10) ← 현재가가 10일 EMA 이상이면
-            True<br />
-            is_high_vol = (rolling_std &gt; median) ← 변동성이 훈련구간 중위수
-            초과 시 True
-          </span>
-        </div>
+        <!-- 2×2 그리드: 왼쪽=관계식+Cold-Start / 오른쪽=4사분면 맵 -->
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1.5rem;
+            align-items: stretch;
+            margin-top: 1rem;
+          "
+        >
+          <!-- 왼쪽 열: 간격 최소화 -->
+          <div style="display: flex; flex-direction: column; gap: 0.4rem">
+            <!-- 1행: 상태 공간 설계 관계식 -->
+            <div class="fbox">
+              <div class="flabel">상태 공간 설계 관계식</div>
+              state = is_bull × 1 + is_above_ema × 2 &nbsp;[+ is_high_vol ×
+              4]<br />
+              <br />
+              <span style="color: var(--text2); font-size: 0.82rem">
+                is_bull = (daily_return &gt; 0) ← 당일 수익률이 양수이면 True<br />
+                is_above_ema = (Close &gt;= EMA_10) ← 현재가가 10일 EMA 이상이면
+                True<br />
+                is_high_vol = (rolling_std &gt; median) ← 변동성이 훈련구간
+                중위수 초과 시 True
+              </span>
+            </div>
 
-        <table class="tbl" style="margin-top: 1rem">
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>추세</th>
-              <th>EMA 위치</th>
-              <th>시장 신호</th>
-              <th>θ[s,1] 초기값 (Cold-Start)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="mono">0</td>
-              <td>하락 (ret ≤ 0)</td>
-              <td>EMA 아래</td>
-              <td>가장 보수적</td>
-              <td class="mono">0 (매수 신호 없음)</td>
-            </tr>
-            <tr>
-              <td class="mono">1</td>
-              <td>상승 (ret &gt; 0)</td>
-              <td>EMA 아래</td>
-              <td>주의 단계</td>
-              <td class="mono">max(0.05, fee × 30)</td>
-            </tr>
-            <tr>
-              <td class="mono">2</td>
-              <td>하락 (ret ≤ 0)</td>
-              <td>EMA 위</td>
-              <td>중립</td>
-              <td class="mono">max(0.10, fee × 50)</td>
-            </tr>
-            <tr>
-              <td class="mono hl">3</td>
-              <td class="hl">상승 (ret &gt; 0)</td>
-              <td class="hl">EMA 위</td>
-              <td class="hl">가장 강한 매수</td>
-              <td class="mono hl">max(0.20, fee × 80)</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="info" style="margin-top: 1rem">
-          <div class="tag">Cold-Start 수수료 장벽 완화</div>
-          - 수수료가 높을수록 BUY 선호 초기화값을 크게 설정하여 초반 CASH 고착을
-          방지한다.<br />
-          - 미국(fee=0.001): θ[1,1]=0.05 / 한국(fee=0.0023): θ[1,1]=0.069.
-          8-State 확장 시 상태 {4..7}은 고변동성 레짐(Regime)으로, 동일 EMA·추세
-          신호에서 별도 정책을 학습한다.<br /><br />
-          * Regime: 시장 국면/체제를 의미하는 금융 트레이딩 용어.<br />
-          - '저'변동성 레짐: 시장이 '안정적'으로 움직이는 구간<br />
-          - '고'변동성 레짐: 시장이 급등락하는 '불안정'한 구간
+            <!-- 2행: Cold-Start 수수료 장벽 완화 -->
+            <div class="info" style="flex: 1">
+              <div class="tag">Cold-Start 수수료 장벽 완화</div>
+              - 수수료가 높을수록 BUY 선호 초기화값을 크게 설정하여 초반 CASH
+              고착을 방지한다.<br />
+              - 미국(fee=0.001): θ[1,1]=0.05 / 한국(fee=0.0023): θ[1,1]=0.069.
+              8-State 확장 시,<br />
+              → 상태 {4..7}은 고변동성 레짐(Regime)으로, 동일 EMA·추세 신호에서
+              별도 정책을 학습한다.<br /><br />
+              * Regime : 시장 국면/체제를 의미하는 금융 트레이딩 용어.<br />
+              - '저'변동성 레짐 : 시장이 '안정적'으로 움직이는 구간<br />
+              - '고'변동성 레짐 : 시장이 급등락하는 '불안정'한 구간
+            </div>
+          </div>
+          <!-- /왼쪽 열 -->
+
+          <!-- 오른쪽 열: 4-State 시장 국면 맵 (80% 크기, 완전 대칭) -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+            "
+          >
+            <!--
+              viewBox 540×570 설계:
+              · 사분면 4개 모두 215×215 (완전 동일)
+              · 축 간격: 각 방향 10px (총 20px gap)
+              · 수평축 y=280, 수직축 x=275
+              · Q2: x=50,y=55  Q1: x=285,y=55
+              · Q3: x=50,y=290 Q4: x=285,y=290
+            -->
+            <svg
+              viewBox="0 0 540 570"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width: 430px; font-family: monospace"
+            >
+              <!-- 제목 -->
+              <text
+                x="270"
+                y="26"
+                text-anchor="middle"
+                fill="#00f5d4"
+                font-size="18"
+                font-weight="bold"
+              >
+                4-State 시장 국면 맵
+              </text>
+
+              <!-- 제목 아래 여백 확보 후 사분면 시작 y=55 -->
+
+              <!-- 사분면 배경 (모두 215×215, 간격 20px) -->
+              <rect
+                x="50"
+                y="55"
+                width="215"
+                height="215"
+                fill="#422006"
+                rx="8"
+                opacity="0.65"
+              />
+              <!-- Q2: State1 -->
+              <rect
+                x="285"
+                y="55"
+                width="215"
+                height="215"
+                fill="#14532d"
+                rx="8"
+                opacity="0.65"
+              />
+              <!-- Q1: State3 -->
+              <rect
+                x="50"
+                y="290"
+                width="215"
+                height="215"
+                fill="#200a0a"
+                rx="8"
+                opacity="0.75"
+              />
+              <!-- Q3: State0 -->
+              <rect
+                x="285"
+                y="290"
+                width="215"
+                height="215"
+                fill="#082020"
+                rx="8"
+                opacity="0.75"
+              />
+              <!-- Q4: State2 -->
+
+              <!-- 축 (수평 y=280, 수직 x=275) -->
+              <line
+                x1="50"
+                y1="280"
+                x2="500"
+                y2="280"
+                stroke="#00f5d4"
+                stroke-width="2.5"
+              />
+              <line
+                x1="275"
+                y1="55"
+                x2="275"
+                y2="505"
+                stroke="#00f5d4"
+                stroke-width="2.5"
+              />
+
+              <!-- 화살표 -->
+              <polygon points="500,275 511,280 500,285" fill="#00f5d4" />
+              <!-- H 오른쪽 -->
+              <polygon points="50,275  39,280  50,285" fill="#00f5d4" />
+              <!-- H 왼쪽 -->
+              <polygon points="270,55  275,44  280,55" fill="#00f5d4" />
+              <!-- V 위쪽 -->
+              <polygon points="270,505 275,516 280,505" fill="#00f5d4" />
+              <!-- V 아래쪽 -->
+
+              <!-- X축 방향 레이블 (흰색·굵게·크게) -->
+              <text
+                x="157"
+                y="535"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="14"
+                font-weight="bold"
+              >
+                ← 하락 (EMA 아래)
+              </text>
+              <text
+                x="393"
+                y="535"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="14"
+                font-weight="bold"
+              >
+                상승 (EMA 위) →
+              </text>
+              <!-- X축 제목 -->
+              <text
+                x="275"
+                y="555"
+                text-anchor="middle"
+                fill="#00f5d4"
+                font-size="13"
+                font-weight="bold"
+              >
+                추세선 (EMA 기준)
+              </text>
+
+              <!-- Y축 방향 레이블 (흰색·굵게·크게, 회전) -->
+              <text
+                x="22"
+                y="162"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="14"
+                font-weight="bold"
+                transform="rotate(-90,22,162)"
+              >
+                ret &gt; 0
+              </text>
+              <text
+                x="22"
+                y="397"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="14"
+                font-weight="bold"
+                transform="rotate(-90,22,397)"
+              >
+                ret ≤ 0
+              </text>
+              <!-- Y축 제목 -->
+              <text
+                x="10"
+                y="280"
+                text-anchor="middle"
+                fill="#00f5d4"
+                font-size="13"
+                font-weight="bold"
+                transform="rotate(-90,10,280)"
+              >
+                일일 수익률 (return)
+              </text>
+
+              <!-- Q1: State 3 (top-right) 가장 강한 매수 · 중심(393,162) -->
+              <text
+                x="393"
+                y="96"
+                text-anchor="middle"
+                fill="#4ade80"
+                font-size="22"
+                font-weight="bold"
+              >
+                State 3
+              </text>
+              <text
+                x="393"
+                y="124"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="15"
+              >
+                EMA 위 · 상승
+              </text>
+              <text
+                x="393"
+                y="156"
+                text-anchor="middle"
+                fill="#fbbf24"
+                font-size="17"
+                font-weight="bold"
+              >
+                ▲ 가장 강한 매수
+              </text>
+              <text
+                x="393"
+                y="184"
+                text-anchor="middle"
+                fill="#4ade80"
+                font-size="15"
+              >
+                θ[3,1] = max(0.20,
+              </text>
+              <text
+                x="393"
+                y="208"
+                text-anchor="middle"
+                fill="#4ade80"
+                font-size="15"
+              >
+                fee × 80)
+              </text>
+
+              <!-- Q2: State 1 (top-left) 주의 단계 · 중심(157,162) -->
+              <text
+                x="157"
+                y="96"
+                text-anchor="middle"
+                fill="#fb923c"
+                font-size="22"
+                font-weight="bold"
+              >
+                State 1
+              </text>
+              <text
+                x="157"
+                y="124"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="15"
+              >
+                EMA 아래 · 상승
+              </text>
+              <text
+                x="157"
+                y="156"
+                text-anchor="middle"
+                fill="#fb923c"
+                font-size="17"
+                font-weight="bold"
+              >
+                ◇ 주의 단계
+              </text>
+              <text
+                x="157"
+                y="184"
+                text-anchor="middle"
+                fill="#fb923c"
+                font-size="15"
+              >
+                θ[1,1] = max(0.05,
+              </text>
+              <text
+                x="157"
+                y="208"
+                text-anchor="middle"
+                fill="#fb923c"
+                font-size="15"
+              >
+                fee × 30)
+              </text>
+
+              <!-- Q3: State 0 (bottom-left) 가장 보수적 · 중심(157,397) -->
+              <text
+                x="157"
+                y="331"
+                text-anchor="middle"
+                fill="#e2e8f0"
+                font-size="22"
+                font-weight="bold"
+              >
+                State 0
+              </text>
+              <text
+                x="157"
+                y="359"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="15"
+              >
+                EMA 아래 · 하락
+              </text>
+              <text
+                x="157"
+                y="391"
+                text-anchor="middle"
+                fill="#e2e8f0"
+                font-size="17"
+                font-weight="bold"
+              >
+                ▽ 가장 보수적
+              </text>
+              <text
+                x="157"
+                y="419"
+                text-anchor="middle"
+                fill="#e2e8f0"
+                font-size="15"
+              >
+                θ[0,1] = 0
+              </text>
+              <text
+                x="157"
+                y="443"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="14"
+              >
+                (매수 신호 없음)
+              </text>
+
+              <!-- Q4: State 2 (bottom-right) 중립 · 중심(393,397) -->
+              <text
+                x="393"
+                y="331"
+                text-anchor="middle"
+                fill="#22d3ee"
+                font-size="22"
+                font-weight="bold"
+              >
+                State 2
+              </text>
+              <text
+                x="393"
+                y="359"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-size="15"
+              >
+                EMA 위 · 하락
+              </text>
+              <text
+                x="393"
+                y="391"
+                text-anchor="middle"
+                fill="#22d3ee"
+                font-size="17"
+                font-weight="bold"
+              >
+                ○ 중립
+              </text>
+              <text
+                x="393"
+                y="419"
+                text-anchor="middle"
+                fill="#22d3ee"
+                font-size="15"
+              >
+                θ[2,1] = max(0.10,
+              </text>
+              <text
+                x="393"
+                y="443"
+                text-anchor="middle"
+                fill="#22d3ee"
+                font-size="15"
+              >
+                fee × 50)
+              </text>
+
+              <!-- 원점 -->
+              <circle cx="275" cy="280" r="4" fill="#00f5d4" opacity="0.7" />
+            </svg>
+          </div>
+          <!-- /오른쪽 열 -->
         </div>
+        <!-- /2×2 그리드 -->
       </div>
     </section>
 
@@ -1408,18 +1818,26 @@
           V(s) = E[ r(t) + γ · V(s(t+1)) ]
         </div>
 
-        <div class="card-grid" style="grid-template-columns: repeat(3, 1fr)">
-
-          <!-- Row 1: 수식 구성 요소 -->
+        <div class="card-grid" style="grid-template-columns: repeat(2, 1fr)">
+          <!-- 1열1행: V(s) -->
           <div class="card">
             <div class="card-sym">V(s)</div>
             <div class="card-name">현재 상태의 가치 (State Value)</div>
             <div class="card-body">
               - 상태 s에서 시작하여 정책 π를 따랐을 때 받을 총 기대 수익.<br />
               - 에이전트가 학습하고 저장하는 핵심 값.<br />
-              - Critic이 담당.
+              - <strong>Critic이 담당</strong>:<br />
+              → V(s)를 추정하여 Actor의 행동이 평균 대비 이득에 대한
+              <strong>A(s,a)</strong>의 기준선(baseline)을 제공.<br />
+              <span style="font-size: 0.82rem; color: var(--text2)"
+                >→ A &gt; 0: 해당 행동 강화 / A &lt; 0: 해당 행동 억제</span
+              >
+            </div>
+            <div class="card-note">
+              Critic이 계산하는 Advantage : A(s,a) = r + γ·V(s') − V(s)
             </div>
           </div>
+          <!-- 2열1행: r(t) -->
           <div class="card">
             <div class="card-sym">r(t)</div>
             <div class="card-name">즉각적 보상 (Immediate Reward)</div>
@@ -1427,8 +1845,58 @@
               - 행동을 취한 직후 받는 보상.<br />
               - 시장 데이터가 수식에 유입되는 유일한 통로.
             </div>
-            <div class="card-note">= daily_return × a − fee × 1[a=1, prev_a=0]<br /><span style="font-size:0.72rem;color:var(--text3)">※ 수수료는 CASH→BUY 전환 시에만 부과</span></div>
+            <div class="card-note">
+              = daily_return × a − fee × 1[a=1, prev_a=0]<br /><span
+                style="font-size: 0.72rem; color: var(--text3)"
+                >※ 수수료는 CASH → BUY 전환 시에만 부과</span
+              >
+            </div>
           </div>
+          <!-- 1열2행: E[·] -->
+          <div class="card">
+            <div class="card-sym">E[·]</div>
+            <div class="card-name">기댓값 연산자 (Expectation)</div>
+            <div class="card-body">
+              - 불확실한 미래의 가능한 모든 경우를 확률로 가중 평균하는 연산 :
+              E[x] = Σ x · P(x)<br />
+              - 같은 행동이라도 시장 반응에 따라 r이 변하므로, V(s)를 단일 값이
+              아닌 <strong>기댓값</strong>으로 정의해야함.
+            </div>
+            <div class="card-note">
+              E 없이는 확률적 환경에서 V(s)가 정의되지 않음
+            </div>
+          </div>
+          <!-- 2열2행: R → r -->
+          <div class="card">
+            <div class="card-sym">R → r</div>
+            <div class="card-name">보상 함수 R vs 실현값 r</div>
+            <div class="card-body">
+              - <strong>R(s,a,s')</strong> : 보상을 계산하는 규칙(함수) — MDP
+              설계자가 정함.<br />
+              - <strong>r(t)</strong> : 시점 t에서 R에 실제 수치를 대입한
+              <em>결과값</em> — 시장이 결정.<br />
+              - 비유 : R은 고정된 레시피, r은 매일 달라지는 완성된 요리.
+            </div>
+            <div class="card-note">
+              R = 규칙(설계) · r = 결과(관측) · E[r] = 평균 기대
+            </div>
+          </div>
+          <!-- 1열3행: 왜 E가 필요한가 -->
+          <div class="card">
+            <div class="card-sym">왜 E가 필요한가?</div>
+            <div class="card-name">불확실성을 확률로 흡수</div>
+            <div class="card-body">
+              - 같은 상태 s, 같은 행동 a라도 다음 상태 s'는 시장에 따라
+              달라진다.<br />
+              - 전이확률 P(s'|s,a)를 직접 알 수 없는
+              <strong>Model-free</strong> 환경이므로, E[·]가 모든 가능한 s'에
+              대한 불확실성을 하나의 값으로 압축한다.
+            </div>
+            <div class="card-note">
+              E가 없으면 V(s) = r + γV(s') 는 매번 다른 값 → 학습 불가
+            </div>
+          </div>
+          <!-- 2열3행: γ · V(s(t+1)) -->
           <div class="card">
             <div class="card-sym">γ · V(s(t+1))</div>
             <div class="card-name">할인된 미래 가치</div>
@@ -1436,42 +1904,10 @@
               - 다음 상태의 가치를 γ로 할인.<br />
               - 현재 가치는 미래 가치의 재귀적 합계임을 표현.
             </div>
-            <div class="card-note">γ=0.95: 미래 1봉 후 가치의 95%만 인정</div>
-          </div>
-
-          <!-- Row 2: E와 r의 역할·필요성 -->
-          <div class="card">
-            <div class="card-sym">E[·]</div>
-            <div class="card-name">기댓값 연산자 (Expectation)</div>
-            <div class="card-body">
-              - 불확실한 미래의 가능한 모든 경우를 확률로 가중 평균하는 연산.<br />
-              - E[X] = Σ x · P(x)<br />
-              - 같은 행동을 해도 시장 반응에 따라 r이 달라지므로,
-              V(s)를 단일 값이 아닌 <strong>기댓값</strong>으로 정의해야 한다.
+            <div class="card-note">
+              γ = 0.95 : 미래 1봉 후 가치의 95%만 인정
             </div>
-            <div class="card-note">E 없이는 확률적 환경에서 V(s)가 정의되지 않음</div>
           </div>
-          <div class="card">
-            <div class="card-sym">R → r</div>
-            <div class="card-name">보상 함수 R vs 실현값 r</div>
-            <div class="card-body">
-              - <strong>R(s,a,s')</strong> : 보상을 계산하는 <em>규칙(함수)</em> — MDP 설계자가 정함.<br />
-              - <strong>r(t)</strong> : 시점 t에서 R에 실제 수치를 대입한 <em>결과값</em> — 시장이 결정.<br />
-              - 비유 : R은 고정된 레시피, r은 매일 달라지는 완성된 요리.
-            </div>
-            <div class="card-note">R = 규칙(설계) · r = 결과(관측) · E[r] = 평균 기대</div>
-          </div>
-          <div class="card">
-            <div class="card-sym">왜 E가 필요한가</div>
-            <div class="card-name">불확실성을 확률로 흡수</div>
-            <div class="card-body">
-              - 같은 상태 s, 같은 행동 a라도 다음 상태 s'는 시장에 따라 달라진다.<br />
-              - 전이확률 P(s'|s,a)를 직접 알 수 없는 <strong>Model-free</strong> 환경이므로,<br />
-              - E[·]가 모든 가능한 s'에 대한 불확실성을 하나의 값으로 압축한다.
-            </div>
-            <div class="card-note">E가 없으면 V(s) = r + γV(s') 는 매번 다른 값 → 학습 불가</div>
-          </div>
-
         </div>
 
         <div class="info warn" style="margin-top: 1rem">
@@ -1485,11 +1921,11 @@
         <hr class="divider" />
         <div class="mini-title">Bellman 최적 방정식 — Q*(s, a)</div>
         <p class="sec-desc" style="margin-bottom: 1rem">
-          "상태 s에서 행동 a를 취할 때, 가능한 최선의 가치는 얼마인가?"
+          "상태 s에서 행동 a를 취할 때, 가능한 "최선의 가치"는 얼마인가?"
         </p>
 
         <div class="fbox orange">
-          <div class="flabel">최적 행동-가치 함수 Q*(s,a)</div>
+          <div class="flabel">"최적 행동" : 가치 함수 Q*(s,a)</div>
           Q*(s, a) = E[ r + γ · max<sub style="font-size: 0.7em">a'</sub> Q*(s',
           a') ]
         </div>
@@ -1521,6 +1957,93 @@
             <div class="card-note">V(s) = max_a Q(s,a) (최적 정책 하에서)</div>
           </div>
         </div>
+
+        <!-- Q vs Q* 비교 -->
+        <hr class="divider" />
+        <div class="mini-title">Q(s,a) vs Q*(s,a) — 추정값과 최적값의 차이</div>
+
+        <div
+          class="card-grid"
+          style="grid-template-columns: repeat(2, 1fr); margin-top: 1rem"
+        >
+          <div class="card">
+            <div class="card-sym">Q(s, a)</div>
+            <div class="card-name">행동-가치 추정값 — 현재 정책 π 종속</div>
+            <div class="card-body">
+              - <strong>현재 정책 π를 따를 때</strong> 상태 s에서 행동 a를
+              취하면 받을 총 기대 수익.<br />
+              - 정책이 바뀌면 Q값도 달라짐 — π에 종속.<br />
+              - 학습 도중 계속 변하는 <strong>추정값</strong>.
+            </div>
+            <div class="card-note">Q_π(s,a) = E_π[ r + γ · Q_π(s', a') ]</div>
+          </div>
+          <div class="card">
+            <div class="card-sym">Q*(s, a)</div>
+            <div class="card-name">최적 행동-가치 함수 — 정책 독립</div>
+            <div class="card-body">
+              - <strong>가능한 모든 정책 중 최선</strong>을 따를 때의 기대
+              수익.<br />
+              - 어떤 정책을 쓰든 도달 가능한
+              <strong>이론적 상한(참값)</strong>.<br />
+              - 미래 행동을 항상 greedy 최적 선택으로 가정.
+            </div>
+            <div class="card-note">
+              Q*(s,a) = max_π Q_π(s,a) = E[ r + γ · max_a' Q*(s',a') ]
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+          "
+        >
+          <div class="card" style="border-color: var(--text3)">
+            <div class="card-sym" style="font-size: 0.9rem">정책 종속성</div>
+            <div class="card-body">
+              <span style="color: var(--orange)">Q(s,a)</span> : π에 따라 값
+              변동<br />
+              <span style="color: var(--teal)">Q*(s,a)</span> : 모든 π 중 최대 →
+              고정된 참값
+            </div>
+          </div>
+          <div class="card" style="border-color: var(--text3)">
+            <div class="card-sym" style="font-size: 0.9rem">미래 행동 선택</div>
+            <div class="card-body">
+              <span style="color: var(--orange)">Q(s,a)</span> : E_π[Q(s',a')] —
+              정책대로<br />
+              <span style="color: var(--teal)">Q*(s,a)</span> : max_a' Q*(s',a')
+              — 항상 최선
+            </div>
+          </div>
+          <div class="card" style="border-color: var(--text3)">
+            <div class="card-sym" style="font-size: 0.9rem">
+              Q-Learning 목표
+            </div>
+            <div class="card-body">
+              반복 갱신으로<br />
+              <span style="color: var(--orange)">Q(s,a)</span> →
+              <span style="color: var(--teal)">Q*(s,a)</span> 수렴
+            </div>
+          </div>
+        </div>
+
+        <div class="info" style="margin-top: 0.8rem">
+          <div class="tag">수렴 메커니즘 — TD 갱신(Update)</div>
+          매 스텝마다 Q(s,a)를 Q*(s,a) 방향으로 조금씩 이동 :
+          <span class="mono" style="font-size: 0.88rem">
+            Q(s,a) ← Q(s,a) + α · [ r + γ·max<sub style="font-size: 0.7em"
+              >a'</sub
+            >
+            Q(s',a') − Q(s,a) ] </span
+          ><br />
+          핵심: TD Target에 <strong>max_a'</strong>를 사용함으로써 현재 정책과
+          무관하게 Q*를 목표로 삼는다. → 이를
+          <strong>Off-policy</strong> 학습이라 한다.
+        </div>
       </div>
     </section>
 
@@ -1538,24 +2061,15 @@
 
         <div class="fbox purple">
           <div class="flabel">
-            Q-Learning TD 갱신 규칙 — base_agent.py _train_qlearning_vanilla()
+            Q-Learning TD 갱신 규칙 — base_agent.py — def
+            _train_qlearning_vanilla()
           </div>
           Q(s,a) += α · [ r + γ · max<sub style="font-size: 0.7em">a'</sub>
           Q(s',a') − Q(s,a) ]
         </div>
 
-        <div class="card-grid" style="grid-template-columns: repeat(3, 1fr)">
-
-          <!-- Row 1: 수식 구성 요소 -->
-          <div class="card">
-            <div class="card-sym">r + γ · max<sub>a'</sub> Q(s',a')</div>
-            <div class="card-name">TD Target (목표값)</div>
-            <div class="card-body">
-              - 에이전트가 "받았어야 할" 기대값.<br />
-              - 실제 보상 r과 다음 상태 최선 행동 가치 추정을 합산.<br />
-              - Q(s,a)가 수렴하려는 '정답'.
-            </div>
-          </div>
+        <div class="card-grid" style="grid-template-columns: repeat(2, 1fr)">
+          <!-- 1열1행: Q(s, a) -->
           <div class="card">
             <div class="card-sym">Q(s, a)</div>
             <div class="card-name">현재 추정값</div>
@@ -1565,6 +2079,30 @@
               - 2×2 행렬: Q[상태][행동]
             </div>
           </div>
+          <!-- 2열1행: r + γ · max_a' Q(s',a') -->
+          <div class="card">
+            <div class="card-sym">r + γ · max<sub>a'</sub> Q(s',a')</div>
+            <div class="card-name">TD Target (목표값)</div>
+            <div class="card-body">
+              - 에이전트가 "받았어야 할" 기대값.<br />
+              - 실제 보상 r과 다음 상태 최선 행동 가치 추정을 합산.<br />
+              - Q(s,a)가 수렴하려는 '정답'.
+            </div>
+          </div>
+          <!-- 1열2행: α (Learning Rate) -->
+          <div class="card">
+            <div class="card-sym">α (=lr, Learning Rate)</div>
+            <div class="card-name">학습률 [0.005 ~ 0.1]</div>
+            <div class="card-body">
+              - 경험 하나당 Q를 얼마나 조정할지.<br />
+              - 작은 α = 신중한 학습 / 큰 α = 공격적 학습<br />
+              - α가 너무 크면 진동, 너무 작으면 수렴이 느림.
+            </div>
+            <div class="card-note">
+              실전: α = 0.010 ~ 0.073 (시뮬레이션 탐색)
+            </div>
+          </div>
+          <!-- 2열2행: δ = Target − Q(s,a) -->
           <div class="card">
             <div class="card-sym">δ = Target − Q(s,a)</div>
             <div class="card-name">TD Error (예측 오차 신호)</div>
@@ -1574,44 +2112,40 @@
               - δ = 0: 예측이 정확함 → 갱신 없음 (수렴)
             </div>
           </div>
-
-          <!-- Row 2: α, +=, 수렴 -->
-          <div class="card">
-            <div class="card-sym">α (Learning Rate)</div>
-            <div class="card-name">학습률 [0.005 ~ 0.1]</div>
-            <div class="card-body">
-              - 경험 하나당 Q를 얼마나 조정할지.<br />
-              - 작은 α = 신중한 학습 / 큰 α = 공격적 학습<br />
-              - α가 너무 크면 진동, 너무 작으면 수렴이 느림.
-            </div>
-            <div class="card-note">실전: α = 0.010 ~ 0.073 (시뮬레이션 탐색)</div>
-          </div>
+          <!-- 1열3행: += 의 의미 -->
           <div class="card">
             <div class="card-sym">+= 의 의미</div>
             <div class="card-name">왜 '=' 이 아닌 '+=' 인가</div>
             <div class="card-body">
-              - <strong>=</strong> : 기존 지식을 버리고 이번 경험만 믿음 → 과적합 위험.<br />
-              - <strong>+=</strong> : 기존 Q에 오차의 일부(α배)만 더함 → 점진적 갱신.<br />
+              - <strong>=</strong> : 기존 지식을 버리고 이번 경험만 믿음 →
+              과적합 위험.<br />
+              - <strong>+=</strong> : 기존 Q에 오차의 일부(α배)만 더함 → 점진적
+              갱신.<br />
               <br />
               Q<sub>new</sub> = Q<sub>old</sub> + α × δ<br />
-              <br />
-              - α=0 이면 전혀 바뀌지 않고, α=1 이면 이번 경험으로 완전 교체.<br />
-              - 수백 에피소드에 걸쳐 평균적으로 올바른 값에 수렴한다.
+              → α=0 이면 전혀 바뀌지 않고, α=1 이면 이번 경험으로 완전 교체.<br />
+              → 수백 에피소드에 걸쳐 평균적으로 올바른 값에 수렴한다.
             </div>
             <div class="card-note">매 경험마다 조금씩, 반복할수록 정확해짐</div>
           </div>
+          <!-- 2열3행: Q-테이블 구조 -->
           <div class="card">
             <div class="card-sym">Q-테이블 구조</div>
             <div class="card-name">수렴까지의 흐름</div>
             <div class="card-body">
-              - 초기값: Q[:,1] = max(fee×50, 0.05) — BUY를 약간 선호하도록 Cold-Start.<br />
+              - 초기값: Q[:,1] = max(fee×50, 0.05) → BUY를 약간 선호하도록
+              Cold-Start.<br />
               - 매 거래일: 경험(s, a, r, s') 관측 → δ 계산 → Q += α·δ.<br />
               - 300~500 에피소드 반복 후 δ → 0 으로 수렴.<br />
               - 수렴된 Q 테이블로 OOS 구간에서 argmax 결정론적 행동.
             </div>
-            <div class="card-note">Vanilla: Q[2][2] (is_bull 기반 2-상태 전용)<br /><span style="font-size:0.72rem;color:var(--text3)">※ 4/8-State는 STATIC / STATIC_H 전용</span></div>
+            <div class="card-note">
+              Vanilla: Q[2][2] (is_bull 기반 2-상태 전용)<br /><span
+                style="font-size: 0.72rem; color: var(--text3)"
+                >※ 4/8-State는 STATIC / STATIC_H 전용</span
+              >
+            </div>
           </div>
-
         </div>
 
         <hr class="divider" />
@@ -1646,8 +2180,8 @@
         </div>
         <div class="info warn" style="margin-top: 1rem">
           <div class="tag">Vanilla의 한계</div>
-          Q-테이블은 기대값만 저장하여, 확률 분포를 다루지 못한다.
-          → Policy & Gradient 불가, 엔트로피 제어 불가.<br />
+          Q-테이블은 기대값만 저장하여, 확률 분포를 다루지 못한다. → Policy &
+          Gradient 불가, 엔트로피 제어 불가.<br />
           2-상태만 사용하여 EMA 위치 신호를 버림.
         </div>
       </div>
@@ -1660,31 +2194,41 @@
         <div class="sec-label">03.5 · 논문 기반 개념 정의</div>
         <h2 class="sec-title">STATIC이란 무엇인가?</h2>
         <p class="sec-desc">
-          "Vectorizing the Trie, Su et al. (Feb. 2026) " 논문에서 제안된
+          "Vectorizing the Trie, Su et al. (Feb. 2026)" 논문에서 제안된
           <strong style="color: var(--purple)">STATIC</strong>은
           <em
-            >Transition Matrix-Accelerated Trie Index for Constrained
-            Decoding</em
-          >의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
+            >State Transition mAtrix-accelerated Trie Index for Constrained
+            decoding</em
+          >
+          의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
           실현하는 기법이다.<br />
-          이 개념은 트레이딩 강화학습의 상태 제약 구조와 구조적으로
-          동형(isomorphic)이다.
+          → 즉, "LLM이 추천/검색 결과를 직접 생성할 때, 엉뚱한 값을 만들지
+          않도록 제약을 걸되, 이 제약 검사를 CPU가 아닌 GPU/TPU에서 빠르게
+          연산하도록 설계한 기법" 이다. 이 개념은 트레이딩 강화학습의 상태 제약
+          구조와 구조적으로 동형(isomorphic)이다.
         </p>
 
         <!-- 핵심 문제 -->
         <div class="info warn">
           <div class="tag">논문이 해결하는 문제</div>
-          표준 오토레그레시브 디코딩은 출력 공간을 제어할 수 없어 "할루시네이션"
-          — 재고에 없거나 너무 오래된 아이템의 ID를 자신 있게 생성 — 이
-          발생한다.<br />
-          Trie(프리픽스 트리) 기반 제약은 개념적으로 올바르지만, 포인터 체이싱
-          특성상 TPU/GPU에서 심각한 지연을 유발한다.
+          표준 오토레그레시브 디코딩(Standard Autoregressive Decoding)은 출력
+          공간을 제어할 수 없어 "할루시네이션" — 재고에 없거나 너무 오래된
+          아이템의 ID를 생성함 — 이 발생한다.<br />
+          Trie 기반 제약은 개념적으로 올바르지만, 포인터 변수가 가리키는 주소를
+          따라 계속해서 메모리에 접근하는 방식인 Pointer Chasing 특성상
+          TPU/GPU에서 심각한 지연을 유발한다.
         </div>
 
         <hr class="divider" />
         <div class="mini-title">
           논문 STATIC 핵심 아이디어 — Trie → CSR 행렬 변환
         </div>
+
+        <p class="sec-desc" style="margin-bottom: 0.6rem">
+          유튜브 추천 시스템에서 LLM은 영상 ID를 <strong>토큰 단위로 직접 생성</strong>한다.
+          이때 <strong>존재하지 않는 ID가 만들어지면 안 되므로</strong>, 유효한 경로만 허용해야 한다. 기존 방식은 Trie를 한 칸씩 이동하며 체크했는데, 이는 순차적이라 GPU를 활용하지 않고 CPU로만 연산하게 된다.<br />
+          <strong>→ STATIC의 해법:</strong> 이 트리를 <strong>2D 행렬(CSR)로 납작하게 펴서</strong> GPU가 수천 개 경로를 동시에 조회하도록 변환한다.
+        </p>
 
         <div class="three-col" style="margin-bottom: 1.5rem">
           <div class="card" style="border-color: var(--red)">
@@ -1728,32 +2272,93 @@
           </div>
         </div>
 
+        <div style="margin-bottom:1.2rem; padding:1rem 1.2rem; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.3); border-radius:8px;">
+          <div style="font-family:var(--sans); font-size:0.9rem; font-weight:700; color:var(--purple); margin-bottom:0.7rem;">
+            ↔ 이 프로젝트에 동일 구조가 적용된 방식
+          </div>
+          <table class="tbl" style="margin-bottom:0.8rem; font-family:var(--sans)">
+            <thead>
+              <tr>
+                <th>구조 요소</th>
+                <th>논문 STATIC (LLM 디코딩)</th>
+                <th>이 프로젝트 STATIC_H (RL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>"표"의 정체</td>
+                <td class="mono">T[노드, 토큰] = 다음 노드</td>
+                <td class="mono">θ[시장상태, 행동] = 선호도</td>
+              </tr>
+              <tr>
+                <td>행(row)</td>
+                <td>현재 Trie 노드</td>
+                <td>시장 상태 {0, 1, 2, 3}</td>
+              </tr>
+              <tr>
+                <td>열(col)</td>
+                <td>선택 가능한 토큰</td>
+                <td>행동 {0: CASH, 1: BUY}</td>
+              </tr>
+              <tr>
+                <td>금지 처리</td>
+                <td class="mono">log_prob = −∞</td>
+                <td>θ 낮게 → π(a|s) ≈ 0</td>
+              </tr>
+              <tr>
+                <td>초기값 설정</td>
+                <td>Trie 경로 존재 여부</td>
+                <td>Cold-Start (수수료 비례)</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-family:var(--sans); font-size:0.85rem; color:var(--text2); border-top:1px solid rgba(255,255,255,0.1); padding-top:0.6rem;">
+            <strong style="color:var(--yellow)">핵심 공통점:</strong>
+            논문은 "존재하지 않는 영상 ID 생성 차단", 이 프로젝트는 "불리한 매매 행동 억제" —
+            <strong style="color:var(--text1)">둘 다 처음부터 불가능한 선택지를 구조적으로 막아놓는다.</strong>
+          </div>
+        </div>
+
         <div class="fbox purple">
           <div class="flabel">CSR 전이 행렬 정의 (논문 수식 4.2)</div>
           T[s, v] = s_next &nbsp;if&nbsp; (s →<sup>v</sup> s_next)
           exists,&nbsp;&nbsp; else 0<br />
           <br />
-          <span style="color: var(--text2); font-size: 0.82rem">
+          <span style="color: var(--text2); font-size: 0.82rem; font-family: var(--sans)">
             s : 현재 prefix 노드 상태 (trie node index)<br />
             v : 선택한 토큰 (token index)<br />
             s_next : 전이 후 다음 노드 ID<br />
             0 : 무효 전이 (터미널 상태 → 해당 토큰 마스킹)
           </span>
+          <div style="margin-top:0.7rem; padding:0.5rem 0.75rem; background:rgba(255,255,255,0.05); border-left:3px solid var(--purple); border-radius:4px; font-size:0.82rem; color:var(--text2); font-family: var(--sans);">
+            <strong style="color:var(--purple)">핵심 직관:</strong>
+            전체 (노드 수 × 어휘 크기) 행렬은 수억 개 원소지만,<br />
+            실제 Trie 경로가 존재하는 칸은 극소수 → <strong>CSR 압축</strong>으로 0이 아닌 값만 저장.<br />
+            T[s,v] = 0 인 토큰은 디코딩 시 log-prob = −∞ 로 마스킹 → 해당 토큰 생성 완전 차단.
+          </div>
         </div>
 
         <div class="fbox purple" style="margin-top: 0.8rem">
           <div class="flabel">CSR 3개 배열 구조 + VNTK 슬라이싱</div>
-          P[n] : Row Pointers &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 노드 n의
-          유효 전이 시작 인덱스<br />
-          C[P[n]:P[n+1]] : Columns ← 유효 토큰 ID 목록<br />
-          V[P[n]:P[n+1]] : Values ← 대응하는 다음 노드 ID 목록<br />
+          P[n] : Row Pointers &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family:var(--sans)">← 노드 n의 유효 전이 시작 인덱스</span><br />
+          C[P[n]:P[n+1]] : Columns <span style="font-family:var(--sans)">← 유효 토큰 ID 목록</span><br />
+          V[P[n]:P[n+1]] : Values <span style="font-family:var(--sans)">← 대응하는 다음 노드 ID 목록</span><br />
           <br />
           <span style="color: var(--text2); font-size: 0.82rem"
-            ># VNTK (Vectorized Node Transition Kernel) 핵심 연산<br />
-            d_col = DynamicSlice(C, start=P[n], len=B_t) ← 고정 크기 슬라이싱<br />
-            m = Scatter(valid_tokens, values=True) ← 희소 → 밀집 마스크<br />
-            log_prob[invalid] = −∞ ← 무효 토큰 제거</span
+            ># VNTK (Vectorized Node Transition Kernel) <span style="font-family:var(--sans)">핵심 연산</span><br />
+            d_col = DynamicSlice(C, start=P[n], len=B_t) <span style="font-family:var(--sans)">← 고정 크기 슬라이싱</span><br />
+            m = Scatter(valid_tokens, values=True) <span style="font-family:var(--sans)">← 희소 → 밀집 마스크</span><br />
+            log_prob[invalid] = −∞ <span style="font-family:var(--sans)">← 무효 토큰 제거</span></span
           >
+          <div style="margin-top:0.7rem; padding:0.5rem 0.75rem; background:rgba(255,255,255,0.05); border-left:3px solid var(--purple); border-radius:4px; font-size:0.82rem; color:var(--text2); font-family:var(--sans);">
+            <strong style="color:var(--purple)">쉽게 이해하기 — 도서관 비유:</strong><br />
+            <strong style="color:var(--text1)">P[n]</strong> : 노드 n의 데이터가 C/V 배열 <em>몇 번째 칸</em>에 있는지 알려주는 <strong>목차 포인터</strong><br />
+            <strong style="color:var(--text1)">C[P[n]:P[n+1]]</strong> : 그 노드에서 <em>실제로 갈 수 있는</em> 토큰 ID 목록 (유효 다음 단어들)<br />
+            <strong style="color:var(--text1)">V[P[n]:P[n+1]]</strong> : 각 토큰 선택 시 <em>도착하는</em> 다음 Trie 노드 ID (이동 목적지)<br /><br />
+            <strong style="color:var(--yellow)">VNTK의 역할:</strong>
+            가변 길이 희소 행(P→C/V 슬라이스)을 <strong>고정 크기 텐서</strong>로 패딩 →<br />
+            배치 내 모든 빔(beam)을 <strong>동일 크기로 정렬</strong> → GPU/TPU 병렬 연산 완전 활용
+          </div>
         </div>
 
         <hr class="divider" />
@@ -1813,6 +2418,36 @@
           </tbody>
         </table>
 
+        <div style="margin-top:0.9rem; padding:0.85rem 1.1rem; background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.18); border-radius:6px; font-family:var(--sans); font-size:0.82rem; color:var(--text2);">
+          <div style="font-weight:700; color:var(--cyan); margin-bottom:0.65rem; font-size:0.87rem;">각 행의 의미 풀이</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.55rem 1.4rem;">
+            <div>
+              <strong style="color:var(--text1)">노드/상태:</strong>
+              논문은 "영상 ID를 어디까지 생성했는지(prefix 위치)", 이 프로젝트는 "지금 시장이 어떤 국면인지(상승/하락 × EMA 위/아래 = 4~8가지)"
+            </div>
+            <div>
+              <strong style="color:var(--text1)">선택/행동:</strong>
+              논문은 "다음에 붙일 영상 ID 조각(토큰)", 이 프로젝트는 "매수(BUY) 또는 현금 대기(CASH) 중 하나 선택"
+            </div>
+            <div>
+              <strong style="color:var(--text1)">전이 구조:</strong>
+              논문은 T[s,v]로 다음 Trie 노드를 즉시 조회, 이 프로젝트는 θ[s,a]로 각 행동의 선호도를 결정 — 둘 다 2D 표 한 번 조회로 끝남
+            </div>
+            <div>
+              <strong style="color:var(--text1)">무효 처리:</strong>
+              논문은 Trie 경로가 없는 토큰을 −∞로 차단, 이 프로젝트는 Cold-Start로 불리한 행동을 낮은 θ로 초기화해 구조적으로 억제
+            </div>
+            <div>
+              <strong style="color:var(--text1)">제약 조건:</strong>
+              논문은 최신성·카테고리·재고로 후보 영상을 필터링, 이 프로젝트는 EMA·추세·변동성으로 유효 시장 국면을 정의
+            </div>
+            <div>
+              <strong style="color:var(--text1)">안정화:</strong>
+              논문은 Trie→CSR 변환으로 947× 속도 향상, 이 프로젝트는 STATIC→STATIC_H(PPO Clip + Adaptive Temperature)로 전 종목 양수 Alpha 달성
+            </div>
+          </div>
+        </div>
+
         <hr class="divider" />
         <div class="mini-title">시장 정보 학습에 STATIC_H가 유리한 이유</div>
 
@@ -1861,7 +2496,7 @@
 
         <div class="two-col" style="margin-bottom: 2rem">
           <div class="card" style="border-color: var(--cyan)">
-            <div class="card-sym">🎭 Actor (정책 π)</div>
+            <div class="card-sym">Actor (정책 π)</div>
             <div class="card-name">역할: 어떤 행동을 취할지 결정</div>
             <div class="card-body">
               파라미터: θ[s, a] (선호도 행렬, shape=(4,2) or (8,2))<br /><br />Softmax
@@ -1876,7 +2511,7 @@
             </div>
           </div>
           <div class="card" style="border-color: var(--gold)">
-            <div class="card-sym">🧠 Critic (가치 V)</div>
+            <div class="card-sym">Critic (가치 V)</div>
             <div class="card-name">역할: 현재 상태가 얼마나 좋은지 평가</div>
             <div class="card-body">
               파라미터: V[s] (가치 테이블, shape=(4,) or (8,))<br /><br />TD(0)
@@ -1886,7 +2521,7 @@
               class="fbox gold"
               style="margin-top: 0.5rem; font-size: 0.78rem"
             >
-              δ = r_eff + γ·V(s') − V(s)<br />V(s) += lr · δ
+              δ = r_eff + γ·V(s') − V(s), where V(s) += lr · δ
             </div>
             <div class="card-body">
               δ = TD Error = 예측 오차 신호.<br />
@@ -1906,6 +2541,11 @@
 
         <hr class="divider" />
         <div class="mini-title">Policy Gradient Theorem — Actor 갱신 수식</div>
+
+        <p class="sec-desc" style="margin-bottom:0.8rem">
+          "선택한 행동이 평균보다 좋으면(δ &gt; 0) 그 방향으로 θ를 밀고, 안 좋으면(δ &lt; 0) 당긴다" <br />
+          → <strong>Score 함수 ∇log π</strong>가 방향을, <strong>Advantage δ</strong>가 크기를, <strong>Critic V(s)</strong>가 기준선을 제공하는 세 역할의 곱이 Actor 갱신의 전부이다.
+        </p>
 
         <div class="fbox">
           <div class="flabel">목적 함수 기울기 (Policy Gradient Theorem)</div>
@@ -1939,22 +2579,23 @@
           </div>
         </div>
 
-        <div class="fbox" style="margin-top: 1rem">
-          <div class="flabel">
-            Actor 실제 갱신 — base_agent.py _train_actor_critic_static()
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-top:1rem;">
+          <div class="fbox" style="font-size:0.82rem; margin-top:0">
+            <div class="flabel">
+              Actor 실제 갱신 — base_agent.py _train_actor_critic_static()
+            </div>
+            grad_log_pi = 1[a == chosen] − π(a|s)
+            <span style="color: var(--text2)">← Score 함수</span><br />
+            θ[s, a] += lr · δ · grad_log_pi
+            <span style="color: var(--text2)">← Policy Gradient 적용</span>
           </div>
-          grad_log_pi = 1[a == chosen] − π(a|s)
-          <span style="color: var(--text2)">← Score 함수</span><br />
-          θ[s, a] += lr · δ · grad_log_pi
-          <span style="color: var(--text2)">← Policy Gradient 적용</span>
-        </div>
-
-        <div class="fbox gold" style="margin-top: 0.8rem">
-          <div class="flabel">Critic 갱신</div>
-          δ = r_eff + γ · V(s') − V(s)
-          <span style="color: var(--text2)">← TD Error</span><br />
-          V(s) += lr · δ
-          <span style="color: var(--text2)">← 가치 함수 갱신</span>
+          <div class="fbox gold" style="font-size:0.82rem; margin-top:0">
+            <div class="flabel">Critic 갱신</div>
+            δ = r_eff + γ · V(s') − V(s)
+            <span style="color: var(--text2)">← TD Error</span><br />
+            V(s) += lr · δ
+            <span style="color: var(--text2)">← 가치 함수 갱신</span>
+          </div>
         </div>
       </div>
     </section>
@@ -1977,53 +2618,58 @@
           H(π) = − Σ<sub>a</sub> π(a|s) · log π(a|s)
         </div>
 
-        <div class="card" style="margin: 1rem 0; padding: 1.4rem">
-          <div class="card-sym">Entropy H(π) 직관적 이해</div>
-          <div class="card-body" style="margin-bottom: 1rem">
-            정책의 행동 선택 불확실성(무질서도) 측정치.<br />
-            높은 엔트로피 = 다양한 행동 선택 = 더 많은 탐험.
-          </div>
-          <div class="ent-row">
-            <div class="ent-label">π = (0.50, 0.50) — 최대 불확실성</div>
-            <div class="ent-bar-wrap">
-              <div class="ent-bar" style="width: 100%"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; margin:1rem 0; align-items:stretch;">
+          <div class="fbox gold" style="margin:0; box-sizing:border-box;">
+            <div class="flabel">
+              엔트로피 정규화 보상<br /><br />
+              → STATIC에서 고정 계수 0.05 사용
             </div>
-            <div class="ent-val">H = 0.693</div>
+            r_eff = reward + <span style="color: var(--cyan)">0.05</span> ·
+            H(π)<br />
+            <br />
+            <span style="color: var(--text2); font-size: 0.82rem; font-family: var(--sans)"
+              >reward = daily_return × a − fee × |a − prev_a|<br />
+              H(π) = −Σ π(a|s) · log π(a|s) ← 현재 정책 엔트로피</span
+            >
           </div>
-          <div class="ent-row">
-            <div class="ent-label">π = (0.75, 0.25) — 중간 확실성</div>
-            <div class="ent-bar-wrap">
-              <div class="ent-bar" style="width: 54%"></div>
-            </div>
-            <div class="ent-val">H = 0.562</div>
-          </div>
-          <div class="ent-row">
-            <div class="ent-label">π = (0.99, 0.01) — 거의 확실</div>
-            <div class="ent-bar-wrap">
-              <div class="ent-bar" style="width: 8%"></div>
-            </div>
-            <div class="ent-val">H = 0.056</div>
-          </div>
-          <div class="ent-row">
-            <div class="ent-label">π = (1.00, 0.00) — 완전 결정적 (붕괴)</div>
-            <div class="ent-bar-wrap">
-              <div class="ent-bar" style="width: 0%"></div>
-            </div>
-            <div class="ent-val">H = 0.000</div>
-          </div>
-        </div>
 
-        <div class="fbox gold">
-          <div class="flabel">
-            엔트로피 정규화 보상 — STATIC에서 고정 계수 0.05 사용
+          <div class="card" style="margin:0; padding:1.4rem;">
+            <div class="card-sym">Entropy H(π) 직관적 이해</div>
+            <div class="card-body" style="margin-bottom: 1rem; font-family: var(--sans)">
+              정책의 행동 선택 불확실성(무질서도) 측정치.<br />
+              높은 엔트로피 = 다양한 행동 선택 = 더 많은 탐험.
+            </div>
+            <div class="ent-row">
+              <div class="ent-label" style="font-family:var(--sans)">π = (0.50, 0.50) — 최대 불확실성</div>
+              <div class="ent-bar-wrap">
+                <div class="ent-bar" style="width: 100%"></div>
+              </div>
+              <div class="ent-val">H = 0.693</div>
+            </div>
+            <div class="ent-row">
+              <div class="ent-label" style="font-family:var(--sans)">π = (0.75, 0.25) — 중간 확실성</div>
+              <div class="ent-bar-wrap">
+                <div class="ent-bar" style="width: 54%"></div>
+              </div>
+              <div class="ent-val">H = 0.562</div>
+            </div>
+            <div class="ent-row">
+              <div class="ent-label" style="font-family:var(--sans)">π = (0.99, 0.01) — 거의 확실</div>
+              <div class="ent-bar-wrap">
+                <div class="ent-bar" style="width: 8%"></div>
+              </div>
+              <div class="ent-val">H = 0.056</div>
+            </div>
+            <div class="ent-row">
+              <div class="ent-label" style="font-family:var(--sans)">π = (1.00, 0.00) — 완전 결정적 (붕괴)</div>
+              <div class="ent-bar-wrap">
+                <div class="ent-bar" style="width: 0%"></div>
+              </div>
+              <div class="ent-val">H = 0.000</div>
+            </div>
           </div>
-          r_eff = reward + <span style="color: var(--cyan)">0.05</span> ·
-          H(π)<br />
-          <br />
-          <span style="color: var(--text2); font-size: 0.82rem"
-            >reward = daily_return × a − fee × |a − prev_a|<br />
-            H(π) = −Σ π(a|s) · log π(a|s) ← 현재 정책 엔트로피</span
-          >
+
+
         </div>
 
         <div class="info">
@@ -2031,7 +2677,7 @@
           계수 0.05는 STATIC에서 고정값이다.<br />
           시장이 일관되게 BUY를 보상하더라도, 엔트로피 보너스가 정책
           붕괴(π(BUY)=1.0)를 방지한다.<br />
-          STATIC_H에서는 이 계수가 시장 상황에 따라 자동으로 변한다(Adaptive
+          → STATIC_H에서는 이 계수가 시장 상황에 따라 <strong style="color:#7fff7f;">자동으로</strong> 변한다(Adaptive
           Temperature).
         </div>
       </div>
@@ -2046,9 +2692,8 @@
         <p class="sec-desc">
           STATIC Actor-Critic 위에 Adaptive Temperature와 Tabular PPO Clipping을
           추가한 하이브리드 알고리즘.<br />
-          PPO Clipping은 Su et al. (2026) 논문의 신경망 PPO 개념을 Tabular
-          정책에 적용한 것이다.<br />
-          본 프로젝트 핵심 알고리즘으로, 6명 전원이 전 종목 양수 Alpha를
+          PPO Clipping은 Vectorizing the Trie, Su et al. (Feb. 2026) 논문의 신경망 PPO 개념을 Tabular 정책에 적용한 것이다.<br />
+          본 프로젝트 핵심 알고리즘으로, 모든 종목 시뮬레이션에서 양수 Alpha를
           달성했다.
         </p>
 
@@ -2125,7 +2770,7 @@
                   font-size: 0.78rem;
                   color: var(--green);
                 "
-                >α_t = clip(0.05×(1+flip_rate), 0.01, 0.15)</code
+                >α_t = clip(0.05×(1+flip_rate),0.01,0.15)</code
               ><br /><br />
               flip=0.0 → α_t = 0.050<br />
               flip=0.5 → α_t = 0.075<br />
@@ -2150,22 +2795,51 @@
           </div>
         </div>
 
-        <div class="info" style="margin-bottom: 1.5rem; border-left: 3px solid var(--green)">
-          <div class="tag" style="background: var(--green)">SAC-inspired</div>
-          Adaptive Temperature는 <strong>Soft Actor-Critic(SAC)</strong>의 자동 엔트로피 조정(Automatic Entropy Tuning)에서 영감을 받았습니다.<br /><br />
-          SAC는 목표 엔트로피 H_target을 미리 설정하고, 라그랑주 승수(α)를 경사 하강으로 자동 조정합니다.<br />
-          → <code style="font-family:var(--mono);color:var(--green)">α ← α − β·(H(π) − H_target)</code><br /><br />
-          본 프로젝트는 신경망 없이 <strong>flip_rate(행동 전환 빈도)</strong>를 프록시 신호로 삼아 동일한 효과를 Tabular 방식으로 구현합니다.<br />
+        <div
+          class="info"
+          style="margin-bottom: 1.5rem; border-left: 3px solid var(--green)"
+        >
+          <div class="tag">SAC-inspired</div>
+          Adaptive Temperature는 <strong>Soft Actor-Critic(SAC)</strong>의 자동
+          엔트로피 조정(Automatic Entropy Tuning)에서 영감을 받았습니다.<br /><br />
+          SAC는 목표 엔트로피 H_target을 미리 설정하고, 라그랑주 승수(α)를 경사
+          하강으로 자동 조정합니다.<br />
+          →
+          <code style="font-family: var(--mono); color: var(--green)"
+            >α ← α − β·(H(π) − H_target)</code
+          ><br /><br />
+          본 프로젝트는 신경망 없이 <strong>flip_rate(행동 전환 빈도)</strong>를
+          프록시 신호로 삼아 동일한 효과를 Tabular 방식으로 구현합니다.<br />
           → 과전환(불안정) 시 α↑ 탐험 강화 · 고착(과활용) 시 α↓ 활용 집중
         </div>
 
-        <div class="info" style="margin-bottom: 1.5rem; border-left: 3px solid var(--purple)">
-          <div class="tag" style="background: var(--purple)">ACER 구현 적용</div>
-          <strong>ACER(Actor-Critic with Experience Replay, Wang et al. 2016)</strong>는 본 프로젝트에 <code style="font-family:var(--mono);color:var(--purple)">_train_acer()</code>로 완전히 구현된 알고리즘입니다.<br /><br />
-          ACER는 리플레이 버퍼에서 과거 샘플을 재사용할 때, 현재 정책과 과거 정책의 차이를 중요도 비율로 보정합니다.<br />
-          → <code style="font-family:var(--mono);color:var(--purple)">ρ = π_new(a|s) / π_old(a|s)</code><br /><br />
-          Tabular PPO Clipping은 이 개념을 신경망 없이 <strong>한 스텝 내에서</strong> 적용합니다 — 리플레이 버퍼 없이 동일 비율로 갱신 크기를 제한.<br />
-          → <code style="font-family:var(--mono);color:var(--purple)">r_t = π_new[a] / π_old[a]</code> &nbsp;→&nbsp; clip([1−ε, 1+ε]) → scale 결정
+        <div
+          class="info"
+          style="margin-bottom: 1.5rem; border-left: 3px solid var(--purple)"
+        >
+          <div class="tag">
+            ACER 구현 적용
+          </div>
+          <strong
+            >ACER(Actor-Critic with Experience Replay, Wang et al. 2016)</strong
+          >는 본 프로젝트에
+          <code style="font-family: var(--mono); color: var(--purple)"
+            >_train_acer()</code
+          >로 완전히 구현된 알고리즘입니다.<br /><br />
+          ACER는 리플레이 버퍼에서 과거 샘플을 재사용할 때, 현재 정책과 과거
+          정책의 차이를 중요도 비율로 보정합니다.<br />
+          →
+          <code style="font-family: var(--mono); color: var(--purple)"
+            >ρ = π_new(a|s) / π_old(a|s)</code
+          ><br /><br />
+          Tabular PPO Clipping은 이 개념을 신경망 없이
+          <strong>한 스텝 내에서</strong> 적용합니다 — 리플레이 버퍼 없이 동일
+          비율로 갱신 크기를 제한.<br />
+          →
+          <code style="font-family: var(--mono); color: var(--purple)"
+            >r_t = π_new[a] / π_old[a]</code
+          >
+          &nbsp;→&nbsp; clip([1−ε, 1+ε]) → scale 결정
         </div>
 
         <div class="mini-title">Tabular PPO Clipping — 5단계 갱신 제약</div>
@@ -2200,6 +2874,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.78rem;
                 font-weight: 700;
                 margin-bottom: 0.4rem;
@@ -2218,6 +2893,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.68rem;
                 color: var(--text3);
                 margin-top: 0.3rem;
@@ -2241,6 +2917,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.78rem;
                 font-weight: 700;
                 margin-bottom: 0.4rem;
@@ -2259,6 +2936,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.68rem;
                 color: var(--text3);
                 margin-top: 0.3rem;
@@ -2282,6 +2960,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.78rem;
                 font-weight: 700;
                 margin-bottom: 0.4rem;
@@ -2300,6 +2979,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.68rem;
                 color: var(--text3);
                 margin-top: 0.3rem;
@@ -2323,6 +3003,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.78rem;
                 font-weight: 700;
                 margin-bottom: 0.4rem;
@@ -2341,6 +3022,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.68rem;
                 color: var(--text3);
                 margin-top: 0.3rem;
@@ -2364,6 +3046,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.78rem;
                 font-weight: 700;
                 margin-bottom: 0.4rem;
@@ -2382,6 +3065,7 @@
             </div>
             <div
               style="
+                font-family: var(--sans);
                 font-size: 0.68rem;
                 color: var(--text3);
                 margin-top: 0.3rem;
@@ -2394,66 +3078,42 @@
 
         <hr class="divider" />
         <div class="mini-title">STATIC vs STATIC_H 핵심 차이</div>
-        <div class="cmp" style="border: 1px solid var(--border)">
-          <div class="cmp-col">
-            <div class="cmp-head dim">STATIC RL</div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">엔트로피 계수</div>
-              <div class="cmp-row-val bad">고정: 0.05 (불변)</div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">정책 갱신</div>
-              <div class="cmp-row-val bad">
-                직접: θ += lr·δ·grad (제약 없음)
-              </div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">급격한 변화</div>
-              <div class="cmp-row-val bad">제어 없음 → 한 스텝에 전환 가능</div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">행동 고착</div>
-              <div class="cmp-row-val bad">강한 추세에서 불충분할 수 있음</div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">OOS 적응력</div>
-              <div class="cmp-row-val bad">제한적: 모든 레짐 동일 강도</div>
-            </div>
-          </div>
-          <div class="cmp-col new">
-            <div class="cmp-head bright">STATIC_H (Hybrid)</div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">엔트로피 계수</div>
-              <div class="cmp-row-val good">
-                동적: α_t ∈ [0.01, 0.15] 자동 조정
-              </div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">정책 갱신</div>
-              <div class="cmp-row-val good">
-                PPO Clip: scale ∈ {0.3, 1.0} 제어
-              </div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">급격한 변화</div>
-              <div class="cmp-row-val good">
-                clip_eps=0.2로 제약 → 점진적 전이
-              </div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">행동 고착</div>
-              <div class="cmp-row-val good">
-                flip_rate 기반 α_t 자동 + Clip 방지
-              </div>
-            </div>
-            <div class="cmp-row">
-              <div class="cmp-row-label">OOS 적응력</div>
-              <div class="cmp-row-val good">
-                강함: α_t가 레짐 변화 시 재탐험 유도
-              </div>
-            </div>
-          </div>
-        </div>
+        <table class="tbl" style="font-family:var(--sans);">
+          <thead>
+            <tr>
+              <th style="width:18%">항목</th>
+              <th style="width:41%; color:var(--red)">STATIC RL</th>
+              <th style="width:41%; color:var(--green)">STATIC_H (Hybrid)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:700; color:var(--text1)">엔트로피 계수</td>
+              <td style="color:var(--red)">고정: 0.05 (불변)</td>
+              <td style="color:var(--green)">동적: α_t ∈ [0.01, 0.15] 자동 조정</td>
+            </tr>
+            <tr>
+              <td style="font-weight:700; color:var(--text1)">정솵 갱신</td>
+              <td style="color:var(--red)">직접: θ += lr·δ·grad (제약 없음)</td>
+              <td style="color:var(--green)">PPO Clip: scale ∈ {0.3, 1.0} 제어</td>
+            </tr>
+            <tr>
+              <td style="font-weight:700; color:var(--text1)">급격한 변화</td>
+              <td style="color:var(--red)">제어 없음 → 한 스텝에 전환 가능</td>
+              <td style="color:var(--green)">clip_eps=0.2로 제약 → 점진적 전이</td>
+            </tr>
+            <tr>
+              <td style="font-weight:700; color:var(--text1)">행동 고착</td>
+              <td style="color:var(--red)">강한 추세에서 불충분할 수 있음</td>
+              <td style="color:var(--green)">flip_rate 기반 α_t 자동 + Clip 방지</td>
+            </tr>
+            <tr>
+              <td style="font-weight:700; color:var(--text1)">OOS 적응력</td>
+              <td style="color:var(--red)">제한적: 모든 레짐 동일 강도</td>
+              <td style="color:var(--green)">강함: α_t가 레짐 변화 시 재탐험 유도</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -2461,11 +3121,11 @@
     <section id="diagram" style="background: var(--bg2); padding: 80px 0 30px">
       <div class="container">
         <div class="accent-line" style="background: var(--orange)"></div>
-        <div class="sec-label">07 · 화살표 연산 다이어그램</div>
+        <div class="sec-label">07 · 화살표 연산 다이어그램.</div>
         <h2 class="sec-title">STATIC_H 전체 연산 흐름도</h2>
         <p class="sec-desc">
           MDP 정의부터 PPO Clipping Actor 갱신까지의 모든 과정을 시각적으로
-          표현한 다이어그램.<br />
+          표현한 다이어그램이다.<br />
           각 화살표는 데이터 흐름과 신호 전달을 나타내며, 색상으로 주요 경로와
           안정화 메커니즘을 구분했다.
         </p>
@@ -2487,8 +3147,9 @@
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
             "
           >
             <div
@@ -2501,8 +3162,9 @@
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
             "
           >
             <div
@@ -2515,8 +3177,9 @@
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
             "
           >
             <div
@@ -2529,8 +3192,9 @@
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
             "
           >
             <div
@@ -2543,8 +3207,9 @@
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-family: var(--mono);
-              font-size: 0.65rem;
+              font-family: var(--sans);
+              font-size: 0.82rem;
+              font-weight: 700;
             "
           >
             <div
@@ -2558,7 +3223,12 @@
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 1060 3110"
-            style="width: 100%; min-width: 700px; display: block; font-family: 'Noto Sans KR', sans-serif"
+            style="
+              width: 100%;
+              min-width: 700px;
+              display: block;
+              font-family: &quot;Noto Sans KR&quot;, sans-serif;
+            "
           >
             <defs>
               <marker
@@ -2574,6 +3244,24 @@
                   d="M2 1L8 5L2 9"
                   fill="none"
                   stroke="#00d4ff"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </marker>
+              <marker
+                id="ac-gray"
+                viewBox="0 0 10 10"
+                refX="8"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path
+                  d="M2 1L8 5L2 9"
+                  fill="none"
+                  stroke="#a0b8cc"
                   stroke-width="1.8"
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -2883,7 +3571,7 @@
               x="30"
               y="182"
               width="200"
-              height="46"
+              height="60"
               rx="5"
               fill="#0a1220"
               stroke="#7090b0"
@@ -2891,7 +3579,7 @@
             />
             <text
               x="130"
-              y="202"
+              y="208"
               text-anchor="middle"
               font-size="12"
               fill="#e0eaf4"
@@ -2901,7 +3589,7 @@
             </text>
             <text
               x="130"
-              y="218"
+              y="224"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -2913,7 +3601,7 @@
               x="248"
               y="182"
               width="220"
-              height="46"
+              height="60"
               rx="5"
               fill="#0a1220"
               stroke="#7090b0"
@@ -2921,7 +3609,7 @@
             />
             <text
               x="358"
-              y="202"
+              y="208"
               text-anchor="middle"
               font-size="12"
               fill="#e0eaf4"
@@ -2931,7 +3619,7 @@
             </text>
             <text
               x="358"
-              y="218"
+              y="224"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -2943,7 +3631,7 @@
               x="486"
               y="182"
               width="240"
-              height="46"
+              height="60"
               rx="5"
               fill="#040e12"
               stroke="#00ff9d"
@@ -2952,7 +3640,7 @@
             />
             <text
               x="606"
-              y="200"
+              y="203"
               text-anchor="middle"
               font-size="12"
               fill="#00ff9d"
@@ -2962,7 +3650,7 @@
             </text>
             <text
               x="606"
-              y="214"
+              y="217"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -2971,7 +3659,7 @@
             </text>
             <text
               x="606"
-              y="226"
+              y="229"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -3013,7 +3701,7 @@
 
             <line
               x1="130"
-              y1="228"
+              y1="242"
               x2="130"
               y2="248"
               stroke="#7090b0"
@@ -3022,7 +3710,7 @@
             />
             <line
               x1="358"
-              y1="228"
+              y1="242"
               x2="358"
               y2="248"
               stroke="#7090b0"
@@ -3031,7 +3719,7 @@
             />
             <line
               x1="606"
-              y1="230"
+              y1="242"
               x2="606"
               y2="248"
               stroke="#00ff9d"
@@ -3537,7 +4225,7 @@
 
             <!-- a → action_history (Step 2 → Step 4-5) -->
             <path
-              d="M 716 434 C 716 560 380 620 250 704"
+              d="M 716 434 C 716 650 250 530 250 704"
               fill="none"
               stroke="#00ff9d"
               stroke-width="0.8"
@@ -3831,7 +4519,7 @@
             />
             <text
               x="550"
-              y="934"
+              y="929"
               text-anchor="middle"
               font-size="10"
               fill="#e0eaf4"
@@ -3840,7 +4528,7 @@
             </text>
             <text
               x="550"
-              y="950"
+              y="945"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -3849,7 +4537,7 @@
             </text>
             <text
               x="550"
-              y="966"
+              y="961"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -4222,7 +4910,7 @@
 
             <rect
               x="30"
-              y="1340"
+              y="1350"
               width="490"
               height="68"
               rx="7"
@@ -4232,7 +4920,7 @@
             />
             <text
               x="275"
-              y="1364"
+              y="1369"
               text-anchor="middle"
               font-size="14"
               fill="#f5c542"
@@ -4242,7 +4930,7 @@
             </text>
             <text
               x="275"
-              y="1386"
+              y="1391"
               text-anchor="middle"
               font-size="11"
               fill="#e0eaf4"
@@ -4251,7 +4939,7 @@
             </text>
             <text
               x="275"
-              y="1400"
+              y="1408"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -4260,22 +4948,25 @@
             </text>
 
             <!-- V feedback arrow -->
-            <path
-              d="M 30 1374 C 8 1374 8 1160 30 1160"
-              fill="none"
+            <line
+              x1="25"
+              y1="1418"
+              x2="25"
+              y2="1164"
               stroke="#f5c542"
               stroke-width="1"
               stroke-dasharray="4 3"
               marker-end="url(#ay)"
             />
             <text
-              x="10"
-              y="1270"
-              font-size="9"
+              x="16"
+              y="1326"
+              font-size="11"
+              font-weight="700"
               fill="#f5c542"
-              transform="rotate(-90,10,1270)"
+              transform="rotate(-90,16,1326)"
             >
-              V 갱신 반영
+              V(s) 갱신 반영
             </text>
 
             <!-- ══ STEP 9·10·11: PPO Actor 갱신 ══ -->
@@ -4285,27 +4976,27 @@
               width="500"
               height="28"
               rx="3"
-              fill="#0d0620"
-              stroke="#b06eff"
-              stroke-width="0.8"
+              fill="#080f1c"
+              stroke="#7090b0"
+              stroke-width="0.5"
             />
             <text
               x="600"
               y="1336"
               font-size="11"
-              fill="#b06eff"
+              fill="#00d4ff"
               letter-spacing="1"
             >
               STEP 9·10·11 ★ NEW
             </text>
-            <text x="800" y="1336" font-size="11" fill="#b06eff">
+            <text x="800" y="1336" font-size="11" fill="#e0eaf4">
               PPO Clipping Actor 갱신
             </text>
 
             <!-- Step9: pi_old -->
             <rect
               x="540"
-              y="1340"
+              y="1350"
               width="500"
               height="50"
               rx="7"
@@ -4315,7 +5006,7 @@
             />
             <text
               x="790"
-              y="1360"
+              y="1370"
               text-anchor="middle"
               font-size="12"
               fill="#b06eff"
@@ -4325,7 +5016,7 @@
             </text>
             <text
               x="790"
-              y="1380"
+              y="1389"
               text-anchor="middle"
               font-size="13"
               fill="#e0eaf4"
@@ -4335,9 +5026,9 @@
 
             <line
               x1="790"
-              y1="1390"
+              y1="1400"
               x2="790"
-              y2="1406"
+              y2="1416"
               stroke="#b06eff"
               stroke-width="1.5"
               marker-end="url(#ap)"
@@ -4346,7 +5037,7 @@
             <!-- grad_log_pi -->
             <rect
               x="540"
-              y="1412"
+              y="1422"
               width="500"
               height="60"
               rx="7"
@@ -4356,7 +5047,7 @@
             />
             <text
               x="790"
-              y="1432"
+              y="1439"
               text-anchor="middle"
               font-size="12"
               fill="#b06eff"
@@ -4366,7 +5057,7 @@
             </text>
             <text
               x="790"
-              y="1452"
+              y="1459"
               text-anchor="middle"
               font-size="11"
               fill="#e0eaf4"
@@ -4375,7 +5066,7 @@
             </text>
             <text
               x="790"
-              y="1466"
+              y="1473"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -4385,9 +5076,9 @@
 
             <line
               x1="790"
-              y1="1472"
+              y1="1482"
               x2="790"
-              y2="1488"
+              y2="1498"
               stroke="#b06eff"
               stroke-width="1.5"
               marker-end="url(#ap)"
@@ -4396,7 +5087,7 @@
             <!-- theta_try -->
             <rect
               x="540"
-              y="1494"
+              y="1504"
               width="500"
               height="50"
               rx="7"
@@ -4406,7 +5097,7 @@
             />
             <text
               x="790"
-              y="1514"
+              y="1523"
               text-anchor="middle"
               font-size="12"
               fill="#b06eff"
@@ -4416,7 +5107,7 @@
             </text>
             <text
               x="790"
-              y="1534"
+              y="1543"
               text-anchor="middle"
               font-size="13"
               fill="#e0eaf4"
@@ -4426,9 +5117,9 @@
 
             <line
               x1="790"
-              y1="1544"
+              y1="1554"
               x2="790"
-              y2="1560"
+              y2="1570"
               stroke="#b06eff"
               stroke-width="1.5"
               marker-end="url(#ap)"
@@ -4437,7 +5128,7 @@
             <!-- IS ratio -->
             <rect
               x="540"
-              y="1566"
+              y="1576"
               width="500"
               height="60"
               rx="7"
@@ -4447,7 +5138,7 @@
             />
             <text
               x="790"
-              y="1586"
+              y="1593"
               text-anchor="middle"
               font-size="13"
               fill="#b06eff"
@@ -4457,7 +5148,7 @@
             </text>
             <text
               x="790"
-              y="1606"
+              y="1613"
               text-anchor="middle"
               font-size="11"
               fill="#e0eaf4"
@@ -4466,7 +5157,7 @@
             </text>
             <text
               x="790"
-              y="1620"
+              y="1627"
               text-anchor="middle"
               font-size="10"
               fill="#c0d4e8"
@@ -4476,9 +5167,9 @@
 
             <line
               x1="790"
-              y1="1626"
+              y1="1636"
               x2="790"
-              y2="1642"
+              y2="1652"
               stroke="#b06eff"
               stroke-width="1.5"
               marker-end="url(#ap)"
@@ -4487,9 +5178,9 @@
             <!-- Clip decision -->
             <rect
               x="540"
-              y="1648"
+              y="1658"
               width="500"
-              height="76"
+              height="84"
               rx="7"
               fill="#101d30"
               stroke="#b06eff"
@@ -4497,7 +5188,7 @@
             />
             <text
               x="790"
-              y="1668"
+              y="1677"
               text-anchor="middle"
               font-size="12"
               fill="#b06eff"
@@ -4507,25 +5198,25 @@
             </text>
             <text
               x="790"
-              y="1690"
+              y="1699"
               text-anchor="middle"
               font-size="12"
               fill="#00ff9d"
             >
-              δ&gt;0 ∧ r_t &gt; 1.2 → scale = 1.2/r_t (BUY 쏠림 억제)
+              δ &gt; 0 ∧ r_t &gt; 1.2 → scale = 1.2/r_t (BUY 쏠림 억제)
             </text>
             <text
               x="790"
-              y="1706"
+              y="1715"
               text-anchor="middle"
               font-size="12"
               fill="#ff6b35"
             >
-              δ&lt;0 ∧ r_t &lt; 0.8 → scale = 0.8/r_t (CASH 쏠림 억제)
+              δ &lt; 0 ∧ r_t &lt; 0.8 → scale = 0.8/r_t (CASH 쏠림 억제)
             </text>
             <text
               x="790"
-              y="1722"
+              y="1731"
               text-anchor="middle"
               font-size="12"
               fill="#00d4ff"
@@ -4535,7 +5226,7 @@
 
             <rect
               x="540"
-              y="1736"
+              y="1746"
               width="500"
               height="32"
               rx="5"
@@ -4545,7 +5236,7 @@
             />
             <text
               x="790"
-              y="1756"
+              y="1766"
               text-anchor="middle"
               font-size="11"
               fill="#e0eaf4"
@@ -4555,9 +5246,9 @@
 
             <line
               x1="790"
-              y1="1768"
+              y1="1778"
               x2="790"
-              y2="1792"
+              y2="1802"
               stroke="#b06eff"
               stroke-width="2"
               marker-end="url(#ap)"
@@ -4566,7 +5257,7 @@
             <!-- ══ STEP 12: 최종 갱신 ══ -->
             <rect
               x="20"
-              y="1800"
+              y="1810"
               width="1020"
               height="28"
               rx="3"
@@ -4576,21 +5267,21 @@
             />
             <text
               x="80"
-              y="1818"
+              y="1828"
               font-size="11"
               fill="#00d4ff"
               letter-spacing="1"
             >
               STEP 12
             </text>
-            <text x="140" y="1818" font-size="11" fill="#e0eaf4">
+            <text x="140" y="1828" font-size="11" fill="#e0eaf4">
               최종 Actor 갱신 — STATIC vs STATIC_H 분기
             </text>
 
             <!-- STATIC -->
             <rect
               x="30"
-              y="1840"
+              y="1850"
               width="490"
               height="80"
               rx="7"
@@ -4600,7 +5291,7 @@
             />
             <text
               x="275"
-              y="1862"
+              y="1872"
               text-anchor="middle"
               font-size="11"
               fill="#c0d4e8"
@@ -4609,7 +5300,7 @@
             </text>
             <text
               x="275"
-              y="1886"
+              y="1896"
               text-anchor="middle"
               font-size="13"
               fill="#e0eaf4"
@@ -4619,7 +5310,7 @@
             </text>
             <text
               x="275"
-              y="1908"
+              y="1918"
               text-anchor="middle"
               font-size="11"
               fill="#c0d4e8"
@@ -4630,7 +5321,7 @@
             <!-- STATIC_H -->
             <rect
               x="540"
-              y="1840"
+              y="1850"
               width="500"
               height="80"
               rx="7"
@@ -4640,7 +5331,7 @@
             />
             <text
               x="790"
-              y="1862"
+              y="1872"
               text-anchor="middle"
               font-size="11"
               fill="#00ff9d"
@@ -4649,7 +5340,7 @@
             </text>
             <text
               x="790"
-              y="1886"
+              y="1896"
               text-anchor="middle"
               font-size="13"
               fill="#00ff9d"
@@ -4659,7 +5350,7 @@
             </text>
             <text
               x="790"
-              y="1908"
+              y="1918"
               text-anchor="middle"
               font-size="11"
               fill="#e0eaf4"
@@ -4670,15 +5361,15 @@
             <!-- STATIC path arrow -->
             <line
               x1="275"
-              y1="1408"
+              y1="1418"
               x2="275"
-              y2="1840"
+              y2="1850"
               stroke="#7090b0"
               stroke-width="1"
               stroke-dasharray="4 3"
               marker-end="url(#ad)"
             />
-            <text x="285" y="1424" font-size="10" fill="#c0d4e8">
+            <text x="285" y="1436" font-size="10" fill="#c0d4e8">
               STATIC 직접 경로
             </text>
 
@@ -4716,175 +5407,221 @@
             />
 
             <!-- ── ① 상태 관측 ── -->
-            <text x="70" y="2026" font-size="12" fill="#c0d4e8">①</text>
-            <text x="100" y="2026" font-size="12" fill="#e0eaf4">상태 관측</text>
+            <text x="70" y="2026" font-size="12" fill="#e0eaf4">①</text>
+            <text x="100" y="2026" font-size="12" fill="#e0eaf4">
+              상태 관측
+            </text>
             <text x="210" y="2026" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2026" font-size="12" fill="#00d4ff">
               s = is_bull×1 + is_above_ema×2 [+ is_high_vol×4]
             </text>
-            <text x="235" y="2046" font-size="10" fill="#7a9cbf">
-              bit 0: ret &gt; 0 (단기 방향) | bit 1: price ≥ EMA_10 (중기 추세) | bit 2: rolling_std &gt; threshold (변동성 레짐)
+            <text x="235" y="2046" font-size="10" fill="#e0eaf4">
+              bit 0: ret &gt; 0 (단기 방향) | bit 1: price ≥ EMA_10 (중기 추세)
+              | bit 2: rolling_std &gt; threshold (변동성 레짐)
             </text>
-            <text x="235" y="2062" font-size="10" fill="#7a9cbf">
-              use_vol=False → 4상태 {0,1,2,3} | use_vol=True → 8상태 {0..7}  |  vol_threshold = 훈련 구간 중위수 자동 산출
+            <text x="235" y="2062" font-size="10" fill="#e0eaf4">
+              use_vol=False → 4상태 {0,1,2,3} | use_vol=True → 8상태 {0..7} |
+              vol_threshold = 훈련 구간 중위수 자동 산출
             </text>
 
             <!-- ── ② Actor 정책 ── -->
-            <text x="70" y="2090" font-size="12" fill="#c0d4e8">②</text>
-            <text x="100" y="2090" font-size="12" fill="#e0eaf4">Actor 정책</text>
+            <text x="70" y="2090" font-size="12" fill="#e0eaf4">②</text>
+            <text x="100" y="2090" font-size="12" fill="#e0eaf4">
+              Actor 정책
+            </text>
             <text x="210" y="2090" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2090" font-size="12" fill="#b06eff">
               π(a|s) = softmax(θ[s]) = exp(θ[s,a]) / Σ exp(θ[s,:])
             </text>
-            <text x="235" y="2110" font-size="10" fill="#7a9cbf">
-              θ: n_states×2 행렬 (CASH=0, BUY=1)  |  logit overflow 방지: exp(clip(logits − max, −30, 30))
+            <text x="235" y="2110" font-size="10" fill="#e0eaf4">
+              θ: n_states×2 행렬 (CASH=0, BUY=1) | logit overflow 방지:
+              exp(clip(logits − max, −30, 30))
             </text>
 
             <!-- ── ③ Cold-Start 초기화 ── -->
-            <text x="70" y="2138" font-size="12" fill="#c0d4e8">③</text>
-            <text x="100" y="2138" font-size="12" fill="#e0eaf4">Cold-Start 초기화</text>
+            <text x="70" y="2138" font-size="12" fill="#e0eaf4">③</text>
+            <text x="100" y="2138" font-size="12" fill="#e0eaf4">
+              Cold-Start 초기화
+            </text>
             <text x="210" y="2138" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2138" font-size="12" fill="#ff6b35">
-              θ[1,1] = max(0.05, fee×30)  |  θ[2,1] = max(0.1, fee×50)  |  θ[3,1] = max(0.2, fee×80)
+              θ[1,1] = max(0.05, fee×30) | θ[2,1] = max(0.1, fee×50) | θ[3,1] =
+              max(0.2, fee×80)
             </text>
-            <text x="235" y="2158" font-size="10" fill="#7a9cbf">
-              수수료 장벽 비례 BUY 선호 logit 부여 — 학습 초기 CASH 고착 방지  |  8상태: θ[5,6,7] 동일 패턴 적용
+            <text x="235" y="2158" font-size="10" fill="#e0eaf4">
+              수수료 장벽 비례 BUY 선호 logit 부여 — 학습 초기 CASH 고착 방지 |
+              8상태: θ[5,6,7] 동일 패턴 적용
             </text>
 
             <!-- ── ④ 행동 선택 ── -->
-            <text x="70" y="2186" font-size="12" fill="#c0d4e8">④</text>
-            <text x="100" y="2186" font-size="12" fill="#e0eaf4">행동 선택</text>
+            <text x="70" y="2186" font-size="12" fill="#e0eaf4">④</text>
+            <text x="100" y="2186" font-size="12" fill="#e0eaf4">
+              행동 선택
+            </text>
             <text x="210" y="2186" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2186" font-size="12" fill="#b06eff">
-              a = random(0,1) if rand() &lt; ε,  else  sample(π(·|s))
+              a = random(0,1) if rand() &lt; ε, else sample(π(·|s))
             </text>
-            <text x="235" y="2206" font-size="10" fill="#7a9cbf">
-              ε-greedy 탐험: ε 확률로 무작위, 아니면 정책 π에서 확률적 샘플링  |  epsilon annealing 없음 (STATIC/STATIC_H 공통)
+            <text x="235" y="2206" font-size="10" fill="#e0eaf4">
+              ε-greedy 탐험: ε 확률로 무작위, 아니면 정책 π에서 확률적 샘플링 |
+              epsilon annealing 없음 (STATIC/STATIC_H 공통)
             </text>
 
             <!-- ── ⑤ 시장 보상 ── -->
-            <text x="70" y="2234" font-size="12" fill="#c0d4e8">⑤</text>
-            <text x="100" y="2234" font-size="12" fill="#e0eaf4">시장 보상</text>
+            <text x="70" y="2234" font-size="12" fill="#e0eaf4">⑤</text>
+            <text x="100" y="2234" font-size="12" fill="#e0eaf4">
+              시장 보상
+            </text>
             <text x="210" y="2234" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2234" font-size="12" fill="#ff6b35">
               R = daily_return × a − fee × 1[a=1 ∧ prev_a=0]
             </text>
-            <text x="235" y="2254" font-size="10" fill="#7a9cbf">
-              a=1(BUY): 일간 수익률 획득  |  a=0(CASH): 보상 0  |  수수료: CASH→BUY 전환 시에만 부과 (편도)
+            <text x="235" y="2254" font-size="10" fill="#e0eaf4">
+              a=1(BUY): 일간 수익률 획득 | a=0(CASH): 보상 0 | 수수료: CASH→BUY
+              전환 시에만 부과 (편도)
             </text>
 
             <!-- ── ⑥ 전환 빈도 ── -->
-            <text x="70" y="2282" font-size="12" fill="#c0d4e8">⑥</text>
-            <text x="100" y="2282" font-size="12" fill="#e0eaf4">전환 빈도</text>
+            <text x="70" y="2282" font-size="12" fill="#e0eaf4">⑥</text>
+            <text x="100" y="2282" font-size="12" fill="#e0eaf4">
+              전환 빈도
+            </text>
             <text x="210" y="2282" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2282" font-size="12" fill="#00ff9d">
-              flip_rate = Σ 1[aₜ ≠ aₜ₋₁] / (W−1)      W = HYBRID_FLIP_WIN = 20 [★]
+              flip_rate = Σ 1[aₜ ≠ aₜ₋₁] / (W−1) W = HYBRID_FLIP_WIN = 20 [★]
             </text>
-            <text x="235" y="2302" font-size="10" fill="#7a9cbf">
-              최근 20봉 슬라이딩 윈도우 내 행동 전환 비율 (0~1)  |  STATIC_H 전용 — STATIC에서는 미사용
+            <text x="235" y="2302" font-size="10" fill="#e0eaf4">
+              최근 20봉 슬라이딩 윈도우 내 행동 전환 비율 (0~1) | STATIC_H 전용
+              — STATIC에서는 미사용
             </text>
 
             <!-- ── ⑦ 적응 온도 ── -->
-            <text x="70" y="2330" font-size="12" fill="#c0d4e8">⑦</text>
-            <text x="100" y="2330" font-size="12" fill="#e0eaf4">적응 온도</text>
+            <text x="70" y="2330" font-size="12" fill="#e0eaf4">⑦</text>
+            <text x="100" y="2330" font-size="12" fill="#e0eaf4">
+              적응 온도
+            </text>
             <text x="210" y="2330" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2330" font-size="12" fill="#00ff9d">
-              α_t = clip( ENTROPY_COEFF × (1 + flip_rate),  HYBRID_ALPHA_MIN,  HYBRID_ALPHA_MAX ) [★]
+              α_t = clip( ENTROPY_COEFF × (1 + flip_rate), HYBRID_ALPHA_MIN,
+              HYBRID_ALPHA_MAX ) [★]
             </text>
-            <text x="235" y="2350" font-size="10" fill="#7a9cbf">
-              = clip( 0.05 × (1 + flip_rate),  0.01,  0.15 )  |  전환 빈번 → α↑ 탐험 강화  |  전환 안정 → α↓ 활용 집중
+            <text x="235" y="2350" font-size="10" fill="#e0eaf4">
+              = clip( 0.05 × (1 + flip_rate), 0.01, 0.15 ) | 전환 빈번 → α↑ 탐험
+              강화 | 전환 안정 → α↓ 활용 집중
             </text>
-            <text x="235" y="2366" font-size="10" fill="#7a9cbf">
-              STATIC: α = ENTROPY_COEFF = 0.05 고정  |  STATIC_H: α_t 동적 — SAC Automatic Entropy Tuning에서 영감, flip_rate를 프록시 신호로 Tabular 구현
+            <text x="235" y="2366" font-size="10" fill="#e0eaf4">
+              STATIC: α = ENTROPY_COEFF = 0.05 고정 | STATIC_H: α_t 동적 — SAC
+              Automatic Entropy Tuning에서 영감, flip_rate를 프록시 신호로
+              Tabular 구현
             </text>
 
             <!-- ── ⑧ 정책 엔트로피 ── -->
-            <text x="70" y="2394" font-size="12" fill="#c0d4e8">⑧</text>
-            <text x="100" y="2394" font-size="12" fill="#e0eaf4">정책 엔트로피</text>
+            <text x="70" y="2394" font-size="12" fill="#e0eaf4">⑧</text>
+            <text x="100" y="2394" font-size="12" fill="#e0eaf4">
+              정책 엔트로피
+            </text>
             <text x="210" y="2394" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2394" font-size="12" fill="#f5c542">
               H(π) = −Σ π(a|s) · log π(a|s)
             </text>
-            <text x="235" y="2414" font-size="10" fill="#7a9cbf">
-              정보 이론적 불확실성 측도  |  π 균등(0.5,0.5) → H=ln2≈0.693 (최대)  |  π 확정(1,0) → H=0 (최소)
+            <text x="235" y="2414" font-size="10" fill="#e0eaf4">
+              정보 이론적 불확실성 측도 | π 균등(0.5,0.5) → H=ln2≈0.693 (최대) |
+              π 확정(1,0) → H=0 (최소)
             </text>
 
             <!-- ── ⑨ 유효 보상 ── -->
-            <text x="70" y="2442" font-size="12" fill="#c0d4e8">⑨</text>
-            <text x="100" y="2442" font-size="12" fill="#e0eaf4">유효 보상</text>
+            <text x="70" y="2442" font-size="12" fill="#e0eaf4">⑨</text>
+            <text x="100" y="2442" font-size="12" fill="#e0eaf4">
+              유효 보상
+            </text>
             <text x="210" y="2442" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2442" font-size="12" fill="#00d4ff">
               r_eff = R + α_t · H(π)
             </text>
-            <text x="235" y="2462" font-size="10" fill="#7a9cbf">
-              엔트로피 보너스: 정책이 한쪽(BUY/CASH)으로 확정되면 보상 감소 → 적절한 탐험 유지 (정규화)
+            <text x="235" y="2462" font-size="10" fill="#e0eaf4">
+              엔트로피 보너스: 정책이 한쪽(BUY/CASH)으로 확정되면 보상 감소 →
+              적절한 탐험 유지 (정규화)
             </text>
 
             <!-- ── ⑩ TD Error ── -->
-            <text x="70" y="2490" font-size="12" fill="#c0d4e8">⑩</text>
+            <text x="70" y="2490" font-size="12" fill="#e0eaf4">⑩</text>
             <text x="100" y="2490" font-size="12" fill="#e0eaf4">TD Error</text>
             <text x="210" y="2490" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2490" font-size="12" fill="#f5c542">
               δ = r_eff + γ · V(s') − V(s)
             </text>
-            <text x="235" y="2510" font-size="10" fill="#7a9cbf">
-              Bellman 잔차: 실제 보상 + 할인된 미래 가치 − 현재 추정 가치  |  δ&gt;0: 예상보다 좋은 결과  |  δ&lt;0: 예상보다 나쁜 결과
+            <text x="235" y="2510" font-size="10" fill="#e0eaf4">
+              Bellman 잔차: 실제 보상 + 할인된 미래 가치 − 현재 추정 가치 |
+              δ&gt;0: 예상보다 좋은 결과 | δ&lt;0: 예상보다 나쁜 결과
             </text>
 
             <!-- ── ⑪ Critic 갱신 ── -->
-            <text x="70" y="2538" font-size="12" fill="#c0d4e8">⑪</text>
-            <text x="100" y="2538" font-size="12" fill="#e0eaf4">Critic 갱신</text>
+            <text x="70" y="2538" font-size="12" fill="#e0eaf4">⑪</text>
+            <text x="100" y="2538" font-size="12" fill="#e0eaf4">
+              Critic 갱신
+            </text>
             <text x="210" y="2538" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2538" font-size="12" fill="#f5c542">
               V(s) += lr (=α) · δ
             </text>
-            <text x="235" y="2558" font-size="10" fill="#7a9cbf">
-              상태 가치 테이블 갱신: TD Error 방향으로 V(s)를 lr만큼 이동  |  V: n_states 크기 1차원 배열
+            <text x="235" y="2558" font-size="10" fill="#e0eaf4">
+              상태 가치 테이블 갱신: TD Error 방향으로 V(s)를 lr만큼 이동 | V:
+              n_states 크기 1차원 배열
             </text>
 
             <!-- ── ⑫ Score 함수 ── -->
-            <text x="70" y="2586" font-size="12" fill="#c0d4e8">⑫</text>
-            <text x="100" y="2586" font-size="12" fill="#e0eaf4">Score 함수</text>
+            <text x="70" y="2586" font-size="12" fill="#e0eaf4">⑫</text>
+            <text x="100" y="2586" font-size="12" fill="#e0eaf4">
+              Score 함수
+            </text>
             <text x="210" y="2586" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2586" font-size="12" fill="#b06eff">
               ∇log π(a|s) = 1[a==chosen] − π(a|s)
             </text>
-            <text x="235" y="2606" font-size="10" fill="#7a9cbf">
-              REINFORCE score function: 선택된 행동의 확률을 높이는 방향 (softmax 미분에서 유도)
+            <text x="235" y="2606" font-size="10" fill="#e0eaf4">
+              REINFORCE score function: 선택된 행동의 확률을 높이는 방향
+              (softmax 미분에서 유도)
             </text>
 
             <!-- ── ⑬ PPO Clip ── -->
-            <text x="70" y="2634" font-size="12" fill="#c0d4e8">⑬</text>
+            <text x="70" y="2634" font-size="12" fill="#e0eaf4">⑬</text>
             <text x="100" y="2634" font-size="12" fill="#e0eaf4">PPO Clip</text>
             <text x="210" y="2634" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2634" font-size="12" fill="#b06eff">
-              θ_try = θ[s] + lr · δ · ∇log π      →  π_try = softmax(θ_try)  [★]
+              θ_try = θ[s] + lr · δ · ∇log π → π_try = softmax(θ_try) [★]
             </text>
             <text x="235" y="2654" font-size="12" fill="#b06eff">
               r_t = π_try(a|s) / π_old(a|s)
             </text>
-            <text x="235" y="2674" font-size="10" fill="#7a9cbf">
-              δ&gt;0 ∧ r_t &gt; 1+ε → scale = (1+ε)/r_t = 1.2/r_t  (과도한 BUY 쏠림 억제)
+            <text x="235" y="2674" font-size="10" fill="#e0eaf4">
+              δ&gt;0 ∧ r_t &gt; 1+ε → scale = (1+ε)/r_t = 1.2/r_t (과도한 BUY
+              쏠림 억제)
             </text>
-            <text x="235" y="2690" font-size="10" fill="#7a9cbf">
-              δ&lt;0 ∧ r_t &lt; 1−ε → scale = (1−ε)/r_t = 0.8/r_t  (과도한 CASH 쏠림 억제)
+            <text x="235" y="2690" font-size="10" fill="#e0eaf4">
+              δ&lt;0 ∧ r_t &lt; 1−ε → scale = (1−ε)/r_t = 0.8/r_t (과도한 CASH
+              쏠림 억제)
             </text>
-            <text x="235" y="2706" font-size="10" fill="#7a9cbf">
-              그 외 → scale = 1.0 (정상 갱신)  |  PPO_CLIP_EPS = 0.2  |  STATIC_H 전용 — STATIC에서는 scale 항상 1.0
+            <text x="235" y="2706" font-size="10" fill="#e0eaf4">
+              그 외 → scale = 1.0 (정상 갱신) | PPO_CLIP_EPS = 0.2 | STATIC_H
+              전용 — STATIC에서는 scale 항상 1.0
             </text>
 
             <!-- ── ⑭ Actor 갱신 ── -->
-            <text x="70" y="2734" font-size="12" fill="#c0d4e8">⑭</text>
-            <text x="100" y="2734" font-size="12" fill="#e0eaf4">Actor 갱신</text>
+            <text x="70" y="2734" font-size="12" fill="#e0eaf4">⑭</text>
+            <text x="100" y="2734" font-size="12" fill="#e0eaf4">
+              Actor 갱신
+            </text>
             <text x="210" y="2734" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2734" font-size="12" fill="#00ff9d">
               θ[s,a] += scale · lr · δ · ∇log π(a|s)
             </text>
-            <text x="235" y="2754" font-size="10" fill="#7a9cbf">
-              Policy Gradient Theorem: ∇J(θ) = E[ ∇log π(a|s) · A(s,a) ]  |  A(s,a) ≈ δ (TD Error를 Advantage로 사용)
+            <text x="235" y="2754" font-size="10" fill="#e0eaf4">
+              Policy Gradient Theorem: ∇J(θ) = E[ ∇log π(a|s) · A(s,a) ] |
+              A(s,a) ≈ δ (TD Error를 Advantage로 사용)
             </text>
-            <text x="235" y="2770" font-size="10" fill="#7a9cbf">
-              STATIC: θ[s,a] += lr · δ · ∇log π  (scale=1 고정)  |  STATIC_H: PPO Clip으로 scale 조정
+            <text x="235" y="2770" font-size="10" fill="#e0eaf4">
+              STATIC: θ[s,a] += lr · δ · ∇log π (scale=1 고정) | STATIC_H: PPO
+              Clip으로 scale 조정
             </text>
 
             <!-- ── 구분선 ── -->
@@ -4898,113 +5635,361 @@
             />
 
             <!-- ── 평가 단계 ── -->
-            <text x="70" y="2818" font-size="12" fill="#c0d4e8">⑮</text>
+            <text x="70" y="2818" font-size="12" fill="#e0eaf4">⑮</text>
             <text x="100" y="2818" font-size="12" fill="#e0eaf4">OOS 평가</text>
             <text x="210" y="2818" font-size="12" fill="#e0eaf4">→</text>
             <text x="235" y="2818" font-size="12" fill="#e0eaf4">
-              워크포워드: 앞 70% 학습 / 뒤 30% OOS  |  평가: argmax(θ[s]) 결정론적 정책
+              워크포워드: 앞 70% 학습 / 뒤 30% OOS | 평가: argmax(θ[s]) 결정론적
+              정책
             </text>
             <text x="235" y="2838" font-size="10" fill="#ffffff">
-              TRAIN_RATIO = 0.7  |  ε-greedy 미사용 (greedy only)  |  수익률·MDD·Composite Gap 산출
+              TRAIN_RATIO = 0.7 | ε-greedy 미사용 (greedy only) |
+              수익률·MDD·Composite Gap 산출
             </text>
 
             <!-- ── 하단 요약: 핵심 수식 계보 — 한 줄 흐름 (통합) ── -->
             <!-- 외곽 박스: 정리 상자 여백 확보를 위해 전폭 확장, center=530 -->
-            <rect x="30" y="2850" width="1000" height="250" rx="6"
-              fill="#040e1a" stroke="#00d4ff" stroke-width="1.5"/>
+            <rect
+              x="30"
+              y="2850"
+              width="1000"
+              height="250"
+              rx="6"
+              fill="#040e1a"
+              stroke="#00d4ff"
+              stroke-width="1.5"
+            />
 
-            <text x="530" y="2875" text-anchor="middle" font-size="13"
-              fill="#00d4ff" font-weight="700" letter-spacing="1">
+            <text
+              x="530"
+              y="2875"
+              text-anchor="middle"
+              font-size="13"
+              fill="#00d4ff"
+              font-weight="700"
+              letter-spacing="1"
+            >
               핵심 수식 계보 — 한 줄 흐름
             </text>
 
             <!-- 1행 명칭 레이블 (굵은 이탤릭, 균등 패딩 기준 중앙 x 업데이트) -->
             <!-- 균등 패딩 14px: 총 콘텐츠=52+12+176+12+184+12+248+12+176=884px, center=530 -->
-            <text x="114" y="2900" text-anchor="middle" font-size="11"
-              font-weight="700" fill="#a0b8cc" font-style="italic">문제 공식화</text>
-            <text x="240" y="2900" text-anchor="middle" font-size="11"
-              font-weight="700" fill="#c8a000" font-style="italic">Bellman 방정식</text>
-            <text x="432" y="2900" text-anchor="middle" font-size="11"
-              font-weight="700" fill="#9050d0" font-style="italic">Q-Learning</text>
-            <text x="660" y="2900" text-anchor="middle" font-size="11"
-              font-weight="700" fill="#00a8c8" font-style="italic">Policy Gradient</text>
-            <text x="884" y="2900" text-anchor="middle" font-size="11"
-              font-weight="700" fill="#c8a000" font-style="italic">엔트로피 정규화</text>
+            <text
+              x="114"
+              y="2900"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="700"
+              fill="#a0b8cc"
+            >
+              문제 공식화
+            </text>
+            <text
+              x="240"
+              y="2900"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="700"
+              fill="#c8a000"
+            >
+              Bellman 방정식
+            </text>
+            <text
+              x="432"
+              y="2900"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="700"
+              fill="#9050d0"
+            >
+              Q-Learning
+            </text>
+            <text
+              x="660"
+              y="2900"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="700"
+              fill="#00a8c8"
+            >
+              Policy Gradient
+            </text>
+            <text
+              x="884"
+              y="2900"
+              text-anchor="middle"
+              font-size="11"
+              font-weight="700"
+              fill="#c8a000"
+            >
+              엔트로피 정규화
+            </text>
 
             <!-- 1행: 수식 상자 (균등 좌우 여백 ~14px: start=88, end=972) -->
-            <rect x="88" y="2904" width="52" height="34" rx="5"
-              fill="#0a1828" stroke="#a0b8cc" stroke-width="1"/>
-            <text x="114" y="2926" text-anchor="middle" font-size="11"
-              fill="#a0b8cc" font-weight="600">MDP</text>
+            <rect
+              x="88"
+              y="2904"
+              width="52"
+              height="34"
+              rx="5"
+              fill="#0a1828"
+              stroke="#a0b8cc"
+              stroke-width="1"
+            />
+            <text
+              x="114"
+              y="2926"
+              text-anchor="middle"
+              font-size="11"
+              fill="#a0b8cc"
+              font-weight="600"
+            >
+              MDP
+            </text>
 
-            <line x1="140" y1="2921" x2="152" y2="2921"
-              stroke="#a0b8cc" stroke-width="1.2" marker-end="url(#ac)"/>
+            <line
+              x1="140"
+              y1="2921"
+              x2="152"
+              y2="2921"
+              stroke="#a0b8cc"
+              stroke-width="1.2"
+              marker-end="url(#ac-gray)"
+            />
 
-            <rect x="152" y="2904" width="176" height="34" rx="5"
-              fill="#1a1400" stroke="#f5c542" stroke-width="1"/>
-            <text x="240" y="2926" text-anchor="middle" font-size="11"
-              fill="#f5c542">V(s) = E[r + γV(s')]</text>
+            <rect
+              x="152"
+              y="2904"
+              width="176"
+              height="34"
+              rx="5"
+              fill="#1a1400"
+              stroke="#f5c542"
+              stroke-width="1"
+            />
+            <text
+              x="240"
+              y="2926"
+              text-anchor="middle"
+              font-size="11"
+              fill="#f5c542"
+            >
+              V(s) = E[r + γV(s')]
+            </text>
 
-            <line x1="328" y1="2921" x2="340" y2="2921"
-              stroke="#f5c542" stroke-width="1.2" marker-end="url(#ay)"/>
+            <line
+              x1="328"
+              y1="2921"
+              x2="340"
+              y2="2921"
+              stroke="#f5c542"
+              stroke-width="1.2"
+              marker-end="url(#ay)"
+            />
 
-            <rect x="340" y="2904" width="184" height="34" rx="5"
-              fill="#140828" stroke="#b06eff" stroke-width="1"/>
-            <text x="432" y="2926" text-anchor="middle" font-size="11"
-              fill="#b06eff">Q += α[r + γmaxQ − Q]</text>
+            <rect
+              x="340"
+              y="2904"
+              width="184"
+              height="34"
+              rx="5"
+              fill="#140828"
+              stroke="#b06eff"
+              stroke-width="1"
+            />
+            <text
+              x="432"
+              y="2926"
+              text-anchor="middle"
+              font-size="11"
+              fill="#b06eff"
+            >
+              Q += α[r + γmaxQ − Q]
+            </text>
 
-            <line x1="524" y1="2921" x2="536" y2="2921"
-              stroke="#b06eff" stroke-width="1.2" marker-end="url(#ap)"/>
+            <line
+              x1="524"
+              y1="2921"
+              x2="536"
+              y2="2921"
+              stroke="#b06eff"
+              stroke-width="1.2"
+              marker-end="url(#ap)"
+            />
 
-            <rect x="536" y="2904" width="248" height="34" rx="5"
-              fill="#081820" stroke="#00d4ff" stroke-width="1"/>
-            <text x="660" y="2926" text-anchor="middle" font-size="11"
-              fill="#00d4ff">π = softmax(θ), θ += lr·δ·grad</text>
+            <rect
+              x="536"
+              y="2904"
+              width="248"
+              height="34"
+              rx="5"
+              fill="#081820"
+              stroke="#00d4ff"
+              stroke-width="1"
+            />
+            <text
+              x="660"
+              y="2926"
+              text-anchor="middle"
+              font-size="11"
+              fill="#00d4ff"
+            >
+              π = softmax(θ), θ += lr·δ·grad
+            </text>
 
-            <line x1="784" y1="2921" x2="796" y2="2921"
-              stroke="#00d4ff" stroke-width="1.2" marker-end="url(#ac)"/>
+            <line
+              x1="784"
+              y1="2921"
+              x2="796"
+              y2="2921"
+              stroke="#00d4ff"
+              stroke-width="1.2"
+              marker-end="url(#ac)"
+            />
 
-            <rect x="796" y="2904" width="176" height="34" rx="5"
-              fill="#1a1400" stroke="#f5c542" stroke-width="1"/>
-            <text x="884" y="2926" text-anchor="middle" font-size="11"
-              fill="#f5c542">r_eff = R + α_t·H(π)</text>
+            <rect
+              x="796"
+              y="2904"
+              width="176"
+              height="34"
+              rx="5"
+              fill="#1a1400"
+              stroke="#f5c542"
+              stroke-width="1"
+            />
+            <text
+              x="884"
+              y="2926"
+              text-anchor="middle"
+              font-size="11"
+              fill="#f5c542"
+            >
+              r_eff = R + α_t·H(π)
+            </text>
 
             <!-- 2행: 화살표 꺾임 (r_eff 중앙 x=884 → STATIC_H 중앙 x=530) -->
-            <line x1="884" y1="2938" x2="884" y2="2956"
-              stroke="#f5c542" stroke-width="1.2"/>
-            <line x1="884" y1="2956" x2="530" y2="2956"
-              stroke="#00ff9d" stroke-width="1.2"/>
-            <line x1="530" y1="2956" x2="530" y2="2966"
-              stroke="#00ff9d" stroke-width="1.2" marker-end="url(#ag)"/>
+            <line
+              x1="884"
+              y1="2938"
+              x2="884"
+              y2="2956"
+              stroke="#f5c542"
+              stroke-width="1.2"
+            />
+            <line
+              x1="884"
+              y1="2956"
+              x2="530"
+              y2="2956"
+              stroke="#00ff9d"
+              stroke-width="1.2"
+            />
+            <line
+              x1="530"
+              y1="2956"
+              x2="530"
+              y2="2966"
+              stroke="#00ff9d"
+              stroke-width="1.2"
+              marker-end="url(#ag)"
+            />
 
             <!-- STATIC_H 명칭 레이블: x=540 시작으로 화살표(x=530) 겹침 방지 -->
-            <text x="540" y="2971" text-anchor="start" font-size="11"
-              fill="#00cc7a" font-style="italic">★ REINFORCE + PPO Clip + Adaptive Entropy</text>
+            <text
+              x="540"
+              y="2971"
+              text-anchor="start"
+              font-size="11"
+              fill="#00cc7a"
+            >
+              ★ REINFORCE + PPO Clip + Adaptive Entropy
+            </text>
 
             <!-- STATIC_H 박스: 좌우 여백 확대 (270→340) -->
-            <rect x="360" y="2976" width="340" height="38" rx="5"
-              fill="#041a0a" stroke="#00ff9d" stroke-width="2"/>
-            <text x="530" y="3000" text-anchor="middle" font-size="13"
-              fill="#00ff9d" font-weight="700">θ += scale · lr · δ · grad = STATIC_H</text>
+            <rect
+              x="360"
+              y="2976"
+              width="340"
+              height="38"
+              rx="5"
+              fill="#041a0a"
+              stroke="#00ff9d"
+              stroke-width="2"
+            />
+            <text
+              x="530"
+              y="3000"
+              text-anchor="middle"
+              font-size="13"
+              fill="#00ff9d"
+              font-weight="700"
+            >
+              θ += scale · lr · δ · grad = STATIC_H
+            </text>
 
             <!-- 핵심 정리 두 상자: 외곽 박스 전폭 활용 (각 width 407→475) -->
             <!-- inner: x=45~1015=970px, 각 박스=(970-20gap)/2=475px -->
-            <rect x="45" y="3030" width="475" height="30" rx="4"
-              fill="#101d30" stroke="#f5c542" stroke-width="0.8"/>
-            <text x="282" y="3050" text-anchor="middle" font-size="10"
-              fill="#f5c542">V(s) = E[r + γ·V(s')]  (Bellman 재귀) — 모든 RL의 수학적 기초</text>
+            <rect
+              x="45"
+              y="3030"
+              width="475"
+              height="30"
+              rx="4"
+              fill="#101d30"
+              stroke="#f5c542"
+              stroke-width="0.8"
+            />
+            <text
+              x="282"
+              y="3050"
+              text-anchor="middle"
+              font-size="10"
+              fill="#f5c542"
+            >
+              V(s) = E[r + γ·V(s')] (Bellman 재귀) — 모든 RL의 수학적 기초
+            </text>
 
-            <text x="530" y="3050" text-anchor="middle" font-size="12"
-              fill="#ffffff">+</text>
+            <text
+              x="530"
+              y="3050"
+              text-anchor="middle"
+              font-size="12"
+              fill="#ffffff"
+            >
+              +
+            </text>
 
             <!-- ∇J 박스: 좌우 여백 확대 (407→475) -->
-            <rect x="540" y="3030" width="475" height="30" rx="4"
-              fill="#101d30" stroke="#b06eff" stroke-width="0.8"/>
-            <text x="777" y="3050" text-anchor="middle" font-size="10"
-              fill="#b06eff">∇J(θ) = E[ ∇log π(a|s) · A(s,a) ]  (Policy Gradient) — Actor 갱신 근거</text>
+            <rect
+              x="540"
+              y="3030"
+              width="475"
+              height="30"
+              rx="4"
+              fill="#101d30"
+              stroke="#b06eff"
+              stroke-width="0.8"
+            />
+            <text
+              x="777"
+              y="3050"
+              text-anchor="middle"
+              font-size="10"
+              fill="#b06eff"
+            >
+              ∇J(θ) = E[ ∇log π(a|s) · A(s,a) ] (Policy Gradient) — Actor 갱신
+              근거
+            </text>
 
-            <text x="530" y="3082" text-anchor="middle" font-size="10"
-              fill="#ffffff">두 정리가 Actor-Critic 구조로 결합  |  [★] = STATIC_H 전용 확장</text>
+            <text
+              x="530"
+              y="3082"
+              text-anchor="middle"
+              font-size="10"
+              fill="#ffffff"
+            >
+              두 정리가 Actor-Critic 구조로 결합 | [★] = STATIC_H 전용 확장
+            </text>
           </svg>
         </div>
       </div>
@@ -5015,12 +6000,11 @@
       <div class="container">
         <div class="accent-line" style="background: var(--green)"></div>
         <div class="sec-label">08 · 실전 성과</div>
-        <h2 class="sec-title">
-          STATIC Hybrid 시뮬레이션 결과
-        </h2>
+        <h2 class="sec-title">STATIC Hybrid 시뮬레이션 결과</h2>
         <p class="sec-desc">
           - STATIC_H를 적용하여, 6종목 모두 Alpha 양수 달성! <br />
-          - 시뮬레이션으로 찾은 최적 하이퍼파라미터(lr(=α), γ, ε)를 적용한 OOS 평가 결과.<br/>
+          - 시뮬레이션으로 찾은 최적 하이퍼파라미터(lr(=α), γ, ε)를 적용한 OOS
+          평가 결과.<br />
           - 워크포워드 검증(앞 70% 학습 / 뒤 30% OOS)으로 과적합 방지.
         </p>
 
@@ -5086,7 +6070,8 @@
               <td class="mono"><!-- @t-m3-m@ -->114.90%</td>
               <td class="mono pos"><!-- @t-m3-a@ -->+10.7%p</td>
               <td class="mono" style="color: var(--red)">
-                <!-- @t-m3-mdd@ -->-19.24%</td>
+                <!-- @t-m3-mdd@ -->-19.24%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -5106,7 +6091,8 @@
               <td class="mono"><!-- @t-m4-m@ -->30.30%</td>
               <td class="mono pos"><!-- @t-m4-a@ -->+14.7%p</td>
               <td class="mono" style="color: var(--red)">
-                <!-- @t-m4-mdd@ -->-18.09%</td>
+                <!-- @t-m4-mdd@ -->-18.09%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -5145,7 +6131,8 @@
               <td class="mono"><!-- @t-m6-m@ -->59.48%</td>
               <td class="mono pos"><!-- @t-m6-a@ -->+15.2%p</td>
               <td class="mono" style="color: var(--red)">
-                <!-- @t-m6-mdd@ -->-29.27%</td>
+                <!-- @t-m6-mdd@ -->-29.27%
+              </td>
               <td
                 style="
                   font-family: var(--mono);
@@ -5166,7 +6153,8 @@
           <div class="rb-val"><!-- @tf-results@ -->Team Fund: +32.82%</div>
           <div class="rb-desc">
             6명 전원 STATIC_H로 양수 Alpha Gap 달성 ·
-            <!-- @best-alpha@ -->최고 Alpha: M2 Nasdaq 100 ETF +33.1%p 🏆</div>
+            <!-- @best-alpha@ -->최고 Alpha: M2 Nasdaq 100 ETF +33.1%p 🏆
+          </div>
         </div>
 
         <hr class="divider" />
@@ -5174,8 +6162,8 @@
           하이퍼파라미터 탐색 — PG Actor-Critic Optimizer
         </div>
 
-        <div class="fbox">
-          <div class="flabel">
+        <div class="fbox" style="font-size:0.83rem">
+          <div class="flabel" style="font-size:1rem;font-weight:700">
             복합 Gap 목표 함수 — heuristic.py PGActorCriticOptimizer
           </div>
           gap_vs_market = STATIC_final − Market_final<br />
@@ -5188,8 +6176,8 @@
           >
         </div>
 
-        <div class="fbox" style="margin-top: 0.8rem">
-          <div class="flabel">PG Actor-Critic Optimizer — 탐색 알고리즘</div>
+        <div class="fbox" style="margin-top:0.8rem;font-size:0.83rem">
+          <div class="flabel" style="font-size:1rem;font-weight:700">PG Actor-Critic Optimizer — 탐색 알고리즘</div>
           <span style="color: var(--text2)"># Actor: 파라미터 공간 탐색</span
           ><br />
           Δ = N(0, σ),&nbsp; x_new = clip(μ + Δ, 0, 1)<br />
@@ -5221,10 +6209,7 @@
           트레이딩 에이전트로의 완전한 진화
         </p>
 
-        <div
-          class="sum-grid"
-          style="grid-template-columns: repeat(2, 1fr)"
-        >
+        <div class="sum-grid" style="grid-template-columns: repeat(2, 1fr)">
           <div class="sum-card">
             <div class="sum-num">STEP 01 — 수학적 기초</div>
             <div class="sum-title">Bellman Equation</div>
@@ -5269,7 +6254,7 @@
             <div class="sum-desc">
               Adaptive Temperature + Tabular PPO Clipping<br />
               (Su et al. 2026 논문 기반).<br /><br />
-              6종목 전 양수 Alpha, Team +32.82%.
+              6종목 모두 양수 Alpha, Team +32.82%.
             </div>
           </div>
         </div>
@@ -5446,13 +6431,16 @@
             </h3>
             <p style="font-size: 0.82rem; color: #c0d4e8; line-height: 1.8">
               - 전통적 트레이딩 전략은 고정 규칙으로 작동한다.<br />
-              - 그러나 시장은 상승장·하락장·고변동성·저변동성이 끊임없이 교체되는 비정상 (non-stationary) 환경이다.<br />
+              - 그러나 시장은 상승장·하락장·고변동성·저변동성이 끊임없이
+              교체되는 비정상 (non-stationary) 환경이다.<br />
               - 사전 데이터 없는
               <strong style="color: var(--cyan)">Cold-Start 조건</strong>에서
-              에이전트가 시장을 스스로 학습해야 한다는 것이 이 프로젝트의 출발점이다.<br />
+              에이전트가 시장을 스스로 학습해야 한다는 것이 이 프로젝트의
+              출발점이다.<br />
               - Bellman 방정식
-              <code style="color: var(--green)">V(s) = E[r + γ·V(s')]</code>은
-              - "현재의 가치는 미래의 가치로 정의된다"는 재귀적 진리를 수학적으로 표현하며, 모든 RL의 토대가 된다.
+              <code style="color: var(--green)">V(s) = E[r + γ·V(s')]</code>은 -
+              "현재의 가치는 미래의 가치로 정의된다"는 재귀적 진리를 수학적으로
+              표현하며, 모든 RL의 토대가 된다.
             </p>
           </div>
 
@@ -5493,9 +6481,10 @@
                 >state = is_bull×1 + is_above_ema×2</code
               >로 4개(또는 8개) 이산 상태로 압축한다.<br />
               - 이는 Su et al.(2026) 논문의 CSR 전이 행렬 구조와 동형이다.<br />
-              → Trie 노드가 시장 상태로, SID 토큰이 BUY/CASH 행동으로 대응된다.<br />
-              - Q-Learning으로 TD 오차를
-              학습하고, STATIC Actor-Critic으로 확률적 정책
+              → Trie 노드가 시장 상태로, SID 토큰이 BUY/CASH 행동으로
+              대응된다.<br />
+              - Q-Learning으로 TD 오차를 학습하고, STATIC Actor-Critic으로
+              확률적 정책
               <code style="color: var(--green)">π(a|s) = softmax(θ[s])</code>를
               직접 학습하며, 엔트로피 보너스
               <code style="color: var(--green)">r_eff = R + 0.05·H(π)</code>로
@@ -5535,8 +6524,8 @@
               STATIC_H가 STATIC을 어떻게 넘어서는가?
             </h3>
             <p style="font-size: 0.82rem; color: #c0d4e8; line-height: 1.8">
-              - STATIC의 두 한계 — 고정 엔트로피 계수(0.05)와 갱신 크기 제약 없음
-              — 를 극복하기 위해 두 메커니즘을 추가한다.<br />
+              - STATIC의 두 한계 — 고정 엔트로피 계수(0.05)와 갱신 크기 제약
+              없음 — 를 극복하기 위해 두 메커니즘을 추가한다.<br />
               <strong style="color: var(--green)">Adaptive Temperature:</strong>
               <code style="color: var(--green)"
                 >α_t = clip(0.05×(1+flip_rate), 0.01, 0.15)</code
@@ -5546,7 +6535,8 @@
               >
               <code style="color: var(--purple)">|r_t−1|>0.2 → scale=0.3</code
               >으로 정책 급변을 억제하여 OOS 안정성을 확보한다.<br />
-              - 이는 논문(Su et al. 2026)의 948× 속도 개선과 같은 구조적 혁신이 다른 도메인에서 반복되는 사례다.
+              - 이는 논문(Su et al. 2026)의 948× 속도 개선과 같은 구조적 혁신이
+              다른 도메인에서 반복되는 사례다.
             </p>
           </div>
 
@@ -5582,14 +6572,17 @@
               결과는 수식이 증명한다!
             </h3>
             <p style="font-size: 0.82rem; color: #c0d4e8; line-height: 1.8">
-              - 워크포워드 검증(앞 70% 학습 / 뒤 30% OOS)으로 과적합을 방지한 상태에서, STATIC_H는 6개 종목 전체에서 시장 대비 양수 Alpha Gap을 달성했다.<br />
-              - Vanilla Q-Learning 대비 풍부한 4/8 상태 공간, 확률적 정책, 동적 엔트로피, PPO 클리핑의 복합 효과가
-              <strong style="color: var(--green)">Team Fund +32.82%</strong>라는 단일 숫자로 수렴한다.<br />
-              - Bellman의 재귀 공식 하나에서 출발하여 실전 트레이딩 시스템까지 — 모든 것은 연결된 하나의 수학적 체계다.
+              - 워크포워드 검증(앞 70% 학습 / 뒤 30% OOS)으로 과적합을 방지한
+              상태에서, STATIC_H는 6개 종목 전체에서 시장 대비 양수 Alpha Gap을
+              달성했다.<br />
+              - Vanilla Q-Learning 대비 풍부한 4/8 상태 공간, 확률적 정책, 동적
+              엔트로피, PPO 클리핑의 복합 효과가
+              <strong style="color: var(--green)">Team Fund +32.82%</strong>라는
+              단일 숫자로 수렴한다.<br />
+              - Bellman의 재귀 공식 하나에서 출발하여 실전 트레이딩 시스템까지, 모든 것은 연결된 하나의 수학적 체계다.
             </p>
           </div>
         </div>
-
 
         <!-- 앱 링크 -->
         <div style="text-align: center; margin-top: 2rem">
@@ -5646,6 +6639,80 @@
         { threshold: 0.3 },
       );
       secs.forEach((s) => io.observe(s));
+    </script>
+
+    <!-- ── MEMBER PARAMS CONFIG ──────────────────────────────────────────
+         config.py 파라미터가 변경되면 아래 MEMBER_PARAMS 객체만 수정하세요.
+         6개 카드에 자동 반영됩니다.
+    ──────────────────────────────────────────────────────────────────── -->
+    <script>
+      const MEMBER_PARAMS = {
+        m1: {
+          state: 8,
+          roll: null,
+          lr: 0.07268,
+          gamma: 0.938065,
+          eps_s: 0.133828,
+          eps_v: 0.102277,
+        },
+        m2: {
+          state: 4,
+          roll: null,
+          lr: 0.080412,
+          gamma: 0.907645,
+          eps_s: 0.119118,
+          eps_v: 0.177335,
+        },
+        m3: {
+          state: 8,
+          roll: null,
+          lr: 0.049807,
+          gamma: 0.880582,
+          eps_s: 0.023155,
+          eps_v: 0.160969,
+        },
+        m4: {
+          state: 8,
+          roll: 30,
+          lr: 0.038007,
+          gamma: 0.921727,
+          eps_s: 0.07596,
+          eps_v: 0.061587,
+        },
+        m5: {
+          state: 8,
+          roll: 60,
+          lr: 0.025708,
+          gamma: 0.917577,
+          eps_s: 0.037793,
+          eps_v: 0.106362,
+        },
+        m6: {
+          state: 8,
+          roll: null,
+          lr: 0.0222,
+          gamma: 0.950344,
+          eps_s: 0.164422,
+          eps_v: 0.139944,
+        },
+      };
+
+      function formatParams(p) {
+        const stateLabel = p.state + "-State";
+        const rollStr = p.roll ? " · Roll=" + p.roll : "";
+        const lrStr = " · lr=" + p.lr.toFixed(3);
+        const gammaStr = " · γ=" + p.gamma.toFixed(2);
+        const epsSStr = " · εₛ=" + p.eps_s.toFixed(3);
+        const epsVStr = " · εᵥ=" + p.eps_v.toFixed(3);
+        return stateLabel + lrStr + gammaStr + epsSStr + epsVStr + rollStr;
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        Object.keys(MEMBER_PARAMS).forEach(function (key) {
+          const el = document.getElementById("params-" + key);
+          if (el) el.textContent = formatParams(MEMBER_PARAMS[key]);
+        });
+      });
     </script>
   </body>
 </html>
