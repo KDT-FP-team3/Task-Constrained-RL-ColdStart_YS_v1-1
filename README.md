@@ -15,7 +15,7 @@
 ![전체화면창](Captures/전체화면창.jpg)
 
 - 좌측 사이드바에서 전역 하이퍼파라미터(학습률·감가율·탐색률·시드 등)와 Fund 배분 설정(Softmax Temperature, Max Single Weight)을 일괄 제어하고, **Eval. All / Simul. All** 버튼으로 6개 멤버 에이전트를 동시에 실행할 수 있다.
-- 상단 메인 영역의 **Master Fund Portfolio Report**는 멤버별 자본 배분 도넛 차트·Vanilla vs STATIC 수익 비교 막대 차트·전체 누적수익률 라인 차트(Team Fund: +43.40%)를 한눈에 제공하며, **Portfolio Alpha Strategy Report** 테이블에서 STATIC·Vanilla·Alpha(Gap)·MDD·Score·Weight%를 종목별로 비교할 수 있다.
+- 상단 메인 영역의 **Master Fund Portfolio Report**는 멤버별 자본 배분 도넛 차트·Vanilla vs STATIC 수익 비교 막대 차트·전체 누적수익률 라인 차트(Team Fund: +32.42%)를 한눈에 제공하며, **Portfolio Alpha Strategy Report** 테이블에서 STATIC·Vanilla·Alpha(Gap)·MDD·Score·Weight%를 종목별로 비교할 수 있다.
 - 하단 **Portfolio Managers** 섹션은 멤버별로 누적수익 비교 차트, Trial History 통계 분석(Return Distribution·시드별 성과 표), Agent Decision Analysis(BUY/CASH 행동 빈도 + 일별 수익 테이블)를 독립적으로 제공하며, 웹 접속 시 저장된 `config.py` 파라미터로 **자동 Run Evaluation이 즉시 실행**된다.
 
 ---
@@ -66,16 +66,16 @@ Project Master : Young-Sang Song
 
 | 멤버     | 담당 종목            | Ticker | 시드 | 알고리즘 | 8-State | Roll | STATIC_H    | Market  | Alpha Gap      |
 | --------- | -------------------- | ------ | ---- | -------- | ---------- | ---- | ----------- | ------- | ----------------- |
-| Member 1 | S&P 500 ETF          | SPY    | 42   | STATIC_H | O       | —    | **23.86%**  | 12.40%  | **+11.6%p**    |
-| Member 2 | Nasdaq 100 ETF       | QQQ    | 137  | STATIC_H | —       | —    | **67.26%**  | 35.36%  | **+32.0%p 🏆** |
-| Member 3 | KOSPI 지수           | ^KS11  | 2024 | STATIC_H | O       | —    | **119.91%** | 117.06% | **+3.3%p**     |
-| Member 4 | KOSDAQ 지수          | ^KQ11  | 777  | STATIC_H | O       | 30봉 | **48.59%**  | 27.92%  | **+21.0%p**    |
-| Member 5 | 미국배당다우존스 ETF | SCHD   | 314  | STATIC_H | O       | 60봉 | **30.18%**  | 23.82%  | **+6.5%p**     |
-| Member 6 | 로열골드(RGLD)       | RGLD   | 100  | STATIC_H | O       | —    | **102.12%** | 84.73%  | **+17.6%p**    |
+| Member 1 | S&P 500 ETF          | SPY    | 42   | STATIC_H | O       | —    | **20.03%**  | 11.62%  | **+8.4%p**     |
+| Member 2 | Nasdaq 100 ETF       | QQQ    | 137  | STATIC_H | —       | —    | **64.79%**  | 31.66%  | **+33.1%p 🏆** |
+| Member 3 | KOSPI 지수           | ^KS11  | 2024 | STATIC_H | O       | —    | **125.64%** | 114.90% | **+10.7%p**    |
+| Member 4 | KOSDAQ 지수          | ^KQ11  | 777  | STATIC_H | O       | 30봉 | **44.95%**  | 30.30%  | **+14.7%p**    |
+| Member 5 | 미국배당다우존스 ETF | SCHD   | 314  | STATIC_H | O       | 60봉 | **27.34%**  | 22.84%  | **+4.5%p**     |
+| Member 6 | 로열골드(RGLD)       | RGLD   | 100  | STATIC_H | O       | —    | **74.66%**  | 59.48%  | **+15.2%p**    |
 
 추가 지원 종목: NVDA, TSLA, GOOGL, MSFT, 삼성전자(005930.KS), SK하이닉스(000660.KS)
 
-> KOSPI(M3): 학습 구간 횡보, OOS 구간 급등 구조 → 3.3%p Alpha는 구조적 한계 감안 시 유의미한 달성.
+> KOSPI(M3): 학습 구간 횡보, OOS 구간 급등 구조에도 불구하고 +10.7%p Alpha 달성. 구조적 한계 감안 시 우수한 성과.
 
 ---
 
@@ -83,19 +83,19 @@ Project Master : Young-Sang Song
 
 | 항목                         | 값                         |
 | ---------------------------- | -------------------------- |
-| **Team Fund (Softmax 가중)** | **+42.58%**                |
-| 총 운용 자본                 | $9.92 ($1 초기 × 6명)      |
-| 최고 Alpha 멤버              | Member 2 (QQQ, +32.0%p)    |
-| 최고 수익률 멤버             | Member 3 (KOSPI, +119.91%) |
+| **Team Fund (Softmax 가중)** | **+32.42%**                |
+| 총 운용 자본                 | $9.60 ($1 초기 × 6명)      |
+| 최고 Alpha 멤버              | Member 2 (QQQ, +33.1%p)    |
+| 최고 수익률 멤버             | Member 3 (KOSPI, +125.64%) |
 
 | 멤버     | 종목                 | Capital ($) | STATIC_H (%) | Alpha (Gap) | MDD        | Score | 비중  |
 | -------- | -------------------- | ----------- | ------------ | ----------- | ---------- | ----- | ----- |
-| Member 1 | S&P 500 ETF          | $1.24       | 23.86        | +11.6%      | **-9.00%** | 2.386 | 8.3%  |
-| Member 2 | Nasdaq 100 ETF       | $1.67       | 67.26        | +32.0%      | -12.88%    | 4.846 | 22.3% |
-| Member 3 | KOSPI 지수           | $2.20       | 119.91       | +3.3%       | -19.24% ⚠️ | 5.924 | 28.0% |
-| Member 4 | KOSDAQ 지수          | $1.49       | 48.59        | +21.0%      | -17.97% ⚠️ | 2.561 | 8.9%  |
-| Member 5 | 미국배당다우존스 ETF | $1.30       | 30.18        | +6.5%       | **-9.11%** | 2.985 | 10.6% |
-| Member 6 | 로열 골드            | $2.02       | 102.12       | +17.6%      | -20.30% ⚠️ | 4.794 | 21.8% |
+| Member 1 | S&P 500 ETF          | $1.21       | 21.07        | +9.6%       | -9.31%     | 2.044 | 9.6%  |
+| Member 2 | Nasdaq 100 ETF       | $1.65       | 64.79        | +33.3%      | -12.88%    | 4.668 | 27.4% |
+| Member 3 | KOSPI 지수           | $2.25       | 125.32       | +10.9%      | -19.24% ⚠️ | 6.191 | 28.0% |
+| Member 4 | KOSDAQ 지수          | $1.46       | 46.45        | +16.4%      | -18.09% ⚠️ | 2.433 | 11.2% |
+| Member 5 | 미국배당다우존스 ETF | $1.27       | 27.34        | +4.6%       | **-9.11%** | 2.704 | 12.5% |
+| Member 6 | 로열 골드            | $1.75       | 74.66        | +15.3%      | -29.27% ⚠️ | 2.466 | 11.4% |
 
 ---
 
@@ -1061,14 +1061,14 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 - **System Status**: Cloud/CPU 환경 표시, 에이전트 분석 진행률 바, 마지막 수익률 실시간 표시
 - **Eval. All / Simul. All** 버튼 + **적용 / +전원리 / 초기화** 버튼으로 전체 멤버 일괄 제어
 - **Fund & Agent Settings 패널**: [P1] Softmax Temperature, Max Single Weight(%), [P2] 8-State Mode 토글, [P3] Rolling Retrain(OOS 주기 재학습) 토글
-- **Fallback Parameters / System Parameters**: Timeframe(1day), Trading Days(330), Train Episodes, Frame Speed, Base Seed(2026), Auto Run Count(6), Sim Min Steps(20), Sim Step Mult(6)
+- **Fallback Parameters / System Parameters**: Timeframe(1day), Trading Days(300), Train Episodes, Frame Speed, Base Seed(2026), Auto Run Count(6), Sim Min Steps(20), Sim Step Mult(6)
 - **Active Agents**: Vanilla RL / STATIC RL 활성화 토글
 - **RL Algorithm**: STATIC 드롭다운 선택, **RL Hyperparameters**: Learning Rate, Discount Factor(γ), STATIC ε, Vanilla ε 슬라이더
 
 **상단 메인 — Master Fund Portfolio Report**
-- **도넛 차트**: 6개 멤버별 자본 배분 비중 (Total Capital 9.93$)
+- **도넛 차트**: 6개 멤버별 자본 배분 비중 (Total Capital 9.60$)
 - **막대 차트**: Vanilla vs STATIC RL 최종 수익($) 비교
-- **누적 수익률 라인 차트**: 전 멤버 STATIC RL 누적수익 + Team Fund 합산 곡선 (Team Fund: +43.40%)
+- **누적 수익률 라인 차트**: 전 멤버 STATIC RL 누적수익 + Team Fund 합산 곡선 (Team Fund: +32.42%)
 
 **Portfolio Alpha Strategy Report 테이블**: Member별 Stocks, Persona, Capital($), STATIC(%), Vanilla(%), Alpha(Gap), MDD, Score, Weight% 한눈에 비교
 
@@ -1144,16 +1144,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                 |
 | ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **23.86%**         |
-| Vanilla RL                | 12.29%             |
-| Market (Buy&Hold)         | 12.40%             |
-| Alpha vs Market           | **+11.6%p**        |
-| Expected Alpha (6 Trials) | +9.06%p            |
-| MDD                       | -9.00%             |
-| Action Frequency          | BUY 181 / CASH 118 |
+| HYBRID RL (STATIC_H)      | **20.03%**         |
+| Vanilla RL                | 11.50%             |
+| Market (Buy&Hold)         | 11.62%             |
+| Alpha vs Market           | **+8.4%p**         |
+| Expected Alpha (6 Trials) | +8.48%p            |
+| MDD                       | -9.31%             |
+| Action Frequency          | BUY 243 / CASH 56  |
 
 **분석**
-- SPY는 미국 대형주 지수로 안정적인 상승 추세를 보인다. STATIC_H가 8-State 변동성 신호를 활용하여 고변동성 구간(2025년 중반 하락)에서 CASH 전환을 적절히 수행, 시장 대비 +11.6%p Alpha를 달성했다. Expected Alpha 9.06%p는 시드 독립성이 높음을 나타낸다.
+- SPY는 미국 대형주 지수로 안정적인 상승 추세를 보인다. STATIC_H가 8-State 변동성 신호를 활용하여 고변동성 구간에서 CASH 전환을 수행, 시장 대비 +8.4%p Alpha를 달성했다. BUY 비중 81%(243/299)로 상승 추세를 강하게 추종하며, Expected Alpha 8.48%p는 시드 독립성이 양호함을 나타낸다.
 
 ---
 
@@ -1165,16 +1165,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                 |
 | ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **67.26%**         |
-| Vanilla RL                | 35.22%             |
-| Market (Buy&Hold)         | 35.36%             |
-| Alpha vs Market           | **+32.0%p 🏆**     |
-| Expected Alpha (6 Trials) | +31.20%p           |
+| HYBRID RL (STATIC_H)      | **64.79%**         |
+| Vanilla RL                | 31.53%             |
+| Market (Buy&Hold)         | 31.66%             |
+| Alpha vs Market           | **+33.1%p 🏆**     |
+| Expected Alpha (6 Trials) | +33.65%p           |
 | MDD                       | -12.88%            |
-| Action Frequency          | BUY 389 / CASH 110 |
+| Action Frequency          | BUY 390 / CASH 109 |
 
 **분석**
-- QQQ는 팀 내 최고 Alpha 달성 종목이다. 4-State(변동성 신호 미사용)임에도 EMA 신호만으로 Nasdaq의 강한 추세를 효과적으로 포착했다. Expected Alpha 31.20%p는 6개 시드 전체에서 안정적으로 높은 Alpha를 기록, 시드 의존성이 낮다. BUY 비중 78%로 상승 추세 충실 추종.
+- QQQ는 팀 내 최고 Alpha 달성 종목이다. 4-State(변동성 신호 미사용)임에도 EMA 신호만으로 Nasdaq의 강한 추세를 효과적으로 포착했다. Expected Alpha 33.65%p는 시드 전체에서 안정적으로 높은 Alpha를 기록, 시드 의존성이 낮다. BUY 비중 78%(390/499)로 상승 추세 충실 추종.
 
 ---
 
@@ -1186,16 +1186,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                 |
 | ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **119.91%**        |
-| Vanilla RL                | 116.57%            |
-| Market (Buy&Hold)         | 117.06%            |
-| Alpha vs Market           | **+3.3%p**         |
-| Expected Alpha (6 Trials) | +2.74%p            |
+| HYBRID RL (STATIC_H)      | **125.64%**        |
+| Vanilla RL                | 114.42%            |
+| Market (Buy&Hold)         | 114.90%            |
+| Alpha vs Market           | **+10.7%p**        |
+| Expected Alpha (6 Trials) | +10.58%p           |
 | MDD                       | -19.24% ⚠️         |
-| Action Frequency          | BUY 332 / CASH 151 |
+| Action Frequency          | BUY 331 / CASH 153 |
 
 **분석**
-- KOSPI는 학습 구간(2024~2025 상반기) 횡보/하락, OOS 구간(2025 하반기~2026) 급등이라는 워크포워드 구조적 불리함에도 불구하고 +3.3%p Alpha를 달성했다. STATIC_H의 Adaptive Temperature가 OOS 급등 구간에서 BUY 비중을 유연하게 유지, Market을 미세하게 초과. MDD -19.24%는 팀 내 주의 종목. 낮은 ε=0.02는 학습된 정책에 강하게 의존함을 의미.
+- KOSPI는 학습 구간 횡보/하락, OOS 구간 급등이라는 워크포워드 구조적 불리함에도 불구하고 +10.7%p Alpha를 달성했다. STATIC_H의 Adaptive Temperature가 OOS 급등 구간에서 BUY 비중을 유연하게 유지, Market을 초과. MDD -19.24%는 팀 내 주의 종목. 낮은 ε=0.02는 학습된 정책에 강하게 의존함을 의미.
 
 ---
 
@@ -1207,16 +1207,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                 |
 | ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **48.59%**         |
-| Vanilla RL                | 27.63%             |
-| Market (Buy&Hold)         | 27.92%             |
-| Alpha vs Market           | **+21.0%p**        |
-| Expected Alpha (6 Trials) | +20.66%p           |
-| MDD                       | -17.97% ⚠️         |
-| Action Frequency          | BUY 233 / CASH 258 |
+| HYBRID RL (STATIC_H)      | **44.95%**         |
+| Vanilla RL                | 30.00%             |
+| Market (Buy&Hold)         | 30.30%             |
+| Alpha vs Market           | **+14.7%p**        |
+| Expected Alpha (6 Trials) | +16.15%p           |
+| MDD                       | -18.09% ⚠️         |
+| Action Frequency          | BUY 227 / CASH 257 |
 
 **분석**
-- KOSDAQ는 KOSPI보다 더 극적인 OOS 급등(2026년)을 보인다. Roll Period=30봉으로 OOS 구간 레짐 변화에 주기적으로 재학습하여 +21%p Alpha 달성. Action Frequency에서 CASH 비중(52%)이 높아 고변동성 하락 구간을 적극 회피, MDD 관리와 수익률 균형을 이루었다. Expected Alpha 20.66%p로 시드 안정성 우수.
+- KOSDAQ는 KOSPI보다 더 극적인 OOS 급등을 보인다. Roll Period=30봉으로 OOS 구간 레짐 변화에 주기적으로 재학습하여 +14.7%p Alpha 달성. Action Frequency에서 CASH 비중(53%)이 높아 고변동성 하락 구간을 적극 회피, MDD 관리와 수익률 균형을 이루었다. Expected Alpha 16.15%p로 시드 안정성 우수.
 
 ---
 
@@ -1228,16 +1228,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                 |
 | ------------------------- | ------------------ |
-| HYBRID RL (STATIC_H)      | **30.18%**         |
-| Vanilla RL                | 23.70%             |
-| Market (Buy&Hold)         | 23.82%             |
-| Alpha vs Market           | **+6.5%p**         |
-| Expected Alpha (6 Trials) | +4.17%p            |
+| HYBRID RL (STATIC_H)      | **27.34%**         |
+| Vanilla RL                | 22.71%             |
+| Market (Buy&Hold)         | 22.84%             |
+| Alpha vs Market           | **+4.5%p**         |
+| Expected Alpha (6 Trials) | +4.62%p            |
 | MDD                       | **-9.11%**         |
-| Action Frequency          | BUY 293 / CASH 206 |
+| Action Frequency          | BUY 296 / CASH 203 |
 
 **분석**
-- SCHD는 배당 ETF로 일변동성이 작아 EMA 신호 구분력이 낮다. Roll Period=60봉(장기 롤링)으로 느린 레짐 변화에 적응하여 +6.5%p Alpha 달성. MDD -9.11%는 팀 내 두 번째로 낮아 안전한 수익 특성. 낮은 학습률(lr=0.026)과 낮은 ε=0.04는 보수적이고 안정적인 정책 수렴을 반영.
+- SCHD는 배당 ETF로 일변동성이 작아 EMA 신호 구분력이 낮다. Roll Period=60봉(장기 롤링)으로 느린 레짐 변화에 적응하여 +4.5%p Alpha 달성. MDD -9.11%는 팀 내 최저로 안전한 수익 특성. 낮은 학습률(lr=0.026)과 낮은 ε=0.04는 보수적이고 안정적인 정책 수렴을 반영.
 
 ---
 
@@ -1249,16 +1249,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 | 지표                      | 값                |
 | ------------------------- | ----------------- |
-| HYBRID RL (STATIC_H)      | **102.12%**       |
-| Vanilla RL                | 84.55%            |
-| Market (Buy&Hold)         | 84.73%            |
-| Alpha vs Market           | **+17.6%p**       |
-| Expected Alpha (6 Trials) | +14.46%p          |
-| MDD                       | -20.30% ⚠️        |
-| Action Frequency          | BUY 229 / CASH 70 |
+| HYBRID RL (STATIC_H)      | **74.66%**         |
+| Vanilla RL                | 59.32%             |
+| Market (Buy&Hold)         | 59.48%             |
+| Alpha vs Market           | **+15.2%p**        |
+| Expected Alpha (6 Trials) | +12.82%p           |
+| MDD                       | -29.27% ⚠️         |
+| Action Frequency          | BUY 229 / CASH 70  |
 
 **분석**
-- RGLD(원자재·금 로열티)는 2025년 금 가격 급등과 함께 높은 수익률을 기록했다. 8-State 변동성 신호가 금 가격의 사이클성 변동을 포착하여 +17.6%p Alpha 달성. BUY 비중 76%로 상승 사이클을 강하게 추종. Vanilla도 84.55%의 높은 수익률을 기록, 시장 자체가 강세였음을 반영. MDD -20.30%는 원자재 특유의 높은 변동성에 기인.
+- RGLD(원자재·금 로열티)는 금 가격 상승과 함께 높은 수익률을 기록했다. 8-State 변동성 신호가 금 가격의 사이클성 변동을 포착하여 +15.2%p Alpha 달성. BUY 비중 77%(229/299)로 상승 사이클을 강하게 추종. MDD -29.27%는 팀 내 최고 수준으로 원자재 특유의 높은 변동성에 기인.
 
 ---
 
@@ -1268,16 +1268,16 @@ Task-Constrained-RL-ColdStart_YS_v1-1/
 
 **설명**: 6명 멤버의 STATIC_H 결과를 Softmax 가중 배분으로 합성한 팀 포트폴리오 대시보드.
 
-**Team Fund: +42.58%** (Softmax 가중 합성 수익률)
+**Team Fund: +32.42%** (Softmax 가중 합성 수익률)
 
 | 구성 요소                                | 내용                                                                                                       |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **도넛 차트 (Master Fund Contribution)** | 멤버별 최종 자본 비중. M3(KOSPI, 22.2%) · M6(RGLD, 20.4%)가 높은 절대 수익률로 최대 기여.                  |
+| **도넛 차트 (Master Fund Contribution)** | 멤버별 최종 자본 비중. M3(KOSPI, 23.4%) · M6(RGLD, 18.2%)가 높은 절대 수익률로 최대 기여.                  |
 | **Profit Comparison 막대 차트**          | Vanilla(빨강) vs STATIC_H(파랑) 6명 비교. 모든 멤버에서 STATIC_H > Vanilla 달성.                           |
-| **All Members 누적 수익 차트**           | 6개 멤버 STATIC_H 수익 곡선 + Team Fund(흰색 굵은 선). M3(노랑, 119.91%)·M6(하늘, 102.12%)가 팀 상단 견인. |
-| **Portfolio Alpha Strategy Report**      | 전체 성과 지표 테이블. M2 Alpha +32.0%p 최고. Team Fund Weight: M3 28%, M2 22.3%, M6 21.8% 순.             |
+| **All Members 누적 수익 차트**           | 6개 멤버 STATIC_H 수익 곡선 + Team Fund(흰색 굵은 선). M3(노랑, 125.32%)·M6(하늘, 74.66%)가 팀 상단 견인. |
+| **Portfolio Alpha Strategy Report**      | 전체 성과 지표 테이블. M2 Alpha +33.3%p 최고. Team Fund Weight: M3 28.0%, M2 27.4%, M5 12.5% 순.           |
 
-**Softmax 배분 해석**: Score = Return / (1 + |MDD|)로 산출. M3는 절대 수익률 119.91%로 Score 5.924 최고 → 비중 28%. M4는 Alpha +21%p이나 Score 2.561로 낮아 비중 8.9% (낮은 절대 수익률 때문). Max Single Weight 28% 상한으로 M3 독점 방지.
+**Softmax 배분 해석**: Score = Return / (1 + |MDD|)로 산출. M3는 절대 수익률 125.32%로 Score 6.191 최고 → 비중 28.0%. M2는 Score 4.668로 두 번째 → 비중 27.4%. Max Single Weight 28% 상한으로 M3 독점 방지.
 
 ---
 
@@ -1472,7 +1472,7 @@ Simul. All → best 파라미터 config.py 자동 저장 → 모듈 리로드 �
 
 ## 17. 향후 개선 제안
 
-v1 결과(전 종목 양수 Alpha, Team Fund +42.58%)를 기반으로 성능 향상 및 실전 운용을 위한 단계별 개선 방향을 제시한다. 구현 난이도와 기대효과를 함께 고려하여 우선순위를 정리했다.
+v1 결과(전 종목 양수 Alpha, Team Fund +32.42%)를 기반으로 성능 향상 및 실전 운용을 위한 단계별 개선 방향을 제시한다. 구현 난이도와 기대효과를 함께 고려하여 우선순위를 정리했다.
 
 ---
 
