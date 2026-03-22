@@ -2200,7 +2200,7 @@
             >Sparse Transition mAtrix-accelerated Trie Index for Constrained
             decoding</em
           >
-          의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제약 디코딩을
+          의 약자로, LLM 기반 생성 검색에서 TPU/GPU 위에 효율적인 제한된 디코딩을
           실현하는 기법이다.<br />
           → 즉, "LLM이 추천/검색 결과를 직접 생성할 때, 엉뚱한 값을 만들지
           않도록 제약을 걸되, 이 제약 검사를 CPU가 아닌 GPU/TPU에서 빠르게
@@ -2327,7 +2327,7 @@
               <tr>
                 <td>금지 처리</td>
                 <td class="mono">log_prob = −∞</td>
-                <td>θ 낮게 → π(a|s) ≈ 0</td>
+                <td>Small θ → π(a|s) ≈ 0</td>
               </tr>
               <tr>
                 <td>초기값 설정</td>
