@@ -924,9 +924,9 @@
           ><span class="hl-g">STATIC Hybrid</span>
         </h1>
         <p class="hero-desc">
-          마르코프 결정 과정(MDP)의 수학적 기초부터<br />Tabular PPO Clipping +
-          Adaptive Temperature 하이브리드까지<br />
-          실전 트레이딩 강화학습의 완전한 수식 흐름과 코드 로직
+          MDP → Bellman → TD → Q-Learning → Actor-Critic → ACER → STATIC_H<br />
+          수식 계보부터 Cold-Start, PPO Clip, Adaptive Entropy 구현까지<br />
+          강화학습(RL) 기반 실전 6종목 - 알고리즘별 수익 성능 비교 시뮬레이션
         </p>
         <div class="hero-chips">
           <div class="hero-chip">MDP</div>
@@ -951,8 +951,15 @@
           - 아래 Streamlit 앱은 본 문서에서 설명하는 모든 수식과 알고리즘이 실제
           시장 데이터에 적용된 결과다. <br />
           - 6명의 에이전트가 각자 담당 종목에서 STATIC_Hybrid(STATIC_H)를
-          실행하여 전 종목 양수 Alpha Gap을 달성했다.
+          실행하여 전 종목 "양수 Alpha Gap"을 달성했다.
         </p>
+        <div class="info" style="margin-top: 0.8rem; margin-bottom: 0rem">
+          <div class="tag">Alpha Gap이란?</div>
+          <strong>Alpha Gap</strong> = RL 전략 수익률 − 시장(Buy &amp; Hold) 수익률<br />
+          → 강화학습(RL, Reinforcement Learning) 에이전트가 단순히 보유만 했을 때보다 "얼마나 더 벌었는가"를 나타내는 <strong>초과 수익 지표</strong>.<br /><br />
+          <strong>양수(+)</strong>의 의미: RL 전략이 시장 수익률을 상회했다는 뜻.<br />
+          → Alpha Gap &gt; 0 이면 에이전트가 시장을 이긴 것, &lt; 0 이면 단순 보유가 더 유리했던 것.
+        </div>
 
         <!-- 성과 배너 -->
         <div class="result-banner" style="margin-bottom: 2rem">
@@ -1224,7 +1231,7 @@
             <div class="card-body" style="font-size: 0.78rem">
               - 현재 파라미터로 RL 에이전트를 평가하고 Trial History를
               축적한다.<br />
-              - 6회 반복으로 기대 Alpha 분포를 추정한다.
+              - Auto Run Count 횟수만큼 반복하여 기대 Alpha 분포를 추정한다.
             </div>
           </div>
           <div
@@ -1233,8 +1240,8 @@
           >
             <div class="card-sym">Simulation (PG Optimizer)</div>
             <div class="card-body" style="font-size: 0.78rem">
-              - PG Actor-Critic Optimizer가 lr(=α), γ, ε을 자동 탐색하여 복합
-              Gap(시장 60% + Vanilla 40%)을 극대화한다.
+              - PG Actor-Critic Optimizer가 lr(=α), γ, ε을 자동 탐색하여 복합 Gap을 극대화한다.<br />
+              <span style="color:var(--text3);font-size:0.72rem">Composite Gap = 0.6×(STATIC−Market) + 0.4×(STATIC−max(Vanilla, Market×0.3))</span>
             </div>
           </div>
           <div
@@ -1311,7 +1318,7 @@
               행동의 즉각적 결과.<br />
               수수료를 차감한 순 수익률로 계산
             </div>
-            <div class="card-note">daily_return × a − fee × |a − prev_a|</div>
+            <div class="card-note">daily_return × a − fee × 1[a=1, prev_a=0]<br /><span style="font-size:0.72rem;color:var(--text3)">※ 수수료는 CASH→BUY 전환 시에만 부과</span></div>
           </div>
           <div class="card">
             <div class="card-sym">γ · Discount (할인인수)</div>
@@ -1432,7 +1439,7 @@
               - 행동을 취한 직후 받는 보상.<br />
               - 시장 데이터가 수식에 유입되는 유일한 통로.
             </div>
-            <div class="card-note">= daily_return × a − fee × |a − prev_a|</div>
+            <div class="card-note">= daily_return × a − fee × 1[a=1, prev_a=0]<br /><span style="font-size:0.72rem;color:var(--text3)">※ 수수료는 CASH→BUY 전환 시에만 부과</span></div>
           </div>
           <div class="card">
             <div class="card-sym">γ · V(s(t+1))</div>
@@ -1614,7 +1621,7 @@
               - 300~500 에피소드 반복 후 δ → 0 으로 수렴.<br />
               - 수렴된 Q 테이블로 OOS 구간에서 argmax 결정론적 행동.
             </div>
-            <div class="card-note">2-State: Q[2][2] / 4-State: Q[4][2] / 8-State: Q[8][2]</div>
+            <div class="card-note">Vanilla: Q[2][2] (is_bull 기반 2-상태 전용)<br /><span style="font-size:0.72rem;color:var(--text3)">※ 4/8-State는 STATIC / STATIC_H 전용</span></div>
           </div>
 
         </div>
@@ -2153,6 +2160,24 @@
               고착 시 탐험 유지, 과전환 시 탐험 장려
             </div>
           </div>
+        </div>
+
+        <div class="info" style="margin-bottom: 1.5rem; border-left: 3px solid var(--green)">
+          <div class="tag" style="background: var(--green)">SAC-inspired</div>
+          Adaptive Temperature는 <strong>Soft Actor-Critic(SAC)</strong>의 자동 엔트로피 조정(Automatic Entropy Tuning)에서 영감을 받았습니다.<br /><br />
+          SAC는 목표 엔트로피 H_target을 미리 설정하고, 라그랑주 승수(α)를 경사 하강으로 자동 조정합니다.<br />
+          → <code style="font-family:var(--mono);color:var(--green)">α ← α − β·(H(π) − H_target)</code><br /><br />
+          본 프로젝트는 신경망 없이 <strong>flip_rate(행동 전환 빈도)</strong>를 프록시 신호로 삼아 동일한 효과를 Tabular 방식으로 구현합니다.<br />
+          → 과전환(불안정) 시 α↑ 탐험 강화 · 고착(과활용) 시 α↓ 활용 집중
+        </div>
+
+        <div class="info" style="margin-bottom: 1.5rem; border-left: 3px solid var(--purple)">
+          <div class="tag" style="background: var(--purple)">ACER 구현 적용</div>
+          <strong>ACER(Actor-Critic with Experience Replay, Wang et al. 2016)</strong>는 본 프로젝트에 <code style="font-family:var(--mono);color:var(--purple)">_train_acer()</code>로 완전히 구현된 알고리즘입니다.<br /><br />
+          ACER는 리플레이 버퍼에서 과거 샘플을 재사용할 때, 현재 정책과 과거 정책의 차이를 중요도 비율로 보정합니다.<br />
+          → <code style="font-family:var(--mono);color:var(--purple)">ρ = π_new(a|s) / π_old(a|s)</code><br /><br />
+          Tabular PPO Clipping은 이 개념을 신경망 없이 <strong>한 스텝 내에서</strong> 적용합니다 — 리플레이 버퍼 없이 동일 비율로 갱신 크기를 제한.<br />
+          → <code style="font-family:var(--mono);color:var(--purple)">r_t = π_new[a] / π_old[a]</code> &nbsp;→&nbsp; clip([1−ε, 1+ε]) → scale 결정
         </div>
 
         <div class="mini-title">Tabular PPO Clipping — 5단계 갱신 제약</div>
@@ -4782,7 +4807,7 @@
               = clip( 0.05 × (1 + flip_rate),  0.01,  0.15 )  |  전환 빈번 → α↑ 탐험 강화  |  전환 안정 → α↓ 활용 집중
             </text>
             <text x="235" y="2366" font-size="10" fill="#7a9cbf">
-              STATIC: α = ENTROPY_COEFF = 0.05 고정  |  STATIC_H: α_t 동적 (SAC-inspired)
+              STATIC: α = ENTROPY_COEFF = 0.05 고정  |  STATIC_H: α_t 동적 — SAC Automatic Entropy Tuning에서 영감, flip_rate를 프록시 신호로 Tabular 구현
             </text>
 
             <!-- ── ⑧ 정책 엔트로피 ── -->
